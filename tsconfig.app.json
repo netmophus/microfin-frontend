@@ -16,6 +16,20 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Alias @/ — exigé par shadcn/ui, et doit rester synchronisé avec resolve.alias de
+       vite.config.ts. TypeScript et Vite résolvent les imports séparément : n'en régler
+       qu'un donne du code qui type mais ne se charge pas, ou l'inverse. */
+    /* Sans baseUrl : déprécié en TypeScript 6, et inutile — `paths` se résout désormais
+       relativement à l'emplacement de ce fichier. */
+    "paths": { "@/*": ["./src/*"] },
+
+    /* Rigueur. strict n'était PAS activé dans le template : sans lui, une valeur
+       potentiellement absente (un champ d'erreur d'API, un paramètre de route) se lit sans
+       broncher et casse à l'exécution. Sur un écran d'authentification, c'est précisément
+       là que les cas limites vivent. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,

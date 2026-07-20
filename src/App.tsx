@@ -1,122 +1,71 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
-function App() {
-  const [count, setCount] = useState(0)
+import { PageAccueil } from '@/features/accueil/PageAccueil'
+import { PageConnexion } from '@/features/auth/PageConnexion'
+import { RouteProtegee } from '@/features/auth/RouteProtegee'
+import { tenterReprendreSession } from '@/lib/api'
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+/** Racine de l'application : providers, amorçage de session, routage. */
 
-      <div className="ticks"></div>
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Une requête qui échoue en 401 est déjà rejouée par l'intercepteur après refresh.
+      // Laisser TanStack Query réessayer par-dessus multiplierait les appels sans rien
+      // résoudre, et brouillerait le diagnostic quand une erreur est réelle.
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+/**
+ * Tente de reprendre la session au démarrage, une seule fois.
+ *
+ * L'access token vit en mémoire et disparaît à chaque rechargement ; le cookie de refresh,
+ * lui, survit. Sans cette tentative, un F5 renverrait au formulaire de connexion — dix fois
+ * par jour pour un agent de guichet.
+ *
+ * `useRef` plutôt que le seul tableau de dépendances vide : en mode strict, React monte puis
+ * démonte puis remonte chaque composant en développement, et l'effet partirait deux fois. Le
+ * single-flight de l'intercepteur le rattraperait, mais mieux vaut ne pas émettre l'appel en
+ * double que de compter sur un filet.
+ */
+function AmorcageSession({ children }: { children: ReactNode }) {
+  const dejaTente = useRef(false)
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  useEffect(() => {
+    if (dejaTente.current) return
+    dejaTente.current = true
+    void tenterReprendreSession()
+  }, [])
+
+  return <>{children}</>
 }
 
-export default App
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AmorcageSession>
+          <Routes>
+            <Route path="/connexion" element={<PageConnexion />} />
+            <Route
+              path="/"
+              element={
+                <RouteProtegee>
+                  <PageAccueil />
+                </RouteProtegee>
+              }
+            />
+            {/* Toute autre adresse ramène à l'accueil, qui décidera lui-même s'il faut
+                d'abord passer par la connexion. */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AmorcageSession>
+      </BrowserRouter>
+    </QueryClientProvider>
+  )
+}
