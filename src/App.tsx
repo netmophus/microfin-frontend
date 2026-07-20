@@ -4,6 +4,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageConnexion } from '@/features/auth/PageConnexion'
+import { PageMotDePasse } from '@/features/auth/PageMotDePasse'
+import { RouteAuthentifiee } from '@/features/auth/RouteAuthentifiee'
 import { RouteProtegee } from '@/features/auth/RouteProtegee'
 import { tenterReprendreSession } from '@/lib/api'
 
@@ -52,6 +54,16 @@ export function App() {
         <AmorcageSession>
           <Routes>
             <Route path="/connexion" element={<PageConnexion />} />
+            {/* Authentifié suffit — miroir de exige_authentification() : un compte bridé
+                doit pouvoir atteindre CET écran, et seulement celui-ci. */}
+            <Route
+              path="/changer-mot-de-passe"
+              element={
+                <RouteAuthentifiee>
+                  <PageMotDePasse />
+                </RouteAuthentifiee>
+              }
+            />
             <Route
               path="/"
               element={

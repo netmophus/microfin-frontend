@@ -20,6 +20,7 @@ import { LIBELLES } from '@/libelles/fr'
 export function RouteProtegee({ children }: { children: ReactNode }) {
   const accessToken = useAuth((etat) => etat.accessToken)
   const amorcage = useAuth((etat) => etat.amorcage)
+  const doitChangerMotDePasse = useAuth((etat) => etat.doitChangerMotDePasse)
   const emplacement = useLocation()
 
   if (amorcage === 'en_cours') {
@@ -34,6 +35,15 @@ export function RouteProtegee({ children }: { children: ReactNode }) {
     // `depuis` permet de revenir à la page demandée après connexion, plutôt que de
     // retomber systématiquement sur l'accueil.
     return <Navigate to="/connexion" replace state={{ depuis: emplacement.pathname }} />
+  }
+
+  // Second volet du miroir de exige() : un compte dont le renouvellement est dû ne peut
+  // atteindre AUCUNE route protégée — y compris en tapant l'URL à la main. Il est renvoyé
+  // vers l'écran de changement, seule route où RouteAuthentifiee le laisse passer. Le
+  // backend refuserait de toute façon en 403 ; cette redirection lui évite de le découvrir
+  // par une suite d'écrans vides.
+  if (doitChangerMotDePasse) {
+    return <Navigate to="/changer-mot-de-passe" replace />
   }
 
   return <>{children}</>

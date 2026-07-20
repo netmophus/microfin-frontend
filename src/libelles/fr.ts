@@ -63,6 +63,54 @@ export const LIBELLES = {
     inattendue: 'Une erreur inattendue est survenue. Réessayez, puis contactez votre administrateur.',
   },
 
+  motDePasse: {
+    titreForce: 'Définissez un nouveau mot de passe',
+    titreVolontaire: 'Changer mon mot de passe',
+
+    // Ton DÉLIBÉRÉMENT rassurant : le renouvellement est une procédure normale (compte
+    // neuf, ou mot de passe réinitialisé par un administrateur), pas une sanction. Un
+    // message alarmant ferait croire à un incident et générerait des appels au support.
+    instructionForce:
+      'Pour votre sécurité, veuillez définir un nouveau mot de passe avant de continuer.',
+    instructionVolontaire:
+      'Choisissez un nouveau mot de passe. Vous devrez saisir votre mot de passe actuel pour confirmer.',
+
+    actuel: 'Mot de passe actuel',
+    nouveau: 'Nouveau mot de passe',
+    confirmation: 'Confirmer le nouveau mot de passe',
+    valider: 'Enregistrer le nouveau mot de passe',
+    validationEnCours: 'Enregistrement…',
+    annuler: 'Annuler',
+
+    exigences: 'Votre mot de passe doit contenir :',
+    regles: {
+      longueur_minimale: 'au moins 12 caractères',
+      majuscule_requise: 'une lettre majuscule',
+      minuscule_requise: 'une lettre minuscule',
+      chiffre_requis: 'un chiffre',
+      caractere_special_requis: 'un caractère spécial (!, ?, @, #…)',
+    },
+
+    actuelRequis: 'Saisissez votre mot de passe actuel.',
+    nouveauRequis: 'Saisissez le nouveau mot de passe.',
+    confirmationRequise: 'Confirmez le nouveau mot de passe.',
+    confirmationDifferente: 'Les deux mots de passe ne correspondent pas.',
+    nonConforme: 'Le mot de passe ne respecte pas toutes les exigences ci-dessous.',
+
+    // Les trois refus du serveur, distincts parce qu'ils appellent trois gestes différents.
+    actuelIncorrect: 'Le mot de passe actuel est incorrect.',
+    dejaUtilise:
+      'Ce mot de passe a déjà été utilisé. Choisissez-en un différent des 12 derniers.',
+    refuseParLaPolitique: 'Le serveur a refusé ce mot de passe :',
+
+    succes: 'Votre mot de passe a été modifié.',
+    // Cas où le changement a RÉUSSI mais où la session n'a pas pu être renouvelée. On
+    // n'annonce jamais un échec sur une opération qui a abouti : l'utilisateur croirait
+    // devoir recommencer, avec un ancien mot de passe qui ne fonctionne plus.
+    succesReconnexionRequise:
+      'Votre mot de passe a été modifié. Veuillez vous reconnecter avec le nouveau.',
+  },
+
   session: {
     expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
     deconnexion: 'Se déconnecter',

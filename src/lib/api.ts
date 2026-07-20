@@ -23,6 +23,7 @@ export const api = axios.create({
 export const CHEMIN_LOGIN = '/auth/login'
 export const CHEMIN_REFRESH = '/auth/refresh'
 export const CHEMIN_LOGOUT = '/auth/logout'
+export const CHEMIN_CHANGER_MDP = '/auth/change-password'
 
 /** En-tête par lequel le backend signale un mot de passe à renouveler (403). */
 export const ENTETE_CODE_ERREUR = 'x-erreur-code'
@@ -61,7 +62,13 @@ api.interceptors.request.use((config) => {
  *
  * Un intercepteur naïf déconnecte l'utilisateur au moment précis où il essaie de le sauver.
  */
-let refreshEnCours: Promise<string> | null = null
+/** Résultat d'un refresh : le nouveau jeton ET l'état du compte que l'API déclare. */
+interface Rafraichissement {
+  accessToken: string
+  doitChangerMotDePasse: boolean
+}
+
+let refreshEnCours: Promise<Rafraichissement> | null = null
 
 /**
  * Client DÉDIÉ au rafraîchissement — même configuration que `api`, mais SANS intercepteur.
@@ -86,13 +93,21 @@ export const clientRefresh = axios.create({
  * Demande un nouveau couple de jetons. Le refresh token part TOUT SEUL dans le cookie —
  * le front ne le voit pas, ne le stocke pas, ne peut pas le lire.
  */
-async function demanderRefresh(): Promise<string> {
-  const reponse = await clientRefresh.post<{ access_token: string }>(CHEMIN_REFRESH, {})
-  return reponse.data.access_token
+async function demanderRefresh(): Promise<Rafraichissement> {
+  const reponse = await clientRefresh.post<{
+    access_token: string
+    must_change_password: boolean
+  }>(CHEMIN_REFRESH, {})
+  return {
+    accessToken: reponse.data.access_token,
+    // Le refresh relit l'état en base : c'est lui qui rattrape une réinitialisation faite
+    // par un administrateur pendant que l'utilisateur travaillait.
+    doitChangerMotDePasse: reponse.data.must_change_password,
+  }
 }
 
 /** Refresh partagé : le premier appelant lance, les suivants attendent le même résultat. */
-function rafraichir(): Promise<string> {
+function rafraichir(): Promise<Rafraichissement> {
   refreshEnCours ??= demanderRefresh().finally(() => {
     // Libéré dans TOUS les cas, succès comme échec. Sans ce `finally`, un refresh échoué
     // laisserait une promesse rejetée en place et toute tentative ultérieure de
@@ -115,7 +130,8 @@ function rafraichir(): Promise<string> {
 export async function tenterReprendreSession(): Promise<void> {
   const { ouvrirSession, terminerAmorcage } = useAuth.getState()
   try {
-    ouvrirSession(await rafraichir())
+    const { accessToken, doitChangerMotDePasse } = await rafraichir()
+    ouvrirSession(accessToken, doitChangerMotDePasse)
   } catch {
     terminerAmorcage()
   }
@@ -143,10 +159,10 @@ api.interceptors.response.use(
     }
 
     try {
-      const token = await rafraichir()
-      useAuth.getState().ouvrirSession(token)
+      const { accessToken, doitChangerMotDePasse } = await rafraichir()
+      useAuth.getState().ouvrirSession(accessToken, doitChangerMotDePasse)
       config._rejoue = true
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${accessToken}`
       return api.request(config as AxiosRequestConfig)
     } catch {
       // Le refresh a échoué : le cookie est absent, périmé, ou les sessions ont été

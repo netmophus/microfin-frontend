@@ -1,7 +1,9 @@
 import { AxiosError } from 'axios'
 
+import type { CodeRegle } from '@/features/auth/politique'
 import {
   api,
+  CHEMIN_CHANGER_MDP,
   CHEMIN_LOGIN,
   CHEMIN_LOGOUT,
   CODE_MOT_DE_PASSE_A_RENOUVELER,
@@ -22,6 +24,9 @@ interface ReponseJetons {
   access_token: string
   token_type: string
   expires_in: number
+  // Déclaré explicitement par l'API (et non déduit du claim du jeton) : c'est le contrat qui
+  // dit au front de conduire l'utilisateur vers l'écran de renouvellement.
+  must_change_password: boolean
 }
 
 /** Corps réel d'un 423 : { detail: { message, verrou_jusqua } }. */
@@ -82,7 +87,10 @@ export async function seConnecter(
       identifiant,
       mot_de_passe: motDePasse,
     })
-    return { accessToken: reponse.data.access_token, doitChangerMotDePasse: false }
+    return {
+      accessToken: reponse.data.access_token,
+      doitChangerMotDePasse: reponse.data.must_change_password,
+    }
   } catch (erreur) {
     throw new ErreurConnexion(traduire(erreur))
   }
@@ -129,4 +137,67 @@ export async function seDeconnecter(): Promise<void> {
   } catch {
     // volontairement ignoré
   }
+}
+
+// --- changement de mot de passe (bloc « écran de renouvellement ») -------------------
+
+/** Échecs distincts du changement, chacun appelant un geste différent de l'utilisateur. */
+export type EchecMotDePasse =
+  | { type: 'actuelIncorrect' } // 400 — l'ancien mot de passe est faux
+  | { type: 'dejaUtilise' } // 409 — fait partie des 12 derniers (C12)
+  | { type: 'politique'; violations: CodeRegle[] } // 422 — détail renvoyé par le serveur
+  | { type: 'reseau' }
+  | { type: 'inattendue' }
+
+export class ErreurMotDePasse extends Error {
+  readonly echec: EchecMotDePasse
+
+  constructor(echec: EchecMotDePasse) {
+    super(echec.type)
+    this.name = 'ErreurMotDePasse'
+    this.echec = echec
+  }
+}
+
+/** Forme réelle du détail d'un 422 : { detail: { message, violations: string[] } }. */
+function extraireViolations(donnees: unknown): CodeRegle[] {
+  if (typeof donnees !== 'object' || donnees === null) return []
+  const detail = (donnees as { detail?: unknown }).detail
+  if (typeof detail !== 'object' || detail === null) return []
+  const violations = (detail as { violations?: unknown }).violations
+  return Array.isArray(violations) ? (violations.filter((v) => typeof v === 'string') as CodeRegle[]) : []
+}
+
+/**
+ * Change le mot de passe. Le backend répond 204 sans corps ET NE RÉÉMET AUCUN JETON.
+ *
+ * C'est le point que le brief décrivait à l'envers : lire un `access_token` sur cette
+ * réponse donnerait `undefined`, et le front garderait l'ancien jeton — celui qui porte
+ * encore must_change_password=true. L'utilisateur aurait changé son mot de passe AVEC succès
+ * et resterait bloqué. La réémission du jeton se fait par le refresh, cf. PageMotDePasse.
+ *
+ * Les mots de passe partent dans le CORPS, jamais dans l'URL ni un en-tête. En cas d'erreur,
+ * on ne relaie que le CODE et les violations — jamais l'objet axios, dont config.data
+ * contiendrait le corps en clair.
+ */
+export async function changerMotDePasse(actuel: string, nouveau: string): Promise<void> {
+  try {
+    await api.post(CHEMIN_CHANGER_MDP, {
+      mot_de_passe_actuel: actuel,
+      nouveau_mot_de_passe: nouveau,
+    })
+  } catch (erreur) {
+    throw new ErreurMotDePasse(traduireMotDePasse(erreur))
+  }
+}
+
+function traduireMotDePasse(erreur: unknown): EchecMotDePasse {
+  if (!(erreur instanceof AxiosError)) return { type: 'inattendue' }
+  if (!erreur.response) return { type: 'reseau' }
+
+  const { status, data } = erreur.response
+  if (status === 400) return { type: 'actuelIncorrect' }
+  if (status === 409) return { type: 'dejaUtilise' }
+  if (status === 422) return { type: 'politique', violations: extraireViolations(data) }
+  return { type: 'inattendue' }
 }
