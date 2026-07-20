@@ -1,0 +1,29 @@
+# Fins de ligne : LF dans le dépôt, toujours. Même règle que le backend.
+#
+# POURQUOI ICI AUSSI, ET MÊME DAVANTAGE. L'outillage Node écrit beaucoup de fichiers —
+# prettier, eslint --fix, shadcn add, les générateurs de composants. Chacun est une occasion
+# de convertir un source en CRLF sous Windows, sans que rien ne le signale : les tests
+# passent, le build passe, mais le diff enfle et `git blame` cesse de désigner le véritable
+# auteur d'une ligne. Le problème s'est produit sur le backend au bloc 4c ; il aurait été
+# plus fréquent ici.
+#
+# Le dépôt est actuellement 100 % LF : ce fichier le maintient, il n'a rien à corriger.
+* text=auto eol=lf
+
+# Binaires déclarés explicitement plutôt que laissés à la détection automatique : elle est
+# fiable, mais le coût d'une erreur est asymétrique — une police ou une image « normalisée »
+# est un fichier détruit.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.avif binary
+*.svg  text
+*.woff  binary
+*.woff2 binary
+*.ttf  binary
+*.otf  binary
+*.pdf  binary
+*.zip  binary
