@@ -131,7 +131,7 @@ export async function tenterReprendreSession(): Promise<void> {
   const { ouvrirSession, terminerAmorcage } = useAuth.getState()
   try {
     const { accessToken, doitChangerMotDePasse } = await rafraichir()
-    ouvrirSession(accessToken, doitChangerMotDePasse)
+    ouvrirSession(accessToken, { doitChangerMotDePasse })
   } catch {
     terminerAmorcage()
   }
@@ -160,7 +160,7 @@ api.interceptors.response.use(
 
     try {
       const { accessToken, doitChangerMotDePasse } = await rafraichir()
-      useAuth.getState().ouvrirSession(accessToken, doitChangerMotDePasse)
+      useAuth.getState().ouvrirSession(accessToken, { doitChangerMotDePasse })
       config._rejoue = true
       config.headers.Authorization = `Bearer ${accessToken}`
       return api.request(config as AxiosRequestConfig)

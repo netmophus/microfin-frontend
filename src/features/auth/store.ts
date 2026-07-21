@@ -40,8 +40,22 @@ interface EtatAuth {
    * que dure le refresh — un clignotement à chaque F5, et l'impression d'être déconnecté.
    */
   amorcage: EtatAmorcage
+  /**
+   * Identifiant AFFICHÉ dans la barre de navigation, saisi à la connexion.
+   *
+   * DÉLIBÉRÉMENT PARTIEL : il survit à la navigation, PAS au rechargement de page. Après un
+   * F5, le refresh silencieux rouvre la session mais ne connaît pas l'identifiant tapé — la
+   * barre n'affiche alors que l'application. C'est un confort d'affichage, jamais une donnée
+   * de sécurité, et on ne le décode PAS du jeton (couplage au format interne, cf. la
+   * décision (b) du contrat must_change_password). Le nom qui survit au rechargement
+   * viendra d'un futur endpoint « qui suis-je » (/auth/me), pas d'ici.
+   */
+  identifiant: string | null
 
-  ouvrirSession: (accessToken: string, doitChangerMotDePasse?: boolean) => void
+  ouvrirSession: (
+    accessToken: string,
+    options?: { doitChangerMotDePasse?: boolean; identifiant?: string },
+  ) => void
   fermerSession: () => void
   terminerAmorcage: () => void
 }
@@ -50,12 +64,25 @@ export const useAuth = create<EtatAuth>((set) => ({
   accessToken: null,
   doitChangerMotDePasse: false,
   amorcage: 'en_cours',
+  identifiant: null,
 
-  ouvrirSession: (accessToken, doitChangerMotDePasse = false) =>
-    set({ accessToken, doitChangerMotDePasse, amorcage: 'termine' }),
+  // identifiant n'est écrasé que s'il est fourni : le refresh silencieux rouvre la session
+  // sans identifiant et ne doit pas effacer celui que la connexion avait posé.
+  ouvrirSession: (accessToken, options) =>
+    set((etat) => ({
+      accessToken,
+      doitChangerMotDePasse: options?.doitChangerMotDePasse ?? false,
+      amorcage: 'termine',
+      identifiant: options?.identifiant ?? etat.identifiant,
+    })),
 
   fermerSession: () =>
-    set({ accessToken: null, doitChangerMotDePasse: false, amorcage: 'termine' }),
+    set({
+      accessToken: null,
+      doitChangerMotDePasse: false,
+      amorcage: 'termine',
+      identifiant: null,
+    }),
 
   terminerAmorcage: () => set({ amorcage: 'termine' }),
 }))

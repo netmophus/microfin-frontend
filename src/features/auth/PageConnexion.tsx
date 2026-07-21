@@ -93,8 +93,12 @@ export function PageConnexion() {
   const connexion = useMutation({
     mutationFn: ({ identifiant, motDePasse }: ChampsConnexion) =>
       seConnecter(identifiant, motDePasse),
-    onSuccess: (resultat) => {
-      ouvrirSession(resultat.accessToken, resultat.doitChangerMotDePasse)
+    onSuccess: (resultat, variables) => {
+      ouvrirSession(resultat.accessToken, {
+        doitChangerMotDePasse: resultat.doitChangerMotDePasse,
+        // L'identifiant saisi, pour l'afficher dans la barre. Purement cosmétique.
+        identifiant: variables.identifiant,
+      })
       // Revenir là où l'utilisateur voulait aller avant d'être renvoyé ici.
       const destination = (emplacement.state as { depuis?: string } | null)?.depuis ?? '/'
       void naviguer(destination, { replace: true })

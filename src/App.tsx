@@ -2,11 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
-import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageConnexion } from '@/features/auth/PageConnexion'
 import { PageMotDePasse } from '@/features/auth/PageMotDePasse'
 import { RouteAuthentifiee } from '@/features/auth/RouteAuthentifiee'
 import { RouteProtegee } from '@/features/auth/RouteProtegee'
+import { AppLayout } from '@/features/layout/AppLayout'
+import { PageUtilisateurs } from '@/features/utilisateurs/PageUtilisateurs'
 import { tenterReprendreSession } from '@/lib/api'
 
 /** Racine de l'application : providers, amorçage de session, routage. */
@@ -64,14 +65,18 @@ export function App() {
                 </RouteAuthentifiee>
               }
             />
+            {/* Route de MISE EN PAGE : la garde protège, AppLayout habille (barre de
+                navigation + <Outlet/>), et les écrans authentifiés se déclarent dessous.
+                Chaque écran à venir s'ajoute ici sans retoucher la barre ni la garde. */}
             <Route
-              path="/"
               element={
                 <RouteProtegee>
-                  <PageAccueil />
+                  <AppLayout />
                 </RouteProtegee>
               }
-            />
+            >
+              <Route path="/" element={<PageUtilisateurs />} />
+            </Route>
             {/* Toute autre adresse ramène à l'accueil, qui décidera lui-même s'il faut
                 d'abord passer par la connexion. */}
             <Route path="*" element={<Navigate to="/" replace />} />

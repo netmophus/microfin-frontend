@@ -111,17 +111,48 @@ export const LIBELLES = {
       'Votre mot de passe a été modifié. Veuillez vous reconnecter avec le nouveau.',
   },
 
-  session: {
-    expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
+  navigation: {
+    utilisateurLabel: 'Connecté',
     deconnexion: 'Se déconnecter',
   },
 
-  accueil: {
-    titre: 'Espace de travail',
-    bienvenue: 'Vous êtes connecté.',
-    // Écran d'attente volontairement minimal : il sert à PROUVER que la route protégée
-    // fonctionne, pas à préfigurer le tableau de bord.
-    provisoire: 'Les écrans de travail seront ajoutés au fil des prochains modules.',
+  utilisateurs: {
+    titre: 'Utilisateurs',
+    sousTitre: 'Comptes des employés de l’institution.',
+    rechercher: 'Rechercher (nom, matricule, adresse électronique…)',
+
+    colonneMatricule: 'Matricule',
+    colonneNom: 'Nom',
+    colonnePrenom: 'Prénom',
+    // « Adresse électronique » et non « Adresse » : dans un logiciel de microfinance,
+    // « adresse » seule évoque le domicile.
+    colonneEmail: 'Adresse électronique',
+    colonneAgence: 'Agence',
+    colonneStatut: 'Statut',
+
+    actif: 'Actif',
+    inactif: 'Inactif',
+    verrouille: 'Verrouillé',
+    sansAgence: '—',
+
+    total: (n: number) => (n <= 1 ? `${n} utilisateur` : `${n} utilisateurs`),
+    page: (courante: number, sur: number) => `Page ${courante} sur ${sur}`,
+    precedent: 'Précédent',
+    suivant: 'Suivant',
+
+    // Aucune ligne : deux causes distinctes, deux messages. Un tableau vide sans explication
+    // laisse croire à une panne.
+    aucunResultat: 'Aucun utilisateur ne correspond à votre recherche.',
+    listeVide: 'Aucun utilisateur pour l’instant. Les comptes créés apparaîtront ici.',
+
+    chargement: 'Chargement des utilisateurs…',
+    interdit: 'Vous n’avez pas la permission de consulter les utilisateurs.',
+    erreur: 'Impossible de charger la liste. Réessayez dans un instant.',
+  },
+
+  session: {
+    expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
+    deconnexion: 'Se déconnecter',
   },
 
   chargement: 'Chargement…',
