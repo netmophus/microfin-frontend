@@ -116,7 +116,7 @@ export function PageFicheUtilisateur() {
     mutationFn: () => supprimer(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['utilisateurs'] })
-      void naviguer('/', { replace: true })
+      void naviguer('/utilisateurs', { replace: true })
     },
     onError: surErreur,
   })
@@ -246,7 +246,7 @@ export function PageFicheUtilisateur() {
 
 function RetourListe() {
   return (
-    <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+    <Link to="/utilisateurs" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
       <ArrowLeft className="size-4" aria-hidden />
       {F.retour}
     </Link>

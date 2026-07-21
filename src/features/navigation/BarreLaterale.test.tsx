@@ -22,7 +22,7 @@ describe('BarreLaterale', () => {
   it('rend « Utilisateurs » comme un vrai lien quand users.read est détenu', () => {
     afficher(['users.read'])
     const lien = screen.getByRole('link', { name: 'Utilisateurs' })
-    expect(lien).toHaveAttribute('href', '/')
+    expect(lien).toHaveAttribute('href', '/utilisateurs')
   })
 
   it('CACHE « Utilisateurs » quand users.read manque', () => {

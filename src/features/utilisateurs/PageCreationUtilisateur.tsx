@@ -95,7 +95,7 @@ export function PageCreationUtilisateur() {
       <MotDePasseProvisoire
         nom={nom || cree.utilisateur.username}
         motDePasse={cree.motDePasseProvisoire}
-        onTermine={() => void naviguer('/', { replace: true })}
+        onTermine={() => void naviguer('/utilisateurs', { replace: true })}
       />
     )
   }
@@ -166,7 +166,7 @@ export function PageCreationUtilisateur() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => void naviguer('/', { replace: true })}
+            onClick={() => void naviguer('/utilisateurs', { replace: true })}
           >
             {C.annuler}
           </Button>

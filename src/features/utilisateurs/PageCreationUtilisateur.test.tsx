@@ -33,7 +33,7 @@ function afficher() {
       <MemoryRouter initialEntries={['/utilisateurs/nouveau']}>
         <Routes>
           <Route path="/utilisateurs/nouveau" element={<PageCreationUtilisateur />} />
-          <Route path="/" element={<div>Liste</div>} />
+          <Route path="/utilisateurs" element={<div>Liste</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,

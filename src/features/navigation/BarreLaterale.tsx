@@ -80,10 +80,11 @@ function Entree({ entree }: { entree: EntreeMenu }) {
   }
 
   // ACTIVE : NavLink marque l'entrée courante (aria-current + fond) sans calcul manuel.
+  // Sans `end` : l'entrée reste surlignée sur les sous-pages (fiche, création) — la section
+  // « Utilisateurs » ne s'éteint pas quand on ouvre une fiche.
   return (
     <NavLink
       to={entree.chemin}
-      end
       className={({ isActive }) =>
         cn(
           'block rounded px-2 py-1.5 pl-7 text-sm hover:bg-muted',

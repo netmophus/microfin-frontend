@@ -49,7 +49,12 @@ export const MENU: readonly GroupeMenu[] = [
     entrees: [
       // La SEULE entrée active à ce jour. Conditionnée à users.read : sans cette permission,
       // elle disparaît (le serveur refuserait de toute façon en 403).
-      { etat: 'actif', libelle: M.entrees.utilisateurs, chemin: '/', permission: 'users.read' },
+      {
+        etat: 'actif',
+        libelle: M.entrees.utilisateurs,
+        chemin: '/utilisateurs',
+        permission: 'users.read',
+      },
       aVenir(M.entrees.rolesHabilitations),
       aVenir(M.entrees.journalAudit),
       aVenir(M.entrees.parametrage),

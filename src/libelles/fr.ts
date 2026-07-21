@@ -338,6 +338,18 @@ export const LIBELLES = {
     erreur: 'L’opération sur les rôles a échoué. Réessayez.',
   },
 
+  accueil: {
+    bienvenue: (nom: string) => `Bienvenue, ${nom}.`,
+    // Compte sans aucun rôle : message CALME et informatif, jamais une erreur rouge. La
+    // personne vient de se connecter, elle n'a rien fait de mal — elle attend juste ses
+    // accès.
+    sansRole:
+      'Votre compte n’a pas encore de rôle attribué. Contactez votre administrateur pour obtenir vos accès.',
+    // A des rôles mais aucun écran encore disponible pour eux.
+    aucunEcran:
+      'Les écrans correspondant à votre rôle seront accessibles depuis le menu, à mesure des prochains modules.',
+  },
+
   session: {
     expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
     deconnexion: 'Se déconnecter',

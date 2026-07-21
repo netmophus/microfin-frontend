@@ -7,6 +7,7 @@ import { PageMotDePasse } from '@/features/auth/PageMotDePasse'
 import { RouteAuthentifiee } from '@/features/auth/RouteAuthentifiee'
 import { RouteProtegee } from '@/features/auth/RouteProtegee'
 import { AppLayout } from '@/features/layout/AppLayout'
+import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageCreationUtilisateur } from '@/features/utilisateurs/PageCreationUtilisateur'
 import { PageFicheUtilisateur } from '@/features/utilisateurs/PageFicheUtilisateur'
 import { PageUtilisateurs } from '@/features/utilisateurs/PageUtilisateurs'
@@ -77,7 +78,10 @@ export function App() {
                 </RouteProtegee>
               }
             >
-              <Route path="/" element={<PageUtilisateurs />} />
+              {/* / = accueil qui DISPATCHE selon les droits (liste si users.read, sinon un
+                  mot d'accueil neutre). La liste des utilisateurs vit sous /utilisateurs. */}
+              <Route path="/" element={<PageAccueil />} />
+              <Route path="/utilisateurs" element={<PageUtilisateurs />} />
               {/* /nouveau AVANT /:id : sinon « nouveau » serait pris pour un identifiant. */}
               <Route path="/utilisateurs/nouveau" element={<PageCreationUtilisateur />} />
               <Route path="/utilisateurs/:id" element={<PageFicheUtilisateur />} />
