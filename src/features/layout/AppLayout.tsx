@@ -1,25 +1,28 @@
+import { useQuery } from '@tanstack/react-query'
 import { LogOut } from 'lucide-react'
 import { Outlet, useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { seDeconnecter } from '@/features/auth/api'
+import { chargerProfil, nomAffiche } from '@/features/auth/profil'
 import { useAuth } from '@/features/auth/store'
+import { BarreLaterale } from '@/features/navigation/BarreLaterale'
 import { LIBELLES } from '@/libelles/fr'
 
 /**
- * Mise en page des écrans authentifiés : barre de navigation + contenu.
+ * Mise en page des écrans authentifiés : barre du haut + arborescence à gauche + zone de
+ * travail. Route de mise en page (rend <Outlet />) — écrite une fois, elle surplombe tous
+ * les écrans à venir.
  *
- * Route de mise en page (rend <Outlet />) : la barre est écrite UNE fois et surplombe tous
- * les écrans protégés à venir, sans être recopiée dans chacun.
- *
- * L'identifiant affiché vient du store, posé à la connexion (cf. store.ts) : présent en
- * usage normal, absent après un rechargement de page. On ne l'affiche donc que s'il existe,
- * plutôt que d'imposer un « — » qui interrogerait l'utilisateur.
+ * Le PROFIL vient de GET /auth/me, pas du store : il se re-demande à chaque montage, donc le
+ * nom et le menu SURVIVENT au rechargement de page, là où le jeton en mémoire, lui, se perd.
  */
 export function AppLayout() {
   const naviguer = useNavigate()
-  const identifiant = useAuth((etat) => etat.identifiant)
   const fermerSession = useAuth((etat) => etat.fermerSession)
+  const identifiantSecours = useAuth((etat) => etat.identifiant)
+
+  const profil = useQuery({ queryKey: ['profil'], queryFn: chargerProfil })
 
   const deconnecter = async () => {
     await seDeconnecter()
@@ -27,10 +30,14 @@ export function AppLayout() {
     void naviguer('/connexion', { replace: true })
   }
 
+  // Nom du profil s'il est chargé ; sinon l'identifiant de session, le temps du chargement.
+  const nom = profil.data ? nomAffiche(profil.data) : identifiantSecours
+  const permissions = profil.data?.permissions ?? []
+
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="flex min-h-screen flex-col bg-muted/40">
       <header className="border-b bg-background">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+        <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-baseline gap-2">
             <span className="font-semibold tracking-tight">{LIBELLES.application.nom}</span>
             <span className="hidden text-xs text-muted-foreground sm:inline">
@@ -39,9 +46,9 @@ export function AppLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            {identifiant && (
+            {nom && (
               <span className="text-sm text-muted-foreground">
-                {LIBELLES.navigation.utilisateurLabel} : {identifiant}
+                {LIBELLES.navigation.utilisateurLabel} : {nom}
               </span>
             )}
             <Button variant="outline" size="sm" onClick={() => void deconnecter()}>
@@ -52,9 +59,12 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <Outlet />
-      </main>
+      <div className="flex flex-1">
+        <BarreLaterale permissions={permissions} />
+        <main className="min-w-0 flex-1 px-6 py-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }

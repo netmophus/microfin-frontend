@@ -150,6 +150,42 @@ export const LIBELLES = {
     erreur: 'Impossible de charger la liste. Réessayez dans un instant.',
   },
 
+  menu: {
+    aVenir: 'Bientôt disponible',
+    aVenirCourt: 'bientôt',
+
+    groupes: {
+      administration: 'Administration',
+      clientele: 'Clientèle',
+      operations: 'Opérations',
+      comptabilite: 'Comptabilité',
+      conformite: 'Conformité',
+      pilotage: 'Pilotage',
+      systeme: 'Système',
+    },
+
+    entrees: {
+      utilisateurs: 'Utilisateurs',
+      rolesHabilitations: 'Rôles et habilitations',
+      journalAudit: 'Journal d’audit',
+      parametrage: 'Paramétrage',
+      tiers: 'Tiers (clients / membres)',
+      caisseGuichet: 'Caisse / Guichet',
+      epargneDepots: 'Épargne / Dépôts',
+      credit: 'Crédit',
+      recouvrement: 'Recouvrement',
+      comptaGenerale: 'Comptabilité générale',
+      comptaAnalytique: 'Comptabilité analytique',
+      tresorerieImmo: 'Trésorerie et Immobilisations',
+      reportingBceao: 'Reporting BCEAO',
+      lbcFt: 'LBC/FT',
+      decisionnel: 'Décisionnel',
+      multiAgences: 'Multi-agences et Consolidation',
+      canauxNumerique: 'Canaux alternatifs et Finance numérique',
+      ged: 'GED',
+    },
+  },
+
   session: {
     expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
     deconnexion: 'Se déconnecter',
