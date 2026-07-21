@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { LogOut } from 'lucide-react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { KeyRound, LogOut } from 'lucide-react'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
 
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { seDeconnecter } from '@/features/auth/api'
 import { chargerProfil, nomAffiche } from '@/features/auth/profil'
 import { useAuth } from '@/features/auth/store'
@@ -51,6 +51,16 @@ export function AppLayout() {
                 {LIBELLES.navigation.utilisateurLabel} : {nom}
               </span>
             )}
+            {/* Changer SON mot de passe : la réinitialisation par un admin est interdite sur
+                soi-même, cette voie self-service est donc la seule pour son propre compte. */}
+            <Link
+              to="/changer-mot-de-passe"
+              className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              title={LIBELLES.navigation.changerMotDePasse}
+            >
+              <KeyRound className="mr-1.5 size-4" aria-hidden />
+              {LIBELLES.navigation.changerMotDePasse}
+            </Link>
             <Button variant="outline" size="sm" onClick={() => void deconnecter()}>
               <LogOut className="mr-1.5 size-4" aria-hidden />
               {LIBELLES.navigation.deconnexion}

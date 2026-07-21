@@ -113,6 +113,7 @@ export const LIBELLES = {
 
   navigation: {
     utilisateurLabel: 'Connecté',
+    changerMotDePasse: 'Mot de passe',
     deconnexion: 'Se déconnecter',
   },
 
@@ -237,6 +238,104 @@ export const LIBELLES = {
     copie: 'Copié',
     confirmation: 'J’ai noté ce mot de passe et je peux le transmettre.',
     terminer: 'Terminer et revenir à la liste',
+  },
+
+  fiche: {
+    retour: 'Retour à la liste',
+    chargement: 'Chargement de la fiche…',
+    introuvable: 'Cet utilisateur est introuvable.',
+    erreur: 'Impossible de charger la fiche. Réessayez dans un instant.',
+
+    // Champs
+    matricule: 'Matricule',
+    identifiant: 'Identifiant de connexion',
+    email: 'Adresse électronique',
+    telephone: 'Téléphone',
+    agence: 'Agence de rattachement',
+    statut: 'Statut',
+    verrouillage: 'Verrouillage',
+    motDePasse: 'Mot de passe',
+    creeLe: 'Créé le',
+    modifieLe: 'Dernière modification',
+    sansValeur: '—',
+
+    actif: 'Actif',
+    inactif: 'Inactif',
+    nonVerrouille: 'Non verrouillé',
+    verrouilleJusqua: (echeance: string) => `Verrouillé jusqu’au ${echeance}`,
+    renouvellementRequis: 'Changement de mot de passe requis à la prochaine connexion',
+    renouvellementNonRequis: 'À jour',
+
+    // Actions
+    modifier: 'Modifier',
+    desactiver: 'Désactiver',
+    reactiver: 'Réactiver',
+    deverrouiller: 'Déverrouiller',
+    reinitialiser: 'Réinitialiser le mot de passe',
+    supprimer: 'Supprimer',
+
+    // Sur soi-même
+    surSoiMeme: 'Vous ne pouvez pas effectuer cette action sur votre propre compte.',
+
+    // Confirmations
+    confirmer: 'Confirmer',
+    annuler: 'Annuler',
+
+    desactiverTitre: 'Désactiver ce compte ?',
+    desactiverAvertissement:
+      'Cette personne sera immédiatement déconnectée : toutes ses sessions seront révoquées. Elle ne pourra plus se connecter tant que le compte n’est pas réactivé.',
+
+    reinitialiserTitre: 'Réinitialiser le mot de passe ?',
+    reinitialiserAvertissement:
+      'Un nouveau mot de passe provisoire sera généré et affiché une seule fois. Toutes les sessions de la personne seront révoquées : elle sera déconnectée immédiatement.',
+
+    supprimerTitre: 'Supprimer cet utilisateur ?',
+    supprimerAvertissement:
+      'La personne sort de l’annuaire et ne pourra plus se connecter. C’est une suppression logique : l’historique d’audit est conservé, mais l’opération n’est pas destinée à être annulée depuis l’application.',
+    supprimerConfirmer: 'Supprimer définitivement',
+
+    // Erreurs d'action
+    actionInterdite: 'Vous n’avez pas la permission d’effectuer cette action.',
+    actionIntrouvable: 'Cet utilisateur n’existe pas dans votre périmètre.',
+    actionConflit: 'Cette adresse électronique est déjà utilisée par un autre compte.',
+    actionInvalide: 'Certaines informations sont invalides. Corrigez les champs signalés.',
+    actionErreur: 'L’action a échoué. Réessayez dans un instant.',
+  },
+
+  modification: {
+    titre: 'Modifier la fiche',
+    nom: 'Nom',
+    prenom: 'Prénom',
+    email: 'Adresse électronique',
+    telephone: 'Téléphone (facultatif)',
+    // Rappel visible : ces deux clés ne se modifient pas.
+    identifiantsFixes: 'Le matricule et l’identifiant de connexion ne sont pas modifiables.',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    annuler: 'Annuler',
+
+    nomRequis: 'Le nom est obligatoire.',
+    prenomRequis: 'Le prénom est obligatoire.',
+    emailRequis: 'L’adresse électronique est obligatoire.',
+    emailInvalide: 'Adresse électronique invalide.',
+  },
+
+  roles: {
+    titre: 'Rôles',
+    sousTitre: 'Les rôles déterminent ce que la personne peut faire dans l’application.',
+    aucun: 'Aucun rôle attribué. Ce compte ne peut rien faire tant qu’un rôle ne lui est pas donné.',
+    retirer: 'Retirer',
+    ajouter: 'Ajouter un rôle',
+    choisir: 'Choisir un rôle…',
+    attribuer: 'Attribuer',
+
+    // Sur sa propre fiche : lecture seule.
+    lectureSeule: 'Vous ne pouvez pas modifier vos propres rôles (séparation des pouvoirs).',
+
+    // Erreurs propres à l'attribution.
+    dejaAttribue: 'Cette personne détient déjà ce rôle.',
+    rolesIndisponibles: 'Impossible de charger la liste des rôles.',
+    erreur: 'L’opération sur les rôles a échoué. Réessayez.',
   },
 
   session: {

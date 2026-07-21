@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ErreurListe, listerUtilisateurs, type LigneUtilisateur } from '@/features/utilisateurs/api'
@@ -14,6 +15,11 @@ import { PageUtilisateurs } from '@/features/utilisateurs/PageUtilisateurs'
  * message ressemble à une panne, et un 403 affiché comme une erreur générique cacherait
  * qu'il s'agit d'un manque de permission.
  */
+
+vi.mock('@/features/auth/useProfil', () => ({
+  useProfil: () => ({ data: { permissions: [] } }),
+  useAPermission: () => false,
+}))
 
 vi.mock('@/features/utilisateurs/api', async () => {
   const reel =
@@ -43,7 +49,9 @@ function afficher() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <PageUtilisateurs />
+      <MemoryRouter>
+        <PageUtilisateurs />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }

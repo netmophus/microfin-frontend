@@ -6,7 +6,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -163,6 +163,8 @@ function ContenuListe({
   table: ReturnType<typeof useReactTable<LigneUtilisateur>>
   recherche: string
 }) {
+  const naviguer = useNavigate()
+
   if (requete.isPending) {
     return <p className="py-8 text-center text-sm text-muted-foreground">{T.chargement}</p>
   }
@@ -208,7 +210,19 @@ function ContenuListe({
         </thead>
         <tbody>
           {table.getRowModel().rows.map((rangee) => (
-            <tr key={rangee.id} className="border-b last:border-0 hover:bg-muted/30">
+            <tr
+              key={rangee.id}
+              // Toute la ligne ouvre la fiche. tabIndex + Enter pour l'accès clavier :
+              // une ligne cliquable qui n'est pas atteignable au clavier exclut une partie
+              // des utilisateurs.
+              tabIndex={0}
+              role="button"
+              onClick={() => naviguer(`/utilisateurs/${rangee.original.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') naviguer(`/utilisateurs/${rangee.original.id}`)
+              }}
+              className="cursor-pointer border-b last:border-0 hover:bg-muted/30 focus:bg-muted/50 focus:outline-none"
+            >
               {rangee.getVisibleCells().map((cellule) => (
                 <td key={cellule.id} className="px-3 py-2">
                   {flexRender(cellule.column.columnDef.cell, cellule.getContext())}
