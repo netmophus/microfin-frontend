@@ -6,10 +6,12 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useAPermission } from '@/features/auth/useProfil'
 import {
   ErreurListe,
   listerUtilisateurs,
@@ -92,11 +94,22 @@ export function PageUtilisateurs() {
     setPage(1)
   }
 
+  // Le bouton de création n'apparaît QUE si la personne détient users.create — inutile de
+  // proposer une action que le serveur refuserait (403). Le serveur reste l'autorité.
+  const peutCreer = useAPermission('users.create')
+
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{T.titre}</h1>
-        <p className="text-sm text-muted-foreground">{T.sousTitre}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">{T.titre}</h1>
+          <p className="text-sm text-muted-foreground">{T.sousTitre}</p>
+        </div>
+        {peutCreer && (
+          <Link to="/utilisateurs/nouveau" className={buttonVariants({ size: 'sm' })}>
+            {LIBELLES.creation.bouton}
+          </Link>
+        )}
       </div>
 
       <Input

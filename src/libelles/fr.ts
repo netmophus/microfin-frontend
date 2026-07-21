@@ -186,6 +186,59 @@ export const LIBELLES = {
     },
   },
 
+  creation: {
+    bouton: 'Créer un utilisateur',
+    titre: 'Nouvel utilisateur',
+    instruction: 'Le mot de passe provisoire sera généré et affiché une seule fois après création.',
+
+    matricule: 'Matricule',
+    nom: 'Nom',
+    prenom: 'Prénom',
+    identifiant: 'Identifiant de connexion',
+    email: 'Adresse électronique',
+    telephone: 'Téléphone',
+    telephoneFacultatif: 'Téléphone (facultatif)',
+    agence: 'Agence de rattachement',
+    agenceChoisir: 'Choisir une agence…',
+
+    creer: 'Créer le compte',
+    creationEnCours: 'Création en cours…',
+    annuler: 'Annuler',
+
+    // Contraintes miroir du backend (schemas.py). Un formulaire qui accepte ce que le
+    // serveur refuse renvoie l'utilisateur à un aller-retour inutile.
+    matriculeRequis: 'Le matricule est obligatoire.',
+    matriculeLong: 'Le matricule ne peut dépasser 30 caractères.',
+    nomRequis: 'Le nom est obligatoire.',
+    prenomRequis: 'Le prénom est obligatoire.',
+    identifiantCourt: 'L’identifiant doit contenir au moins 3 caractères.',
+    identifiantLong: 'L’identifiant ne peut dépasser 50 caractères.',
+    emailRequis: 'L’adresse électronique est obligatoire.',
+    emailInvalide: 'Adresse électronique invalide.',
+    agenceRequise: 'Choisissez une agence de rattachement.',
+
+    agencesIndisponibles: 'Impossible de charger la liste des agences.',
+
+    // Erreurs du serveur à la création.
+    conflit: 'Cet identifiant est déjà utilisé par un autre compte.',
+    invalide: 'Certaines informations sont invalides. Corrigez les champs signalés.',
+    interdit: 'Vous n’avez pas la permission de créer un utilisateur.',
+  },
+
+  motDePasseProvisoire: {
+    // LE point le plus important de l'écran : ce mot de passe n'existe qu'ici, une fois.
+    titre: 'Compte créé — notez le mot de passe provisoire',
+    intro: (nom: string) => `Voici le mot de passe provisoire de ${nom}.`,
+    avertissement:
+      'Notez-le maintenant : il ne sera plus jamais affiché et n’est récupérable nulle part. Sans lui, le compte devra être réinitialisé pour être utilisable.',
+    transmission:
+      'Communiquez-le à la personne de vive voix ou sur papier. Elle devra le changer à sa première connexion.',
+    copier: 'Copier',
+    copie: 'Copié',
+    confirmation: 'J’ai noté ce mot de passe et je peux le transmettre.',
+    terminer: 'Terminer et revenir à la liste',
+  },
+
   session: {
     expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
     deconnexion: 'Se déconnecter',

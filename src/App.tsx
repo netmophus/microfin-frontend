@@ -7,6 +7,7 @@ import { PageMotDePasse } from '@/features/auth/PageMotDePasse'
 import { RouteAuthentifiee } from '@/features/auth/RouteAuthentifiee'
 import { RouteProtegee } from '@/features/auth/RouteProtegee'
 import { AppLayout } from '@/features/layout/AppLayout'
+import { PageCreationUtilisateur } from '@/features/utilisateurs/PageCreationUtilisateur'
 import { PageUtilisateurs } from '@/features/utilisateurs/PageUtilisateurs'
 import { tenterReprendreSession } from '@/lib/api'
 
@@ -76,6 +77,7 @@ export function App() {
               }
             >
               <Route path="/" element={<PageUtilisateurs />} />
+              <Route path="/utilisateurs/nouveau" element={<PageCreationUtilisateur />} />
             </Route>
             {/* Toute autre adresse ramène à l'accueil, qui décidera lui-même s'il faut
                 d'abord passer par la connexion. */}

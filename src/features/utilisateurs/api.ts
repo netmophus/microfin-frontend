@@ -82,3 +82,69 @@ function traduire(erreur: unknown): EchecListe {
   if (erreur.response.status === 403) return { type: 'interdit' }
   return { type: 'inattendue' }
 }
+
+// --- création d'un utilisateur (POST /users) -----------------------------------------
+
+/** Champs envoyés au serveur. Les noms sont ceux de CreerUtilisateurRequest côté backend. */
+export interface DonneesCreation {
+  matricule: string
+  last_name: string
+  first_name: string
+  username: string
+  email: string
+  phone: string | null
+  primary_agency_id: string
+}
+
+/** Résultat d'une création : la fiche du compte ET son mot de passe provisoire (UNE fois). */
+export interface UtilisateurCree {
+  utilisateur: { id: string; last_name: string; first_name: string; username: string }
+  motDePasseProvisoire: string
+}
+
+export type EchecCreation =
+  | { type: 'conflit' } // 409 — identifiant déjà utilisé
+  | { type: 'invalide' } // 422 — donnée refusée par le serveur
+  | { type: 'interdit' } // 403 — pas la permission (ne devrait pas arriver si bouton masqué)
+  | { type: 'reseau' }
+  | { type: 'inattendue' }
+
+export class ErreurCreation extends Error {
+  readonly echec: EchecCreation
+
+  constructor(echec: EchecCreation) {
+    super(echec.type)
+    this.name = 'ErreurCreation'
+    this.echec = echec
+  }
+}
+
+export async function creerUtilisateur(donnees: DonneesCreation): Promise<UtilisateurCree> {
+  try {
+    const reponse = await api.post<{
+      utilisateur: UtilisateurCree['utilisateur']
+      mot_de_passe_provisoire: string
+    }>('/users', donnees)
+    return {
+      utilisateur: reponse.data.utilisateur,
+      motDePasseProvisoire: reponse.data.mot_de_passe_provisoire,
+    }
+  } catch (erreur) {
+    throw new ErreurCreation(traduireCreation(erreur))
+  }
+}
+
+function traduireCreation(erreur: unknown): EchecCreation {
+  if (!(erreur instanceof AxiosError)) return { type: 'inattendue' }
+  if (!erreur.response) return { type: 'reseau' }
+  switch (erreur.response.status) {
+    case 409:
+      return { type: 'conflit' }
+    case 422:
+      return { type: 'invalide' }
+    case 403:
+      return { type: 'interdit' }
+    default:
+      return { type: 'inattendue' }
+  }
+}
