@@ -350,6 +350,63 @@ export const LIBELLES = {
       'Les écrans correspondant à votre rôle seront accessibles depuis le menu, à mesure des prochains modules.',
   },
 
+  audit: {
+    titre: 'Journal d’audit',
+    sousTitre: 'Trace inviolable des opérations sensibles. Consultation en lecture seule.',
+
+    colonneDate: 'Date et heure',
+    colonneAction: 'Action',
+    colonneActeur: 'Auteur',
+    colonneCible: 'Personne concernée',
+    colonneDetail: 'Détail',
+
+    voirDetail: 'Voir',
+    masquerDetail: 'Masquer',
+    avant: 'Avant',
+    apres: 'Après',
+    adresseIp: 'Adresse IP',
+    systeme: 'Système',
+    sansValeur: '—',
+
+    // Filtres
+    filtreAction: 'Type d’action',
+    filtreActionToutes: 'Toutes les actions',
+    filtreDateDebut: 'Depuis le',
+    filtreDateFin: 'Jusqu’au',
+    reinitialiser: 'Réinitialiser les filtres',
+
+    total: (n: number) => (n <= 1 ? `${n} entrée` : `${n} entrées`),
+    page: (courante: number, sur: number) => `Page ${courante} sur ${sur}`,
+    precedent: 'Précédent',
+    suivant: 'Suivant',
+
+    chargement: 'Chargement du journal…',
+    aucuneEntree: 'Aucune entrée ne correspond à ces critères.',
+    interdit: 'Vous n’avez pas la permission de consulter le journal d’audit.',
+    erreur: 'Impossible de charger le journal. Réessayez dans un instant.',
+
+    // TABLE DE CORRESPONDANCE — le point qui rend l'écran lisible pour un directeur ou un
+    // auditeur. Le journal stocke des codes techniques ; on ne les montre JAMAIS bruts.
+    // Doit rester alignée sur les actions écrites côté backend (ActionUtilisateur,
+    // ActionAudit) : une action non traduite retomberait sur son code — visible et laid.
+    actions: {
+      'user.created': 'Création d’un utilisateur',
+      'user.updated': 'Modification d’une fiche utilisateur',
+      'user.deactivated': 'Désactivation d’un compte',
+      'user.activated': 'Réactivation d’un compte',
+      'user.deleted': 'Suppression d’un utilisateur',
+      'user.unlocked': 'Déverrouillage d’un compte',
+      'user.password_reset': 'Réinitialisation d’un mot de passe',
+      'user.role_assigned': 'Attribution d’un rôle',
+      'user.role_removed': 'Retrait d’un rôle',
+      'auth.login.success': 'Connexion réussie',
+      'auth.account.locked': 'Verrouillage du compte (tentatives échouées)',
+      'auth.token.reuse_detected': 'Réutilisation de jeton détectée',
+      'auth.token.refresh_denied_account_unavailable': 'Rafraîchissement refusé (compte indisponible)',
+      'auth.login.agency_denied': 'Connexion refusée (agence non autorisée)',
+    } as Record<string, string>,
+  },
+
   session: {
     expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
     deconnexion: 'Se déconnecter',

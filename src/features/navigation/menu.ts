@@ -47,8 +47,8 @@ export const MENU: readonly GroupeMenu[] = [
     id: 'administration',
     titre: M.groupes.administration,
     entrees: [
-      // La SEULE entrée active à ce jour. Conditionnée à users.read : sans cette permission,
-      // elle disparaît (le serveur refuserait de toute façon en 403).
+      // Chaque entrée ACTIVE est conditionnée à sa permission : sans elle, l'entrée
+      // disparaît (le serveur refuserait de toute façon en 403).
       {
         etat: 'actif',
         libelle: M.entrees.utilisateurs,
@@ -56,7 +56,12 @@ export const MENU: readonly GroupeMenu[] = [
         permission: 'users.read',
       },
       aVenir(M.entrees.rolesHabilitations),
-      aVenir(M.entrees.journalAudit),
+      {
+        etat: 'actif',
+        libelle: M.entrees.journalAudit,
+        chemin: '/audit',
+        permission: 'audit.read',
+      },
       aVenir(M.entrees.parametrage),
     ],
   },

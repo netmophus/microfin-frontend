@@ -8,6 +8,7 @@ import { RouteAuthentifiee } from '@/features/auth/RouteAuthentifiee'
 import { RouteProtegee } from '@/features/auth/RouteProtegee'
 import { AppLayout } from '@/features/layout/AppLayout'
 import { PageAccueil } from '@/features/accueil/PageAccueil'
+import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
 import { PageCreationUtilisateur } from '@/features/utilisateurs/PageCreationUtilisateur'
 import { PageFicheUtilisateur } from '@/features/utilisateurs/PageFicheUtilisateur'
 import { PageUtilisateurs } from '@/features/utilisateurs/PageUtilisateurs'
@@ -85,6 +86,7 @@ export function App() {
               {/* /nouveau AVANT /:id : sinon « nouveau » serait pris pour un identifiant. */}
               <Route path="/utilisateurs/nouveau" element={<PageCreationUtilisateur />} />
               <Route path="/utilisateurs/:id" element={<PageFicheUtilisateur />} />
+              <Route path="/audit" element={<PageJournalAudit />} />
             </Route>
             {/* Toute autre adresse ramène à l'accueil, qui décidera lui-même s'il faut
                 d'abord passer par la connexion. */}
