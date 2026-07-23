@@ -5,10 +5,14 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { PageConnexion } from '@/features/auth/PageConnexion'
 import { PageMotDePasse } from '@/features/auth/PageMotDePasse'
 import { RouteAuthentifiee } from '@/features/auth/RouteAuthentifiee'
+import { RoutePermission } from '@/features/auth/RoutePermission'
 import { RouteProtegee } from '@/features/auth/RouteProtegee'
 import { AppLayout } from '@/features/layout/AppLayout'
 import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
+import { PageCreationTier } from '@/features/tiers/PageCreationTier'
+import { PageFicheTier } from '@/features/tiers/PageFicheTier'
+import { PageTiers } from '@/features/tiers/PageTiers'
 import { PageCreationUtilisateur } from '@/features/utilisateurs/PageCreationUtilisateur'
 import { PageFicheUtilisateur } from '@/features/utilisateurs/PageFicheUtilisateur'
 import { PageUtilisateurs } from '@/features/utilisateurs/PageUtilisateurs'
@@ -80,13 +84,69 @@ export function App() {
               }
             >
               {/* / = accueil qui DISPATCHE selon les droits (liste si users.read, sinon un
-                  mot d'accueil neutre). La liste des utilisateurs vit sous /utilisateurs. */}
+                  mot d'accueil neutre). La liste des utilisateurs vit sous /utilisateurs.
+                  CHAQUE écran conditionné à une permission est gardé au ROUTAGE par
+                  RoutePermission : sans le droit, on est redirigé vers l'accueil — jamais
+                  d'erreur rouge sur une URL mémorisée. */}
               <Route path="/" element={<PageAccueil />} />
-              <Route path="/utilisateurs" element={<PageUtilisateurs />} />
+              <Route
+                path="/utilisateurs"
+                element={
+                  <RoutePermission permission="users.read">
+                    <PageUtilisateurs />
+                  </RoutePermission>
+                }
+              />
               {/* /nouveau AVANT /:id : sinon « nouveau » serait pris pour un identifiant. */}
-              <Route path="/utilisateurs/nouveau" element={<PageCreationUtilisateur />} />
-              <Route path="/utilisateurs/:id" element={<PageFicheUtilisateur />} />
-              <Route path="/audit" element={<PageJournalAudit />} />
+              <Route
+                path="/utilisateurs/nouveau"
+                element={
+                  <RoutePermission permission="users.create">
+                    <PageCreationUtilisateur />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/utilisateurs/:id"
+                element={
+                  <RoutePermission permission="users.read">
+                    <PageFicheUtilisateur />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/audit"
+                element={
+                  <RoutePermission permission="audit.read">
+                    <PageJournalAudit />
+                  </RoutePermission>
+                }
+              />
+              {/* /nouveau AVANT /:id : sinon « nouveau » serait pris pour un identifiant. */}
+              <Route
+                path="/tiers"
+                element={
+                  <RoutePermission permission="tiers.read.basic">
+                    <PageTiers />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/tiers/nouveau"
+                element={
+                  <RoutePermission permission="tiers.create">
+                    <PageCreationTier />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/tiers/:id"
+                element={
+                  <RoutePermission permission="tiers.read.basic">
+                    <PageFicheTier />
+                  </RoutePermission>
+                }
+              />
             </Route>
             {/* Toute autre adresse ramène à l'accueil, qui décidera lui-même s'il faut
                 d'abord passer par la connexion. */}

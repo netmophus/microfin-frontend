@@ -24,9 +24,16 @@ export function PageAccueil() {
     return <p className="py-8 text-sm text-muted-foreground">{LIBELLES.chargement}</p>
   }
 
-  // La redirection après connexion tient compte de ce à quoi la personne a droit.
-  if (profil.data?.permissions.includes('users.read')) {
+  // La redirection après connexion tient compte de ce à quoi la personne a droit. Ordre :
+  // l'administration d'abord (users.read), puis le métier (tiers). Un caissier, sans
+  // users.read mais avec l'accès aux tiers, atterrit ainsi sur SON écran, pas sur un mot
+  // d'accueil « aucun écran » trompeur.
+  const permissions = profil.data?.permissions ?? []
+  if (permissions.includes('users.read')) {
     return <Navigate to="/utilisateurs" replace />
+  }
+  if (permissions.includes('tiers.read.basic')) {
+    return <Navigate to="/tiers" replace />
   }
 
   const nom = profil.data ? nomAffiche(profil.data) : ''

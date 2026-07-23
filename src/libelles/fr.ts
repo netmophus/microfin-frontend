@@ -407,6 +407,181 @@ export const LIBELLES = {
     } as Record<string, string>,
   },
 
+  tiers: {
+    titre: 'Tiers (clients / membres)',
+    sousTitre: 'Personnes physiques, morales et groupements en relation avec l’institution.',
+
+    colonneNumero: 'Numéro',
+    colonneNom: 'Nom',
+    colonneType: 'Type',
+    colonneAgence: 'Agence',
+    colonneStatut: 'Statut',
+    sansAgence: '—',
+
+    rechercher: 'Rechercher — numéro ou nom',
+    total: (n: number) => (n <= 1 ? `${n} tiers` : `${n} tiers`),
+    page: (courante: number, sur: number) => `Page ${courante} sur ${sur}`,
+    precedent: 'Précédent',
+    suivant: 'Suivant',
+
+    chargement: 'Chargement des tiers…',
+    listeVide: 'Aucun tiers enregistré pour le moment.',
+    aucunResultat: 'Aucun tiers ne correspond à cette recherche.',
+    interdit: 'Vous n’avez pas la permission de consulter les tiers.',
+    erreur: 'Impossible de charger les tiers. Réessayez dans un instant.',
+    introuvable: 'Ce tiers est introuvable, ou hors de votre périmètre.',
+
+    // Codes techniques -> français. Alignés sur les valeurs du backend (tier_type, status,
+    // event_type). Une valeur non traduite retomberait sur son code, visible et laid.
+    types: {
+      individual: 'Personne physique',
+      legal_entity: 'Personne morale',
+      group: 'Groupement',
+    } as Record<string, string>,
+    statuts: {
+      prospect: 'Prospect',
+      actif: 'Actif',
+      suspendu_temporaire: 'Suspendu',
+      suspendu_lcb: 'Suspendu (LBC/FT)',
+      desactive: 'Désactivé',
+      decede: 'Décédé',
+      dissous: 'Dissous',
+      fusionne: 'Fusionné',
+    } as Record<string, string>,
+    evenements: {
+      created: 'Création de la fiche',
+      updated: 'Modification',
+      activated: 'Activation',
+      suspended: 'Suspension',
+      reactivated: 'Réactivation',
+      deactivated: 'Désactivation',
+      marked_deceased: 'Décès enregistré',
+      marked_dissolved: 'Dissolution enregistrée',
+      merged: 'Fusion de fiches',
+    } as Record<string, string>,
+  },
+
+  tiersCreation: {
+    bouton: 'Nouveau tiers',
+    titre: 'Nouveau tiers',
+    instruction: 'La fiche naîtra en statut « prospect », en attente de validation KYC.',
+
+    typeQuestion: 'Type de tiers',
+    typePhysique: 'Personne physique',
+    typeMorale: 'Personne morale',
+    typeGroupement: 'Groupement',
+    typePhysiqueAide: 'Un membre ou client individuel.',
+    typeMoraleAide: 'Une entreprise, association, coopérative ou ONG.',
+    typeGroupementAide: 'Un groupement solidaire (caution solidaire, tontine…).',
+
+    // Champs communs
+    telephone: 'Téléphone (facultatif)',
+    agence: 'Agence de rattachement',
+    agenceChoisir: 'Choisir une agence…',
+    agencesIndisponibles: 'Impossible de charger la liste des agences.',
+
+    // Personne physique
+    nom: 'Nom',
+    prenom: 'Prénom',
+    dateNaissance: 'Date de naissance',
+    sexe: 'Sexe',
+    sexeChoisir: 'Choisir…',
+    sexeM: 'Masculin',
+    sexeF: 'Féminin',
+    nationalite: 'Nationalité',
+    nationaliteChoisir: 'Choisir un pays…',
+    profession: 'Profession (facultatif)',
+
+    // Personne morale
+    raisonSociale: 'Dénomination sociale',
+    formeJuridique: 'Forme juridique',
+    formeChoisir: 'Choisir…',
+    dateConstitution: 'Date de constitution',
+    siege: 'Pays du siège',
+    capital: 'Capital social (facultatif)',
+    devise: 'Devise',
+    deviseChoisir: 'Choisir…',
+
+    // Groupement
+    nomGroupement: 'Nom du groupement',
+    typeGroupementLabel: 'Type de groupement',
+    typeGroupementChoisir: 'Choisir…',
+
+    creer: 'Créer la fiche',
+    creationEnCours: 'Création en cours…',
+    annuler: 'Annuler',
+
+    // Validation (miroir des bornes backend)
+    requis: 'Ce champ est obligatoire.',
+    trop_long: 'Valeur trop longue.',
+    dateInvalide: 'Date invalide.',
+    dateFuture: 'La date ne peut pas être dans le futur.',
+    paysIndisponibles: 'Impossible de charger la liste des pays.',
+
+    // Erreurs serveur
+    conflit: 'Un tiers avec ces identifiants existe déjà.',
+    invalide: 'Certaines informations sont invalides. Corrigez les champs signalés.',
+    reference: 'Une donnée de référence (agence, pays) est invalide.',
+    interdit: 'Vous n’avez pas la permission de créer un tiers.',
+
+    formesJuridiques: {
+      SA: 'SA — Société anonyme',
+      SARL: 'SARL — Société à responsabilité limitée',
+      SAS: 'SAS — Société par actions simplifiée',
+      SNC: 'SNC — Société en nom collectif',
+      GIE: 'GIE — Groupement d’intérêt économique',
+      ASSOCIATION: 'Association',
+      COOPERATIVE: 'Coopérative',
+      ONG: 'ONG',
+      EI: 'Entreprise individuelle',
+      AUTRE: 'Autre',
+    } as Record<string, string>,
+    typesGroupement: {
+      caution_solidaire: 'Caution solidaire',
+      tontine: 'Tontine',
+      association_locale: 'Association locale',
+      cooperative_villageoise: 'Coopérative villageoise',
+      autre: 'Autre',
+    } as Record<string, string>,
+  },
+
+  tiersFiche: {
+    retour: 'Retour à la liste',
+    numero: 'Numéro',
+    type: 'Type',
+    statut: 'Statut',
+    agence: 'Agence',
+    telephone: 'Téléphone',
+    profession: 'Profession',
+    dateNaissance: 'Date de naissance',
+    sexe: 'Sexe',
+    nationalite: 'Nationalité',
+    raisonSociale: 'Dénomination sociale',
+    formeJuridique: 'Forme juridique',
+    dateConstitution: 'Date de constitution',
+    nomGroupement: 'Nom du groupement',
+    typeGroupement: 'Type de groupement',
+    creeLe: 'Créé le',
+
+    identite: 'Identité',
+    timeline: 'Frise chronologique',
+    timelineVide: 'Aucun événement enregistré.',
+
+    // Le statut prospect, expliqué — on montre l'état réel et pourquoi il n'est pas actif.
+    prospectTitre: 'Fiche en attente de validation KYC',
+    prospectExplication:
+      'Cette fiche n’est pas encore active. L’activation viendra avec la validation KYC (module à venir). Aucune opération n’est encore possible sur ce tiers.',
+
+    // Vue limitée (read.basic) : ce que voit un caissier, sans détail ni frise.
+    vueLimitee: 'Vue limitée',
+    vueLimiteeAide:
+      'Vous voyez l’identification de ce tiers. Le détail complet est réservé aux profils habilités.',
+
+    chargement: 'Chargement de la fiche…',
+    sansValeur: '—',
+    systeme: 'Système',
+  },
+
   session: {
     expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
     deconnexion: 'Se déconnecter',

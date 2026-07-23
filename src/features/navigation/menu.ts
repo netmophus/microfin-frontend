@@ -68,7 +68,15 @@ export const MENU: readonly GroupeMenu[] = [
   {
     id: 'clientele',
     titre: M.groupes.clientele,
-    entrees: [aVenir(M.entrees.tiers)],
+    entrees: [
+      // Visible dès tiers.read.basic (le minimum : un caissier consulte au guichet).
+      {
+        etat: 'actif',
+        libelle: M.entrees.tiers,
+        chemin: '/tiers',
+        permission: 'tiers.read.basic',
+      },
+    ],
   },
   {
     id: 'operations',
