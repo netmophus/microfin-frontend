@@ -33,6 +33,11 @@ export function AppLayout() {
   // Nom du profil s'il est chargé ; sinon l'identifiant de session, le temps du chargement.
   const nom = profil.data ? nomAffiche(profil.data) : identifiantSecours
   const permissions = profil.data?.permissions ?? []
+  // La QUALITÉ (rôle·s) et l'agence courante, sous le nom : dans une IMF où l'on peut changer
+  // de fonction ou avoir plusieurs comptes, savoir « en quelle qualité » on est connecté évite
+  // les erreurs de manipulation. L'agence servira quand le multi-agences arrivera.
+  const roles = (profil.data?.roles ?? []).map((r) => r.name).join(', ')
+  const agence = profil.data?.agence_courante?.name ?? null
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
@@ -47,9 +52,19 @@ export function AppLayout() {
 
           <div className="flex items-center gap-3">
             {nom && (
-              <span className="text-sm text-muted-foreground">
-                {LIBELLES.navigation.utilisateurLabel} : {nom}
-              </span>
+              <div className="text-right leading-tight">
+                <div className="text-sm text-muted-foreground">
+                  {LIBELLES.navigation.utilisateurLabel} :{' '}
+                  <span className="font-medium text-foreground">{nom}</span>
+                </div>
+                {(roles || agence) && (
+                  <div className="text-xs text-muted-foreground">
+                    {roles}
+                    {roles && agence ? ' · ' : ''}
+                    {agence}
+                  </div>
+                )}
+              </div>
             )}
             {/* Changer SON mot de passe : la réinitialisation par un admin est interdite sur
                 soi-même, cette voie self-service est donc la seule pour son propre compte. */}
