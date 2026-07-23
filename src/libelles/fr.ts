@@ -582,6 +582,54 @@ export const LIBELLES = {
     systeme: 'Système',
   },
 
+  tiersActions: {
+    titre: 'Actions',
+
+    activer: 'Activer',
+    suspendre: 'Suspendre',
+    reactiver: 'Réactiver',
+    marquerDecede: 'Enregistrer le décès',
+    marquerDissous: 'Enregistrer la dissolution',
+    desactiver: 'Désactiver',
+
+    motif: 'Motif (facultatif)',
+    motifPlaceholder: 'Ex. : pièce d’identité à régulariser',
+    annuler: 'Annuler',
+    fermer: 'Fermer',
+
+    suspendreTitre: 'Suspendre cette fiche ?',
+    suspendreAvert:
+      'La fiche ne pourra plus effectuer d’opérations tant qu’elle est suspendue. L’action est réversible.',
+    suspendreConfirmer: 'Suspendre',
+
+    reactiverTitre: 'Réactiver cette fiche ?',
+    reactiverAvert: 'La fiche redevient active et peut à nouveau opérer.',
+    reactiverConfirmer: 'Réactiver',
+
+    decedeTitre: 'Enregistrer le décès ?',
+    decedeAvert:
+      'La fiche passera en statut « décédé ». Elle RESTE consultable — il y a une succession, une épargne à liquider.',
+    decedeConfirmer: 'Enregistrer le décès',
+
+    dissousTitre: 'Enregistrer la dissolution ?',
+    dissousAvert: 'La fiche passera en statut « dissous ». Elle reste consultable.',
+    dissousConfirmer: 'Enregistrer la dissolution',
+
+    desactiverTitre: 'Désactiver cette fiche ?',
+    desactiverAvert:
+      'ATTENTION — la fiche va SORTIR de l’annuaire : elle disparaîtra des listes et personne ne la verra plus. À ne faire que si le tiers n’a aucune opération (épargne, crédit) en cours.',
+    desactiverConfirmer: 'Désactiver définitivement',
+
+    // Activation refusée : on affiche TOUTES les conditions manquantes (conception T1e/T3),
+    // pas un message générique.
+    activationTitre: 'Activation impossible pour l’instant',
+    activationIntro: 'L’activation requiert que toutes ces conditions soient remplies :',
+    activationEnCours: 'Vérification des conditions…',
+
+    erreur: 'L’action a échoué. Réessayez dans un instant.',
+    interdit: 'Vous n’avez pas la permission d’effectuer cette action.',
+  },
+
   session: {
     expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
     deconnexion: 'Se déconnecter',

@@ -235,6 +235,78 @@ export function creerGroupement(donnees: DonneesGroupement): Promise<FicheTier> 
   return creer('/tiers/groups', donnees)
 }
 
+// --- transitions de cycle de vie (T1e) -------------------------------------------------
+
+export type TransitionNom =
+  | 'activate'
+  | 'suspend'
+  | 'reactivate'
+  | 'mark_deceased'
+  | 'mark_dissolved'
+  | 'deactivate'
+
+const URL_TRANSITION: Record<TransitionNom, string> = {
+  activate: 'activate',
+  suspend: 'suspend',
+  reactivate: 'reactivate',
+  mark_deceased: 'mark-deceased',
+  mark_dissolved: 'mark-dissolved',
+  deactivate: 'deactivate',
+}
+
+/** Une condition d'activation non remplie, telle que le 412 la renvoie. */
+export interface ConditionManquante {
+  code: string
+  libelle: string
+}
+
+export type EchecTransition =
+  | { type: 'conditions'; conditions: ConditionManquante[] } // 412 : l'activation refusée, avec TOUT ce qui manque
+  | { type: 'illegale'; message: string } // 409 : transition interdite, message du serveur
+  | { type: 'introuvable' } // 404 : hors périmètre ou inexistante
+  | { type: 'interdit' } // 403
+  | { type: 'reseau' }
+  | { type: 'inattendue' }
+
+export class ErreurTransition extends Error {
+  readonly echec: EchecTransition
+
+  constructor(echec: EchecTransition) {
+    super(echec.type)
+    this.name = 'ErreurTransition'
+    this.echec = echec
+  }
+}
+
+export async function executerTransition(
+  nom: TransitionNom,
+  id: string,
+  motif: string | null,
+): Promise<FicheTier> {
+  try {
+    const corps = motif?.trim() ? { motif: motif.trim() } : {}
+    const reponse = await api.post<FicheTier>(`/tiers/${id}/${URL_TRANSITION[nom]}`, corps)
+    return reponse.data
+  } catch (erreur) {
+    throw new ErreurTransition(traduireTransition(erreur))
+  }
+}
+
+function traduireTransition(erreur: unknown): EchecTransition {
+  if (!(erreur instanceof AxiosError)) return { type: 'inattendue' }
+  if (!erreur.response) return { type: 'reseau' }
+  const reponse = erreur.response
+  if (reponse.status === 412) {
+    // Le backend renvoie TOUTES les conditions manquantes d'un coup : on les remonte telles quelles.
+    const detail = reponse.data?.detail as { conditions_manquantes?: ConditionManquante[] } | undefined
+    return { type: 'conditions', conditions: detail?.conditions_manquantes ?? [] }
+  }
+  if (reponse.status === 409) return { type: 'illegale', message: String(reponse.data?.detail ?? '') }
+  if (reponse.status === 404) return { type: 'introuvable' }
+  if (reponse.status === 403) return { type: 'interdit' }
+  return { type: 'inattendue' }
+}
+
 // --- traductions d'erreurs -------------------------------------------------------------
 
 function traduireLecture(erreur: unknown): EchecListe {

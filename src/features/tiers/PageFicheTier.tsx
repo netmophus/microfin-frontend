@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAPermission } from '@/features/auth/useProfil'
+import { ActionsTier } from '@/features/tiers/actions-tier'
 import {
   ErreurFiche,
   lireTier,
@@ -69,6 +70,11 @@ export function PageFicheTier() {
     return (idAgence: string) => table.get(idAgence) ?? T.sansValeur
   }, [agences.data])
 
+  // Après une transition : tout ce qui commence par 'tiers' est invalidé -> la fiche (statut,
+  // donc les actions disponibles) ET la frise se rafraîchissent, la liste aussi.
+  const queryClient = useQueryClient()
+  const rafraichir = () => void queryClient.invalidateQueries({ queryKey: ['tiers'] })
+
   if (requete.isPending) {
     return <p className="py-8 text-center text-sm text-muted-foreground">{T.chargement}</p>
   }
@@ -130,6 +136,8 @@ export function PageFicheTier() {
           </p>
         )}
       </section>
+
+      <ActionsTier tier={fiche} onChangement={rafraichir} />
 
       {peutVoirDetail && <SectionTimeline requete={timeline} />}
     </div>
