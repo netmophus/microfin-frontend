@@ -1,10 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAPermission } from '@/features/auth/useProfil'
 import { ActionsTier } from '@/features/tiers/actions-tier'
+import { OngletCoordonnees } from '@/features/tiers/OngletCoordonnees'
+import { OngletPieces } from '@/features/tiers/OngletPieces'
 import {
   ErreurFiche,
   lireTier,
@@ -116,6 +118,14 @@ export function PageFicheTier() {
         </Alert>
       )}
 
+      {fiche.status === 'desactive' && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            <span className="font-medium">{T.desactiveeTitre}.</span> {T.desactiveeAide}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <section className="rounded-md border p-4">
         <h2 className="mb-2 text-sm font-semibold">{T.identite}</h2>
         <dl className="divide-y">
@@ -139,8 +149,63 @@ export function PageFicheTier() {
 
       <ActionsTier tier={fiche} onChangement={rafraichir} />
 
+      {/* Onglets Coordonnées / Pièces : réservés à qui a tiers.read (les GET le sont). Un caissier
+          en read.basic ne les voit pas — il n'a que l'identification limitée ci-dessus. */}
+      {peutVoirDetail && <OngletsDetail tierId={fiche.id} />}
+
       {peutVoirDetail && <SectionTimeline requete={timeline} />}
     </div>
+  )
+}
+
+const O = LIBELLES.tiersOnglets
+
+/** Bascule Coordonnées / Pièces. Un seul onglet monté à la fois : le second ne charge ses
+ *  données qu'une fois ouvert. */
+function OngletsDetail({ tierId }: { tierId: string }) {
+  const [onglet, setOnglet] = useState<'coordonnees' | 'pieces'>('coordonnees')
+  return (
+    <section className="rounded-md border">
+      <div className="flex border-b" role="tablist">
+        <BoutonOnglet actif={onglet === 'coordonnees'} onClick={() => setOnglet('coordonnees')}>
+          {O.coordonnees}
+        </BoutonOnglet>
+        <BoutonOnglet actif={onglet === 'pieces'} onClick={() => setOnglet('pieces')}>
+          {O.pieces}
+        </BoutonOnglet>
+      </div>
+      <div className="p-4">
+        {onglet === 'coordonnees' ? (
+          <OngletCoordonnees tierId={tierId} />
+        ) : (
+          <OngletPieces tierId={tierId} />
+        )}
+      </div>
+    </section>
+  )
+}
+
+function BoutonOnglet({
+  actif,
+  onClick,
+  children,
+}: {
+  actif: boolean
+  onClick: () => void
+  children: string
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={actif}
+      onClick={onClick}
+      className={`px-4 py-2 text-sm font-medium ${
+        actif ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
 

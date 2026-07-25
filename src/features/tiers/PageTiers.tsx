@@ -35,12 +35,17 @@ function Statut({ code }: { code: string }) {
 export function PageTiers() {
   const [recherche, setRecherche] = useState('')
   const [page, setPage] = useState(1)
+  const [inclureDesactives, setInclureDesactives] = useState(false)
   const rechercheDifferee = useDebounce(recherche)
   const naviguer = useNavigate()
 
+  // La case n'existe que pour la supervision (le serveur ignore le paramètre sans la permission,
+  // mais on ne montre même pas l'option à qui ne peut pas s'en servir).
+  const peutVoirDesactives = useAPermission('tiers.read.deleted')
+
   const requete = useQuery({
-    queryKey: ['tiers', rechercheDifferee, page],
-    queryFn: () => listerTiers({ q: rechercheDifferee, page }),
+    queryKey: ['tiers', rechercheDifferee, page, inclureDesactives],
+    queryFn: () => listerTiers({ q: rechercheDifferee, page, inclureDesactives }),
     placeholderData: keepPreviousData,
   })
 
@@ -76,14 +81,29 @@ export function PageTiers() {
         )}
       </div>
 
-      <Input
-        type="search"
-        placeholder={T.rechercher}
-        value={recherche}
-        onChange={(e) => majRecherche(e.target.value)}
-        className="max-w-sm"
-        aria-label={T.rechercher}
-      />
+      <div className="flex flex-wrap items-center gap-4">
+        <Input
+          type="search"
+          placeholder={T.rechercher}
+          value={recherche}
+          onChange={(e) => majRecherche(e.target.value)}
+          className="max-w-sm"
+          aria-label={T.rechercher}
+        />
+        {peutVoirDesactives && (
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={inclureDesactives}
+              onChange={(e) => {
+                setInclureDesactives(e.target.checked)
+                setPage(1)
+              }}
+            />
+            {T.afficherDesactives}
+          </label>
+        )}
+      </div>
 
       <Contenu
         requete={requete}

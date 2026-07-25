@@ -36,6 +36,7 @@ export const TAILLE_PAGE = 25
 export interface ParamsListe {
   q?: string
   page?: number
+  inclureDesactives?: boolean
 }
 
 export type EchecListe = { type: 'interdit' } | { type: 'reseau' } | { type: 'inattendue' }
@@ -57,6 +58,8 @@ export async function listerTiers(params: ParamsListe): Promise<PageTiers> {
         q: params.q?.trim() || undefined,
         page: params.page ?? 1,
         taille: TAILLE_PAGE,
+        // Honoré côté serveur SEULEMENT si l'appelant a tiers.read.deleted (sinon ignoré).
+        inclure_desactives: params.inclureDesactives || undefined,
       },
     })
     return reponse.data
@@ -244,6 +247,7 @@ export type TransitionNom =
   | 'mark_deceased'
   | 'mark_dissolved'
   | 'deactivate'
+  | 'restore'
 
 const URL_TRANSITION: Record<TransitionNom, string> = {
   activate: 'activate',
@@ -252,6 +256,7 @@ const URL_TRANSITION: Record<TransitionNom, string> = {
   mark_deceased: 'mark-deceased',
   mark_dissolved: 'mark-dissolved',
   deactivate: 'deactivate',
+  restore: 'restore',
 }
 
 /** Une condition d'activation non remplie, telle que le 412 la renvoie. */
@@ -265,6 +270,9 @@ export type EchecTransition =
   | { type: 'illegale'; message: string } // 409 : transition interdite, message du serveur
   | { type: 'introuvable' } // 404 : hors périmètre ou inexistante
   | { type: 'interdit' } // 403
+  // 422 à la restauration : une pièce à numéro unique a été reprise ailleurs. tierId non nul =
+  // fiche en conflit DANS le périmètre (message actionnable, lien) ; nul = refus générique.
+  | { type: 'doublon'; message: string; tierId: string | null; nom: string | null }
   | { type: 'reseau' }
   | { type: 'inattendue' }
 
@@ -304,6 +312,15 @@ function traduireTransition(erreur: unknown): EchecTransition {
   if (reponse.status === 409) return { type: 'illegale', message: String(reponse.data?.detail ?? '') }
   if (reponse.status === 404) return { type: 'introuvable' }
   if (reponse.status === 403) return { type: 'interdit' }
+  if (reponse.status === 422) {
+    // Collision de pièce à la restauration : détail structuré {message, tier_id, nom}.
+    const detail = reponse.data?.detail as
+      | { message?: string; tier_id?: string | null; nom?: string | null }
+      | undefined
+    if (detail && typeof detail === 'object' && 'message' in detail) {
+      return { type: 'doublon', message: detail.message ?? '', tierId: detail.tier_id ?? null, nom: detail.nom ?? null }
+    }
+  }
   return { type: 'inattendue' }
 }
 

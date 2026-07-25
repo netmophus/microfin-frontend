@@ -419,6 +419,7 @@ export const LIBELLES = {
     sansAgence: '—',
 
     rechercher: 'Rechercher — numéro ou nom',
+    afficherDesactives: 'Afficher les fiches désactivées',
     total: (n: number) => (n <= 1 ? `${n} tiers` : `${n} tiers`),
     page: (courante: number, sur: number) => `Page ${courante} sur ${sur}`,
     precedent: 'Précédent',
@@ -577,6 +578,11 @@ export const LIBELLES = {
     vueLimiteeAide:
       'Vous voyez l’identification de ce tiers. Le détail complet est réservé aux profils habilités.',
 
+    // Fiche désactivée (sortie de l'annuaire) : visible seulement pour la supervision.
+    desactiveeTitre: 'Fiche désactivée',
+    desactiveeAide:
+      'Cette fiche est sortie de l’annuaire (désactivée). Elle n’apparaît plus dans les listes courantes. Un responsable peut la réactiver — elle repartira en prospect, à re-valider.',
+
     chargement: 'Chargement de la fiche…',
     sansValeur: '—',
     systeme: 'Système',
@@ -620,6 +626,14 @@ export const LIBELLES = {
       'ATTENTION — la fiche va SORTIR de l’annuaire : elle disparaîtra des listes et personne ne la verra plus. À ne faire que si le tiers n’a aucune opération (épargne, crédit) en cours.',
     desactiverConfirmer: 'Désactiver définitivement',
 
+    // Restauration d'une fiche désactivée : on énonce clairement ce qui va se passer.
+    reactiverFiche: 'Réactiver la fiche',
+    reactiverFicheTitre: 'Réactiver cette fiche désactivée ?',
+    reactiverFicheAvert:
+      'La fiche reviendra dans l’annuaire en statut « prospect » — PAS active. Elle devra repasser la validation KYC avant toute opération : un ancien membre qui revient n’est pas automatiquement re-vérifié.',
+    reactiverFicheConfirmer: 'Réactiver (retour en prospect)',
+    voirFicheConflit: 'Voir la fiche',
+
     // Activation refusée : on affiche TOUTES les conditions manquantes (conception T1e/T3),
     // pas un message générique.
     activationTitre: 'Activation impossible pour l’instant',
@@ -628,6 +642,139 @@ export const LIBELLES = {
 
     erreur: 'L’action a échoué. Réessayez dans un instant.',
     interdit: 'Vous n’avez pas la permission d’effectuer cette action.',
+  },
+
+  tiersOnglets: {
+    coordonnees: 'Coordonnées',
+    pieces: 'Pièces d’identité',
+    frise: 'Historique',
+  },
+
+  tiersCoordonnees: {
+    chargement: 'Chargement des coordonnées…',
+    erreur: 'Impossible de charger les coordonnées.',
+    vide: 'Aucune coordonnée enregistrée.',
+
+    // Groupes
+    telephones: 'Téléphones',
+    emails: 'Adresses e-mail',
+    adresses: 'Adresses',
+
+    principal: 'Principal',
+    definirPrincipal: 'Définir comme principal',
+    supprimer: 'Supprimer',
+    forceLabel: 'Numéro non vérifié',
+
+    // Ajout
+    ajouterTelephone: 'Ajouter un téléphone',
+    ajouterEmail: 'Ajouter un e-mail',
+    ajouterAdresse: 'Ajouter une adresse',
+    ajouter: 'Ajouter',
+    annuler: 'Annuler',
+    enCours: 'Enregistrement…',
+    marquerPrincipal: 'En faire la coordonnée principale',
+
+    // Téléphone
+    numero: 'Numéro de téléphone',
+    numeroPlaceholder: 'Ex. : 90 12 34 56',
+    // Échappatoire : n'apparaît QU'APRÈS un refus forçable. Jamais un réflexe.
+    forcerTitre: 'Ce numéro n’a pas été reconnu',
+    forcerAide:
+      'Vérifiez d’abord la saisie. Si le numéro est réellement correct (format inhabituel, ligne récente), vous pouvez l’enregistrer tel quel — il sera signalé comme non vérifié.',
+    forcerConfirmer: 'Enregistrer quand même',
+
+    // E-mail
+    email: 'Adresse e-mail',
+    emailPlaceholder: 'nom@exemple.com',
+
+    // Adresse — les DEUX modes sont d'égale importance (le repère est le cas courant en rural).
+    adresseIntro: 'Renseignez une adresse formelle OU un point de repère — l’un suffit.',
+    rue: 'Rue / voie',
+    ruePlaceholder: 'Ex. : Rue KK-12, porte 45',
+    quartier: 'Quartier',
+    repere: 'Point de repère',
+    reperePlaceholder: 'Ex. : derrière la mosquée, près du puits',
+    adresseVide: 'Renseignez au moins une rue ou un point de repère.',
+
+    // Suppression
+    supprimerTitre: 'Supprimer cette coordonnée ?',
+    motif: 'Motif (facultatif)',
+    motifPlaceholder: 'Ex. : numéro erroné signalé par le client',
+    confirmerSuppression: 'Supprimer',
+
+    sousTypes: {
+      mobile: 'Mobile',
+      landline: 'Fixe',
+      professional: 'Professionnel',
+      emergency: 'Urgence',
+      spouse: 'Conjoint',
+      home: 'Domicile',
+      work: 'Travail',
+      postal: 'Postale',
+      permanent: 'Permanente',
+      temporary: 'Temporaire',
+      personal: 'Personnel',
+      other: 'Autre',
+    } as Record<string, string>,
+
+    erreurGenerique: 'L’opération a échoué. Réessayez dans un instant.',
+  },
+
+  tiersPieces: {
+    chargement: 'Chargement des pièces…',
+    erreur: 'Impossible de charger les pièces.',
+    vide: 'Aucune pièce enregistrée.',
+
+    ajouter: 'Ajouter une pièce',
+    ajouterBouton: 'Ajouter',
+    annuler: 'Annuler',
+    enCours: 'Enregistrement…',
+
+    // Formulaire
+    type: 'Type de pièce',
+    typeChoisir: 'Choisir…',
+    typesIndisponibles: 'Impossible de charger les types de pièces.',
+    numero: 'Numéro',
+    numeroPlaceholder: 'Tel qu’il figure sur la pièce',
+    autorite: 'Autorité de délivrance (facultatif)',
+    dateEmission: 'Date de délivrance (facultatif)',
+    dateExpiration: 'Date d’expiration',
+    dateExpirationFacultative: 'Date d’expiration (facultatif)',
+    paysEmission: 'Pays de délivrance (facultatif)',
+    paysChoisir: 'Choisir…',
+    marquerPrincipale: 'En faire la pièce principale',
+
+    principale: 'Principale',
+    definirPrincipale: 'Définir comme principale',
+    verifier: 'Vérifier',
+    verifiee: 'Vérifiée',
+    supprimer: 'Supprimer',
+
+    // Badges de validité — visibles d'un coup d'œil. Une pièce périmée ne bloque pas, mais se voit.
+    validite: {
+      valide: 'Valide',
+      expire_bientot: 'Expire bientôt',
+      perimee: 'Périmée',
+      sans_objet: 'Sans échéance',
+    } as Record<string, string>,
+
+    // Doublon : message actionnable quand la fiche est nommée.
+    doublonLien: 'Voir la fiche',
+
+    // Vérification
+    verifierTitre: 'Vérifier cette pièce ?',
+    verifierAide:
+      'Vous attestez avoir vu la pièce en original et l’avoir jugée conforme. Une pièce modifiée ensuite perdra cette vérification.',
+    verifierNote: 'Note de vérification (facultatif)',
+    verifierConfirmer: 'Confirmer la vérification',
+
+    // Suppression
+    supprimerTitre: 'Supprimer cette pièce ?',
+    motif: 'Motif (facultatif)',
+    motifPlaceholder: 'Ex. : doublon d’une autre pièce',
+    confirmerSuppression: 'Supprimer',
+
+    erreurGenerique: 'L’opération a échoué. Réessayez dans un instant.',
   },
 
   session: {

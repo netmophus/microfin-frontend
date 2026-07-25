@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,9 @@ import {
 import { LIBELLES } from '@/libelles/fr'
 
 const A = LIBELLES.tiersActions
+
+/** Collision de pièce à la restauration (422). tierId non nul = fiche nommée (dans le périmètre). */
+type Doublon = Extract<EchecTransition, { type: 'doublon' }>
 
 /** Métadonnées d'affichage par action : libellé du bouton, textes de confirmation, style. */
 interface MetaAction {
@@ -83,6 +87,15 @@ const META: Record<TransitionNom, MetaAction> = {
     danger: true,
     motif: true,
   },
+  restore: {
+    bouton: A.reactiverFiche,
+    permission: 'tiers.deactivate', // symétrie : qui désactive restaure
+    titre: A.reactiverFicheTitre,
+    avertissement: A.reactiverFicheAvert,
+    confirmer: A.reactiverFicheConfirmer,
+    danger: false,
+    motif: true,
+  },
 }
 
 const PRESQUE_TERMINAL = ['prospect', 'actif', 'suspendu_temporaire'] as const
@@ -100,6 +113,8 @@ function actionsPossibles(statut: string, type: string): TransitionNom[] {
     actions.push('deactivate')
   }
   if (statut === 'suspendu_lcb') actions.push('deactivate')
+  // Retour d'une fiche sortie de l'annuaire (visible seulement à qui a tiers.read.deleted).
+  if (statut === 'desactive') actions.push('restore')
   return actions
 }
 
@@ -118,6 +133,7 @@ export function ActionsTier({ tier, onChangement }: { tier: FicheTier; onChangem
   const [motif, setMotif] = useState('')
   const [conditions, setConditions] = useState<ConditionManquante[] | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
+  const [doublon, setDoublon] = useState<Doublon | null>(null)
 
   const mutation = useMutation({
     mutationFn: (nom: TransitionNom) => executerTransition(nom, tier.id, motif || null),
@@ -128,6 +144,7 @@ export function ActionsTier({ tier, onChangement }: { tier: FicheTier; onChangem
     onError: (e) => {
       const echec: EchecTransition = e instanceof ErreurTransition ? e.echec : { type: 'inattendue' }
       if (echec.type === 'conditions') setConditions(echec.conditions)
+      else if (echec.type === 'doublon') setDoublon(echec)
       else setErreur(messageEchec(echec))
     },
   })
@@ -142,12 +159,14 @@ export function ActionsTier({ tier, onChangement }: { tier: FicheTier; onChangem
     setMotif('')
     setConditions(null)
     setErreur(null)
+    setDoublon(null)
   }
 
   const choisir = (nom: TransitionNom) => {
     setMotif('')
     setConditions(null)
     setErreur(null)
+    setDoublon(null)
     setAction(nom)
     // « Activer » ne se confirme pas : c'est une VÉRIFICATION qui révèle les conditions
     // manquantes. On lance directement, et le 412 remplit la liste ci-dessous.
@@ -186,6 +205,7 @@ export function ActionsTier({ tier, onChangement }: { tier: FicheTier; onChangem
           motif={motif}
           setMotif={setMotif}
           erreur={erreur}
+          doublon={doublon}
           enCours={mutation.isPending}
           onConfirmer={() => mutation.mutate(action)}
           onAnnuler={fermer}
@@ -201,6 +221,7 @@ function PanneauConfirmation({
   motif,
   setMotif,
   erreur,
+  doublon,
   enCours,
   onConfirmer,
   onAnnuler,
@@ -209,6 +230,7 @@ function PanneauConfirmation({
   motif: string
   setMotif: (v: string) => void
   erreur: string | null
+  doublon: Doublon | null
   enCours: boolean
   onConfirmer: () => void
   onAnnuler: () => void
@@ -241,6 +263,24 @@ function PanneauConfirmation({
       {erreur && (
         <Alert variant="destructive" role="alert">
           <AlertDescription>{erreur}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Collision de pièce à la restauration : nommée si dans le périmètre (lien), générique sinon. */}
+      {doublon && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {doublon.message}{' '}
+            {doublon.tierId && (
+              <Link
+                to={`/tiers/${doublon.tierId}`}
+                className="font-medium underline underline-offset-2"
+              >
+                {A.voirFicheConflit}
+                {doublon.nom ? ` — ${doublon.nom}` : ''}
+              </Link>
+            )}
+          </AlertDescription>
         </Alert>
       )}
 

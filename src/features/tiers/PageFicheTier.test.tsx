@@ -28,6 +28,18 @@ vi.mock('@/features/utilisateurs/agences', () => ({
   listerAgences: vi.fn().mockResolvedValue([{ id: 'a1', code: 'AG1', name: 'Agence Centre' }]),
 }))
 
+// L'onglet Coordonnées est monté par défaut (tiers.read) : on neutralise ses appels réseau.
+vi.mock('@/features/tiers/coordonnees', () => ({
+  listerContacts: vi.fn().mockResolvedValue([]),
+}))
+vi.mock('@/features/tiers/pieces', () => ({
+  listerPieces: vi.fn().mockResolvedValue([]),
+  listerTypesPieces: vi.fn().mockResolvedValue([]),
+}))
+vi.mock('@/features/tiers/referentiels', () => ({
+  listerPays: vi.fn().mockResolvedValue([]),
+}))
+
 const lireSimule = vi.mocked(lireTier)
 const timelineSimule = vi.mocked(lireTimeline)
 const ID = '11111111-1111-1111-1111-111111111111'

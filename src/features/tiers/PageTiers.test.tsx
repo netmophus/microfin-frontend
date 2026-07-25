@@ -1,14 +1,17 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { listerTiers, type LigneTier } from '@/features/tiers/api'
 import { PageTiers } from '@/features/tiers/PageTiers'
 
+const etat = vi.hoisted(() => ({ permissions: [] as string[] }))
+
 vi.mock('@/features/auth/useProfil', () => ({
-  useProfil: () => ({ data: { permissions: [] } }),
-  useAPermission: () => false,
+  useProfil: () => ({ data: { permissions: etat.permissions } }),
+  useAPermission: (p: string) => etat.permissions.includes(p),
 }))
 
 vi.mock('@/features/tiers/api', async () => {
@@ -45,7 +48,10 @@ function afficher() {
   )
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  etat.permissions = []
+})
 
 describe('PageTiers', () => {
   it('traduit le type et le statut, et résout le nom de l’agence', async () => {
@@ -66,5 +72,28 @@ describe('PageTiers', () => {
     afficher()
 
     expect(await screen.findByText(/aucun tiers enregistré/i)).toBeVisible()
+  })
+
+  it('la case « Afficher les désactivées » n’apparaît qu’avec tiers.read.deleted', async () => {
+    listerSimule.mockResolvedValue({ lignes: [ligne({})], total: 1, page: 1, taille: 25 })
+
+    // Sans la permission (chargé de clientèle) : pas de case.
+    afficher()
+    await screen.findByText('Diallo Amadou')
+    expect(screen.queryByLabelText(/Afficher les fiches désactivées/i)).toBeNull()
+  })
+
+  it('avec tiers.read.deleted, la case est proposée et pilote inclure_desactives', async () => {
+    etat.permissions = ['tiers.read.deleted']
+    listerSimule.mockResolvedValue({ lignes: [ligne({})], total: 1, page: 1, taille: 25 })
+
+    afficher()
+    const case_ = await screen.findByLabelText(/Afficher les fiches désactivées/i)
+    expect(case_).toBeVisible()
+
+    await userEvent.setup().click(case_)
+    await waitFor(() =>
+      expect(listerSimule).toHaveBeenLastCalledWith(expect.objectContaining({ inclureDesactives: true })),
+    )
   })
 })

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ActionsTier } from '@/features/tiers/actions-tier'
@@ -41,7 +42,9 @@ function afficher(f: FicheTier) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <ActionsTier tier={f} onChangement={() => {}} />
+      <MemoryRouter>
+        <ActionsTier tier={f} onChangement={() => {}} />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -111,5 +114,46 @@ describe('ActionsTier', () => {
     // Sur confirmation, l'appel part avec l'action 'suspend'.
     await user.click(within(dialogue).getByRole('button', { name: 'Suspendre' }))
     await waitFor(() => expect(executerSimule).toHaveBeenCalledWith('suspend', expect.any(String), null))
+  })
+
+  it('« Réactiver la fiche » sur un désactivé exige tiers.deactivate et explique le retour en prospect', async () => {
+    etat.permissions = ['tiers.deactivate']
+    afficher(fiche({ status: 'desactive', tier_type: 'individual' }))
+
+    const bouton = screen.getByRole('button', { name: 'Réactiver la fiche' })
+    await userEvent.setup().click(bouton)
+
+    const dialogue = screen.getByRole('alertdialog')
+    // La confirmation dit clairement : retour dans l'annuaire en prospect, à re-valider (pas actif).
+    expect(within(dialogue).getByText(/reviendra dans l.annuaire/i)).toBeVisible()
+    expect(within(dialogue).getByText(/validation KYC/i)).toBeVisible()
+  })
+
+  it('sans tiers.deactivate, aucune réactivation sur un désactivé', () => {
+    etat.permissions = ['tiers.read.deleted'] // il peut VOIR le désactivé, pas le réactiver
+    afficher(fiche({ status: 'desactive', tier_type: 'individual' }))
+
+    expect(screen.queryByRole('button', { name: 'Réactiver la fiche' })).toBeNull()
+  })
+
+  it('une collision de pièce à la restauration nomme la fiche avec un lien', async () => {
+    etat.permissions = ['tiers.deactivate']
+    executerSimule.mockRejectedValue(
+      new ErreurTransition({
+        type: 'doublon',
+        message: 'Cette pièce est déjà enregistrée sur la fiche M-2026-42.',
+        tierId: 'tid-42',
+        nom: 'Traore',
+      }),
+    )
+    const user = userEvent.setup()
+
+    afficher(fiche({ status: 'desactive', tier_type: 'individual' }))
+    await user.click(screen.getByRole('button', { name: 'Réactiver la fiche' }))
+    const dialogue = screen.getByRole('alertdialog')
+    await user.click(within(dialogue).getByRole('button', { name: 'Réactiver (retour en prospect)' }))
+
+    const lien = await screen.findByRole('link', { name: /Voir la fiche/ })
+    expect(lien).toHaveAttribute('href', '/tiers/tid-42')
   })
 })
