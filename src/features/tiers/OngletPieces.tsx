@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { BadgeCheck, IdCard, Plus, Star, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
+import { BadgePrincipal, BadgeValidite, BadgeVerifiee } from '@/features/tiers/badges'
 import {
   ajouterPiece,
   definirPiecePrincipale,
@@ -17,7 +19,6 @@ import {
   supprimerPiece,
   verifierPiece,
   type Piece,
-  type Validite,
 } from '@/features/tiers/pieces'
 import { listerPays } from '@/features/tiers/referentiels'
 import { LIBELLES } from '@/libelles/fr'
@@ -25,21 +26,6 @@ import { LIBELLES } from '@/libelles/fr'
 const P = LIBELLES.tiersPieces
 const SELECT =
   'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs disabled:opacity-50'
-
-/** Badge de validité — couleur selon l'état, visible d'un coup d'œil. Périmée = rouge. */
-function BadgeValidite({ etat }: { etat: Validite }) {
-  const style: Record<Validite, string> = {
-    valide: 'bg-emerald-100 text-emerald-800',
-    expire_bientot: 'bg-amber-100 text-amber-800',
-    perimee: 'bg-red-100 text-red-800',
-    sans_objet: 'bg-gray-100 text-gray-600',
-  }
-  return (
-    <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${style[etat]}`}>
-      {P.validite[etat] ?? etat}
-    </span>
-  )
-}
 
 export function OngletPieces({ tierId }: { tierId: string }) {
   const peutGerer = useAPermission('tiers.update')
@@ -141,62 +127,70 @@ function LignePiece({
   return (
     <li className="rounded-md border p-2.5 text-sm">
       <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium">{nomType}</span>
-            <span className="font-mono text-xs text-muted-foreground">{piece.document_number}</span>
-            <BadgeValidite etat={piece.validite} />
-            {piece.is_primary && (
-              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">
-                {P.principale}
+        <div className="flex min-w-0 gap-2.5">
+          <IdCard className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">{nomType}</span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {piece.document_number}
               </span>
-            )}
-            {piece.is_verified && (
-              <span className="rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-800">
-                ✓ {P.verifiee}
-              </span>
+              <BadgeValidite etat={piece.validite} />
+              {piece.is_primary && <BadgePrincipal />}
+              {piece.is_verified && <BadgeVerifiee />}
+            </div>
+            {piece.expiry_date && (
+              <p className="text-xs text-muted-foreground">
+                {P.dateExpiration} : {new Date(piece.expiry_date).toLocaleDateString('fr-FR')}
+              </p>
             )}
           </div>
-          {piece.expiry_date && (
-            <p className="text-xs text-muted-foreground">
-              {P.dateExpiration} : {new Date(piece.expiry_date).toLocaleDateString('fr-FR')}
-            </p>
-          )}
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="flex shrink-0 gap-1">
           {peutGerer && !piece.is_primary && (
-            <button
+            <Button
               type="button"
-              className="text-xs text-muted-foreground underline underline-offset-2"
+              variant="ghost"
+              size="icon-sm"
+              title={P.definirPrincipale}
+              aria-label={P.definirPrincipale}
               disabled={principal.isPending}
               onClick={() => principal.mutate()}
             >
-              {P.definirPrincipale}
-            </button>
+              <Star />
+            </Button>
           )}
           {peutVerifier && !piece.is_verified && (
-            <button
+            <Button
               type="button"
-              className="text-xs text-sky-700 underline underline-offset-2"
+              variant="ghost"
+              size="icon-sm"
+              className="text-success hover:text-success"
+              title={P.verifier}
+              aria-label={P.verifier}
               onClick={() => {
                 setErreur(null)
                 setPanneau('verifier')
               }}
             >
-              {P.verifier}
-            </button>
+              <BadgeCheck />
+            </Button>
           )}
           {peutGerer && (
-            <button
+            <Button
               type="button"
-              className="text-xs text-destructive underline underline-offset-2"
+              variant="ghost"
+              size="icon-sm"
+              className="text-destructive hover:text-destructive"
+              title={P.supprimer}
+              aria-label={P.supprimer}
               onClick={() => {
                 setErreur(null)
                 setPanneau('supprimer')
               }}
             >
-              {P.supprimer}
-            </button>
+              <Trash2 />
+            </Button>
           )}
         </div>
       </div>
@@ -328,13 +322,10 @@ function FormPiece({
 
   if (!ouvert) {
     return (
-      <button
-        type="button"
-        className="text-sm text-primary underline underline-offset-2"
-        onClick={() => setOuvert(true)}
-      >
-        + {P.ajouter}
-      </button>
+      <Button type="button" variant="ghost" size="sm" className="text-primary" onClick={() => setOuvert(true)}>
+        <Plus />
+        {P.ajouter}
+      </Button>
     )
   }
 

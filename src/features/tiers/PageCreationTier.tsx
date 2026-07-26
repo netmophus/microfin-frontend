@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Building2, UserRound, Users, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -17,10 +18,10 @@ const T = LIBELLES.tiersCreation
 
 type TypeTier = 'individual' | 'legal_entity' | 'group'
 
-const CHOIX: { type: TypeTier; libelle: string; aide: string }[] = [
-  { type: 'individual', libelle: T.typePhysique, aide: T.typePhysiqueAide },
-  { type: 'legal_entity', libelle: T.typeMorale, aide: T.typeMoraleAide },
-  { type: 'group', libelle: T.typeGroupement, aide: T.typeGroupementAide },
+const CHOIX: { type: TypeTier; libelle: string; aide: string; icone: LucideIcon }[] = [
+  { type: 'individual', libelle: T.typePhysique, aide: T.typePhysiqueAide, icone: UserRound },
+  { type: 'legal_entity', libelle: T.typeMorale, aide: T.typeMoraleAide, icone: Building2 },
+  { type: 'group', libelle: T.typeGroupement, aide: T.typeGroupementAide, icone: Users },
 ]
 
 export function PageCreationTier() {
@@ -54,27 +55,34 @@ export function PageCreationTier() {
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">{T.typeQuestion}</legend>
         <div className="grid gap-2 sm:grid-cols-3">
-          {CHOIX.map((choix) => (
-            <label
-              key={choix.type}
-              className={`cursor-pointer rounded-md border p-3 text-sm ${
-                type === choix.type
-                  ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                  : 'hover:bg-muted/30'
-              }`}
-            >
-              <input
-                type="radio"
-                name="type-tier"
-                value={choix.type}
-                checked={type === choix.type}
-                onChange={() => setType(choix.type)}
-                className="sr-only"
-              />
-              <span className="block font-medium">{choix.libelle}</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">{choix.aide}</span>
-            </label>
-          ))}
+          {CHOIX.map((choix) => {
+            const actif = type === choix.type
+            const Icone = choix.icone
+            return (
+              <label
+                key={choix.type}
+                className={`cursor-pointer rounded-lg border-2 p-3 text-sm transition-colors ${
+                  actif
+                    ? 'border-primary bg-brand-subtle'
+                    : 'border-border hover:border-primary/40 hover:bg-muted/30'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="type-tier"
+                  value={choix.type}
+                  checked={actif}
+                  onChange={() => setType(choix.type)}
+                  className="sr-only"
+                />
+                <Icone className={`mb-1.5 size-5 ${actif ? 'text-primary' : 'text-muted-foreground'}`} />
+                <span className={`block font-medium ${actif ? 'text-primary' : ''}`}>
+                  {choix.libelle}
+                </span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">{choix.aide}</span>
+              </label>
+            )
+          })}
         </div>
       </fieldset>
 

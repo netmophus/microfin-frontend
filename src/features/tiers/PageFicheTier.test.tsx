@@ -38,6 +38,14 @@ vi.mock('@/features/tiers/pieces', () => ({
 }))
 vi.mock('@/features/tiers/referentiels', () => ({
   listerPays: vi.fn().mockResolvedValue([]),
+  listerSecteurs: vi.fn().mockResolvedValue([]),
+}))
+// Le bandeau prospect lit les conditions d'activation ; l'onglet KYC recalcule.
+vi.mock('@/features/tiers/kyc', () => ({
+  lireConditionsActivation: vi
+    .fn()
+    .mockResolvedValue({ activable: false, conditions: [{ code: 'ORIGINE_FONDS_MANQUANTE', libelle: 'Renseignez l’origine des fonds.' }] }),
+  mettreAJourKyc: vi.fn(),
 }))
 
 const lireSimule = vi.mocked(lireTier)
@@ -92,6 +100,12 @@ const COMPLETE: FicheTier = {
     profession: 'Commerçante',
     monthly_income_estimate: '150000.00',
     is_literate: true,
+    origine_fonds: null,
+    secteur_activite_id: null,
+    ppe_status: false,
+    ppe_relation: null,
+    ppe_fonction: null,
+    mode_entree_relation: null,
   },
 }
 
@@ -138,7 +152,7 @@ describe('PageFicheTier', () => {
     expect(await screen.findByText('Création de la fiche')).toBeVisible()
   })
 
-  it('le statut prospect est expliqué (on ne triche pas)', async () => {
+  it('le bandeau prospect liste ce qui reste à compléter (état réel, pas un texte figé)', async () => {
     etat.permissions = ['tiers.read', 'tiers.read.basic']
     lireSimule.mockResolvedValue(COMPLETE)
     timelineSimule.mockResolvedValue([])
@@ -146,6 +160,8 @@ describe('PageFicheTier', () => {
     afficher()
 
     await screen.findByText('Diallo Amadou')
-    expect(screen.getByText(/en attente de validation KYC/i)).toBeVisible()
+    // Le bandeau montre la vraie condition manquante remontée par le backend, pas « module à venir ».
+    expect(await screen.findByText('Renseignez l’origine des fonds.')).toBeVisible()
+    expect(screen.queryByText(/module à venir/i)).toBeNull()
   })
 })

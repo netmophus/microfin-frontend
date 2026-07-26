@@ -86,6 +86,13 @@ export interface IndividuDetail {
   profession: string | null
   monthly_income_estimate: string | null
   is_literate: boolean
+  // Données KYC (T3c) — pré-remplissent le formulaire de l'onglet KYC.
+  origine_fonds: string | null
+  secteur_activite_id: string | null
+  ppe_status: boolean
+  ppe_relation: string | null
+  ppe_fonction: string | null
+  mode_entree_relation: string | null
 }
 
 export interface PersonneMoraleDetail {
@@ -125,6 +132,9 @@ export interface FicheTier {
   language_preference?: string | null
   created_at?: string
   updated_at?: string
+  // Reflet du risque (T3b/c) : niveau + drapeau provisoire (barème non validé par l'expert).
+  risk_level?: string | null
+  risk_provisional?: boolean
   individu?: IndividuDetail | null
   personne_morale?: PersonneMoraleDetail | null
   groupement?: GroupementDetail | null

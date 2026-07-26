@@ -58,7 +58,7 @@ beforeEach(() => {
 
 async function ouvrirEtSoumettreTelephone() {
   await screen.findByText('Téléphones')
-  fireEvent.click(screen.getByText('+ Ajouter un téléphone'))
+  fireEvent.click(screen.getByRole('button', { name: /Ajouter un téléphone/ }))
   fireEvent.change(screen.getByLabelText('Numéro de téléphone'), { target: { value: '999999999999' } })
   fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }))
 }
@@ -93,7 +93,7 @@ describe('OngletCoordonnees — adresse', () => {
 
     afficher()
     await screen.findByText('Adresses')
-    fireEvent.click(screen.getByText('+ Ajouter une adresse'))
+    fireEvent.click(screen.getByRole('button', { name: /Ajouter une adresse/ }))
 
     // Le repère n'est pas une option cachée : les deux champs sont là d'emblée.
     expect(screen.getByLabelText('Rue / voie')).toBeVisible()

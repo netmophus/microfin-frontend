@@ -97,7 +97,7 @@ describe('OngletPieces', () => {
     // Sans la permission : pas de bouton Vérifier.
     afficher()
     await screen.findByText('Carte nationale')
-    expect(screen.queryByText('Vérifier')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Vérifier' })).toBeNull()
   })
 
   it('avec tiers.identity.verify, « Vérifier » est proposé', async () => {
@@ -106,7 +106,7 @@ describe('OngletPieces', () => {
 
     afficher()
 
-    expect(await screen.findByText('Vérifier')).toBeVisible()
+    expect(await screen.findByRole('button', { name: 'Vérifier' })).toBeVisible()
   })
 
   it('un doublon nommé rend un lien vers la fiche existante', async () => {
@@ -116,7 +116,7 @@ describe('OngletPieces', () => {
     )
 
     afficher()
-    fireEvent.click(await screen.findByText('+ Ajouter une pièce'))
+    fireEvent.click(await screen.findByRole('button', { name: /Ajouter une pièce/ }))
     fireEvent.change(screen.getByLabelText('Type de pièce'), { target: { value: TYPE } })
     fireEvent.change(screen.getByLabelText('Numéro'), { target: { value: 'NER-123' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }))

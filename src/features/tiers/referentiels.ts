@@ -29,3 +29,14 @@ export async function listerDevises(): Promise<Devise[]> {
   const reponse = await api.get<Devise[]>('/currencies')
   return reponse.data
 }
+
+export interface Secteur {
+  id: string
+  code: string
+  libelle: string
+}
+
+export async function listerSecteurs(): Promise<Secteur[]> {
+  const reponse = await api.get<Secteur[]>('/secteurs-activite')
+  return reponse.data
+}

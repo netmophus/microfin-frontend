@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { MapPin, Mail, Phone, Plus, Star, Trash2, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
+import { BadgePrincipal } from '@/features/tiers/badges'
 import {
   ajouterAdresse,
   ajouterEmail,
@@ -89,12 +92,14 @@ function LigneContact({
   valeur,
   drapeau,
   peutGerer,
+  icone: Icone,
 }: {
   tierId: string
   contact: Contact
   valeur: string
   drapeau?: string
   peutGerer: boolean
+  icone: LucideIcon
 }) {
   const queryClient = useQueryClient()
   const rafraichir = () => void queryClient.invalidateQueries({ queryKey: ['tiers'] })
@@ -116,41 +121,43 @@ function LigneContact({
   return (
     <li className="rounded-md border p-2.5 text-sm">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span>{valeur}</span>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <Icone className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="break-all">{valeur}</span>
           {sousType(contact.contact_subtype) && (
-            <span className="text-xs text-muted-foreground">({sousType(contact.contact_subtype)})</span>
-          )}
-          {contact.is_primary && (
-            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">
-              {C.principal}
+            <span className="text-xs text-muted-foreground">
+              ({sousType(contact.contact_subtype)})
             </span>
           )}
-          {drapeau && (
-            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">
-              {drapeau}
-            </span>
-          )}
+          {contact.is_primary && <BadgePrincipal />}
+          {drapeau && <Badge ton="warning">{drapeau}</Badge>}
         </div>
         {peutGerer && (
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 gap-1">
             {!contact.is_primary && (
-              <button
+              <Button
                 type="button"
-                className="text-xs text-muted-foreground underline underline-offset-2"
+                variant="ghost"
+                size="icon-sm"
+                title={C.definirPrincipal}
+                aria-label={C.definirPrincipal}
                 disabled={principal.isPending}
                 onClick={() => principal.mutate()}
               >
-                {C.definirPrincipal}
-              </button>
+                <Star />
+              </Button>
             )}
-            <button
+            <Button
               type="button"
-              className="text-xs text-destructive underline underline-offset-2"
+              variant="ghost"
+              size="icon-sm"
+              className="text-destructive hover:text-destructive"
+              title={C.supprimer}
+              aria-label={C.supprimer}
               onClick={() => setSuppr(true)}
             >
-              {C.supprimer}
-            </button>
+              <Trash2 />
+            </Button>
           </div>
         )}
       </div>
@@ -207,6 +214,7 @@ function GroupeTelephones({
           valeur={c.phone_number ?? c.phone_raw ?? ''}
           drapeau={c.phone_normalized ? undefined : C.forceLabel}
           peutGerer={peutGerer}
+          icone={Phone}
         />
       ))}
     </Groupe>
@@ -235,6 +243,7 @@ function GroupeEmails({
           contact={c}
           valeur={c.email_address ?? ''}
           peutGerer={peutGerer}
+          icone={Mail}
         />
       ))}
     </Groupe>
@@ -263,6 +272,7 @@ function GroupeAdresses({
           contact={c}
           valeur={libelleAdresse(c)}
           peutGerer={peutGerer}
+          icone={MapPin}
         />
       ))}
     </Groupe>
@@ -283,13 +293,10 @@ function ZoneAjout({
 }) {
   if (!ouvert) {
     return (
-      <button
-        type="button"
-        className="text-sm text-primary underline underline-offset-2"
-        onClick={() => setOuvert(true)}
-      >
-        + {libelle}
-      </button>
+      <Button type="button" variant="ghost" size="sm" className="text-primary" onClick={() => setOuvert(true)}>
+        <Plus />
+        {libelle}
+      </Button>
     )
   }
   return <div className="rounded-md border p-3">{children}</div>

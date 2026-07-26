@@ -456,6 +456,7 @@ export const LIBELLES = {
       suspended: 'Suspension',
       reactivated: 'Réactivation',
       deactivated: 'Désactivation',
+      restored: 'Réactivation',
       marked_deceased: 'Décès enregistré',
       marked_dissolved: 'Dissolution enregistrée',
       merged: 'Fusion de fiches',
@@ -568,10 +569,12 @@ export const LIBELLES = {
     timeline: 'Frise chronologique',
     timelineVide: 'Aucun événement enregistré.',
 
-    // Le statut prospect, expliqué — on montre l'état réel et pourquoi il n'est pas actif.
-    prospectTitre: 'Fiche en attente de validation KYC',
-    prospectExplication:
-      'Cette fiche n’est pas encore active. L’activation viendra avec la validation KYC (module à venir). Aucune opération n’est encore possible sur ce tiers.',
+    // Le statut prospect, expliqué — on montre l'ÉTAT RÉEL (ce qui reste à compléter), pas un
+    // texte figé. Les conditions viennent du backend (GET activation-conditions).
+    prospectTitre: 'Fiche en attente d’activation',
+    prospectPret: 'Toutes les conditions de dossier sont réunies : cette fiche peut être activée.',
+    prospectACompleter: 'Pour activer cette fiche, complétez :',
+    prospectChargement: 'Vérification des conditions d’activation…',
 
     // Vue limitée (read.basic) : ce que voit un caissier, sans détail ni frise.
     vueLimitee: 'Vue limitée',
@@ -647,7 +650,44 @@ export const LIBELLES = {
   tiersOnglets: {
     coordonnees: 'Coordonnées',
     pieces: 'Pièces d’identité',
+    kyc: 'KYC / Risque',
     frise: 'Historique',
+  },
+
+  tiersKyc: {
+    titre: 'Connaissance client (KYC) et risque LBC/FT',
+    intro: 'Ces informations alimentent le calcul du niveau de risque et conditionnent l’activation.',
+    reservePP: 'Le KYC détaillé ne concerne que les personnes physiques pour l’instant.',
+
+    origineFonds: 'Origine des fonds',
+    origineFondsPlaceholder: 'Ex. : salaire, activité commerciale, transfert…',
+    secteur: 'Secteur d’activité',
+    secteurChoisir: 'Choisir un secteur…',
+    secteursIndisponibles: 'Impossible de charger les secteurs.',
+    modeEntree: 'Mode d’entrée en relation',
+    modeChoisir: 'Choisir…',
+    modes: {
+      presentiel: 'Présentiel (au guichet)',
+      tiers_confiance: 'Introduction par un tiers de confiance',
+      distance: 'À distance',
+    } as Record<string, string>,
+    ppe: 'Personne politiquement exposée (PPE)',
+    ppeAide: 'Le client exerce, ou est proche de quelqu’un qui exerce, une fonction publique importante.',
+    ppeRelation: 'Lien',
+    ppeRelations: { direct: 'La personne elle-même', entourage: 'Un proche' } as Record<string, string>,
+    ppeFonction: 'Fonction (facultatif)',
+    ppeFonctionPlaceholder: 'Ex. : maire, député, haut fonctionnaire…',
+
+    enregistrer: 'Enregistrer et recalculer le risque',
+    enCours: 'Enregistrement…',
+    erreur: 'L’enregistrement a échoué. Réessayez.',
+
+    // Niveau de risque + provisoire
+    niveauTitre: 'Niveau de risque',
+    niveaux: { faible: 'Faible', moyen: 'Moyen', eleve: 'Élevé' } as Record<string, string>,
+    nonEvalue: 'Non encore évalué — renseignez les données KYC.',
+    provisoire:
+      'Barème PROVISOIRE, non validé par le responsable LBC/FT : ce niveau n’est pas une valeur réglementaire confirmée.',
   },
 
   tiersCoordonnees: {

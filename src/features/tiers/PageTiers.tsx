@@ -1,11 +1,14 @@
 import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AvatarInitiales } from '@/components/ui/avatar-initiales'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAPermission } from '@/features/auth/useProfil'
+import { BadgeStatut } from '@/features/tiers/badges'
 import {
   ErreurListe,
   listerTiers,
@@ -19,18 +22,6 @@ import { useDebounce } from '@/lib/useDebounce'
 import { LIBELLES } from '@/libelles/fr'
 
 const T = LIBELLES.tiers
-
-/** Pastille de statut. Une fiche naît en « prospect » : neutre, pas encore active. */
-function Statut({ code }: { code: string }) {
-  const base = 'inline-block rounded px-2 py-0.5 text-xs font-medium'
-  const style =
-    code === 'actif'
-      ? 'bg-emerald-100 text-emerald-800'
-      : code === 'prospect'
-        ? 'bg-amber-100 text-amber-800'
-        : 'bg-gray-100 text-gray-700'
-  return <span className={`${base} ${style}`}>{T.statuts[code] ?? code}</span>
-}
 
 export function PageTiers() {
   const [recherche, setRecherche] = useState('')
@@ -76,20 +67,27 @@ export function PageTiers() {
         </div>
         {peutCreer && (
           <Link to="/tiers/nouveau" className={buttonVariants({ size: 'sm' })}>
+            <Plus />
             {LIBELLES.tiersCreation.bouton}
           </Link>
         )}
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
-        <Input
-          type="search"
-          placeholder={T.rechercher}
-          value={recherche}
-          onChange={(e) => majRecherche(e.target.value)}
-          className="max-w-sm"
-          aria-label={T.rechercher}
-        />
+        <div className="relative max-w-sm flex-1">
+          <Search
+            className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            type="search"
+            placeholder={T.rechercher}
+            value={recherche}
+            onChange={(e) => majRecherche(e.target.value)}
+            className="pl-8"
+            aria-label={T.rechercher}
+          />
+        </div>
         {peutVoirDesactives && (
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <input
@@ -203,12 +201,23 @@ function Contenu({
               }}
               className="cursor-pointer border-b last:border-0 hover:bg-muted/30 focus:bg-muted/50 focus:outline-none"
             >
-              <td className="whitespace-nowrap px-3 py-2 font-mono text-xs">{ligne.tier_number}</td>
-              <td className="px-3 py-2">{ligne.display_name}</td>
-              <td className="px-3 py-2">{T.types[ligne.tier_type] ?? ligne.tier_type}</td>
-              <td className="px-3 py-2">{nomAgence(ligne.primary_agency_id)}</td>
+              <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-muted-foreground">
+                {ligne.tier_number}
+              </td>
               <td className="px-3 py-2">
-                <Statut code={ligne.status} />
+                <div className="flex items-center gap-2.5">
+                  <AvatarInitiales nom={ligne.display_name} />
+                  <span className="font-medium">{ligne.display_name}</span>
+                </div>
+              </td>
+              <td className="px-3 py-2 text-muted-foreground">
+                {T.types[ligne.tier_type] ?? ligne.tier_type}
+              </td>
+              <td className="px-3 py-2 text-muted-foreground">
+                {nomAgence(ligne.primary_agency_id)}
+              </td>
+              <td className="px-3 py-2">
+                <BadgeStatut code={ligne.status} />
               </td>
             </tr>
           ))}

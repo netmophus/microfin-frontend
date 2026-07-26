@@ -8,6 +8,18 @@
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Geist Variable', sans-serif;
+    /* Identité institutionnelle + badges sémantiques (une seule source, ajustable ici). */
+    --color-brand: var(--brand);
+    --color-brand-subtle: var(--brand-subtle);
+    --color-brand-foreground: var(--brand-foreground);
+    --color-success: var(--success);
+    --color-success-subtle: var(--success-subtle);
+    --color-warning: var(--warning);
+    --color-warning-subtle: var(--warning-subtle);
+    --color-danger: var(--danger);
+    --color-danger-subtle: var(--danger-subtle);
+    --color-neutral-badge: var(--neutral-badge);
+    --color-neutral-badge-subtle: var(--neutral-badge-subtle);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,14 +61,29 @@
 }
 
 :root {
+    /* Bleu institutionnel — accent de confiance bancaire. Le PRIMARY du système, pour que
+       boutons, liens actifs et accents en héritent sans couleur en dur écran par écran. */
+    --brand: #185fa5;
+    --brand-subtle: #e6f1fb;
+    --brand-foreground: #ffffff;
+    /* Badges sémantiques : couleur JAMAIS seule (toujours pastille + texte). Paires fg/bg. */
+    --success: #0f6e56;
+    --success-subtle: #e1f5ee;
+    --warning: #854f0b;
+    --warning-subtle: #faeeda;
+    --danger: #b42318;
+    --danger-subtle: #fee4e2;
+    --neutral-badge: #475467;
+    --neutral-badge-subtle: #eaecf0;
+
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
+    --primary: var(--brand);
+    --primary-foreground: var(--brand-foreground);
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: oklch(0.97 0 0);
@@ -84,14 +111,27 @@
 }
 
 .dark {
+    /* Bleu plus clair sur fond sombre ; sous-fonds de badges assombris, textes éclaircis. */
+    --brand: #4e9be0;
+    --brand-subtle: #14324d;
+    --brand-foreground: #08131f;
+    --success: #7ee0c0;
+    --success-subtle: #10362c;
+    --warning: #f5c97a;
+    --warning-subtle: #3a2a0f;
+    --danger: #f5a29a;
+    --danger-subtle: #3a1512;
+    --neutral-badge: #c4cbd6;
+    --neutral-badge-subtle: #2a2f38;
+
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
+    --primary: var(--brand);
+    --primary-foreground: #ffffff;
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: oklch(0.269 0 0);

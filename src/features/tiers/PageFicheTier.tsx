@@ -1,11 +1,32 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import {
+  ArrowLeft,
+  Ban,
+  Briefcase,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  FilePlus2,
+  Landmark,
+  PauseCircle,
+  PencilLine,
+  Phone,
+  PlayCircle,
+  RotateCcw,
+  Tag,
+  UserRound,
+  Venus,
+} from 'lucide-react'
+import { useMemo, useState, type ComponentType } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AvatarInitiales } from '@/components/ui/avatar-initiales'
 import { useAPermission } from '@/features/auth/useProfil'
 import { ActionsTier } from '@/features/tiers/actions-tier'
+import { BadgeStatut } from '@/features/tiers/badges'
 import { OngletCoordonnees } from '@/features/tiers/OngletCoordonnees'
+import { OngletKyc } from '@/features/tiers/OngletKyc'
 import { OngletPieces } from '@/features/tiers/OngletPieces'
 import {
   ErreurFiche,
@@ -14,11 +35,14 @@ import {
   type EvenementTimeline,
   type FicheTier,
 } from '@/features/tiers/api'
+import { lireConditionsActivation } from '@/features/tiers/kyc'
 import { listerAgences } from '@/features/utilisateurs/agences'
 import { LIBELLES } from '@/libelles/fr'
 
 const T = LIBELLES.tiersFiche
 const G = LIBELLES.tiers
+
+type Icone = ComponentType<{ className?: string }>
 
 /** Nom d'affichage : depuis le bloc de détail (vue complète) ou display_name (vue résumée). */
 function nomAffichage(fiche: FicheTier): string {
@@ -28,22 +52,22 @@ function nomAffichage(fiche: FicheTier): string {
   return fiche.display_name ?? fiche.tier_number
 }
 
-function Statut({ code }: { code: string }) {
-  const base = 'inline-block rounded px-2 py-0.5 text-xs font-medium'
-  const style =
-    code === 'actif'
-      ? 'bg-emerald-100 text-emerald-800'
-      : code === 'prospect'
-        ? 'bg-amber-100 text-amber-800'
-        : 'bg-gray-100 text-gray-700'
-  return <span className={`${base} ${style}`}>{G.statuts[code] ?? code}</span>
-}
-
-function Ligne({ label, valeur }: { label: string; valeur: string | null | undefined }) {
+function Ligne({
+  label,
+  valeur,
+  icone: Icone,
+}: {
+  label: string
+  valeur: string | null | undefined
+  icone?: Icone
+}) {
   return (
-    <div className="flex justify-between gap-4 py-1.5 text-sm">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right">{valeur?.trim() ? valeur : T.sansValeur}</dd>
+    <div className="flex items-center justify-between gap-4 py-2 text-sm">
+      <dt className="flex items-center gap-2 text-muted-foreground">
+        {Icone && <Icone className="size-4 shrink-0 text-muted-foreground/70" />}
+        {label}
+      </dt>
+      <dd className="text-right font-medium">{valeur?.trim() ? valeur : T.sansValeur}</dd>
     </div>
   )
 }
@@ -99,24 +123,20 @@ export function PageFicheTier() {
   const aLeDetail = Boolean(fiche.individu || fiche.personne_morale || fiche.groupement)
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5">
       <RetourListe />
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{nomAffichage(fiche)}</h1>
+      {/* En-tête : avatar + nom + numéro mono + badge de statut. */}
+      <header className="flex items-center gap-4 rounded-lg border bg-card p-4">
+        <AvatarInitiales nom={nomAffichage(fiche)} taille="lg" />
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-xl font-semibold tracking-tight">{nomAffichage(fiche)}</h1>
           <p className="font-mono text-xs text-muted-foreground">{fiche.tier_number}</p>
         </div>
-        <Statut code={fiche.status} />
-      </div>
+        <BadgeStatut code={fiche.status} />
+      </header>
 
-      {fiche.status === 'prospect' && (
-        <Alert>
-          <AlertDescription>
-            <span className="font-medium">{T.prospectTitre}.</span> {T.prospectExplication}
-          </AlertDescription>
-        </Alert>
-      )}
+      {fiche.status === 'prospect' && peutVoirDetail && <BandeauProspect tierId={fiche.id} />}
 
       {fiche.status === 'desactive' && (
         <Alert variant="destructive">
@@ -126,44 +146,95 @@ export function PageFicheTier() {
         </Alert>
       )}
 
-      <section className="rounded-md border p-4">
-        <h2 className="mb-2 text-sm font-semibold">{T.identite}</h2>
-        <dl className="divide-y">
-          <Ligne label={T.type} valeur={G.types[fiche.tier_type] ?? fiche.tier_type} />
-          <Ligne label={T.agence} valeur={nomAgence(fiche.primary_agency_id)} />
-          {fiche.primary_phone !== undefined && (
-            <Ligne label={T.telephone} valeur={fiche.primary_phone} />
-          )}
-          {fiche.individu && <DetailIndividu detail={fiche.individu} />}
-          {fiche.personne_morale && <DetailMorale detail={fiche.personne_morale} />}
-          {fiche.groupement && <DetailGroupement detail={fiche.groupement} />}
-          {fiche.created_at && <Ligne label={T.creeLe} valeur={formaterDate(fiche.created_at)} />}
-        </dl>
+      {/* Deux colonnes pour un logiciel qui respire : identité + actions à gauche, contenu riche
+          (onglets + frise) à droite. Le caissier (read.basic) n'a que l'identité, en une colonne. */}
+      <div className={peutVoirDetail ? 'grid gap-5 lg:grid-cols-3' : ''}>
+        <div className="space-y-5 lg:col-span-1">
+          <section className="rounded-lg border bg-card p-4">
+            <h2 className="mb-2 text-sm font-semibold">{T.identite}</h2>
+            <dl className="divide-y">
+              <Ligne label={T.type} valeur={G.types[fiche.tier_type] ?? fiche.tier_type} icone={Tag} />
+              <Ligne label={T.agence} valeur={nomAgence(fiche.primary_agency_id)} icone={Landmark} />
+              {fiche.primary_phone !== undefined && (
+                <Ligne label={T.telephone} valeur={fiche.primary_phone} icone={Phone} />
+              )}
+              {fiche.individu && <DetailIndividu detail={fiche.individu} />}
+              {fiche.personne_morale && <DetailMorale detail={fiche.personne_morale} />}
+              {fiche.groupement && <DetailGroupement detail={fiche.groupement} />}
+              {fiche.created_at && (
+                <Ligne label={T.creeLe} valeur={formaterDate(fiche.created_at)} icone={CalendarDays} />
+              )}
+            </dl>
 
-        {!aLeDetail && (
-          <p className="mt-3 rounded bg-muted/40 p-2 text-xs text-muted-foreground">
-            <span className="font-medium">{T.vueLimitee}.</span> {T.vueLimiteeAide}
-          </p>
+            {!aLeDetail && (
+              <p className="mt-3 rounded bg-muted/40 p-2 text-xs text-muted-foreground">
+                <span className="font-medium">{T.vueLimitee}.</span> {T.vueLimiteeAide}
+              </p>
+            )}
+          </section>
+
+          <ActionsTier tier={fiche} onChangement={rafraichir} />
+        </div>
+
+        {peutVoirDetail && (
+          <div className="space-y-5 lg:col-span-2">
+            <OngletsDetail fiche={fiche} />
+            <SectionTimeline requete={timeline} />
+          </div>
         )}
-      </section>
-
-      <ActionsTier tier={fiche} onChangement={rafraichir} />
-
-      {/* Onglets Coordonnées / Pièces : réservés à qui a tiers.read (les GET le sont). Un caissier
-          en read.basic ne les voit pas — il n'a que l'identification limitée ci-dessus. */}
-      {peutVoirDetail && <OngletsDetail tierId={fiche.id} />}
-
-      {peutVoirDetail && <SectionTimeline requete={timeline} />}
+      </div>
     </div>
   )
 }
 
 const O = LIBELLES.tiersOnglets
+const P = LIBELLES.tiersFiche
 
-/** Bascule Coordonnées / Pièces. Un seul onglet monté à la fois : le second ne charge ses
- *  données qu'une fois ouvert. */
-function OngletsDetail({ tierId }: { tierId: string }) {
-  const [onglet, setOnglet] = useState<'coordonnees' | 'pieces'>('coordonnees')
+/** Bandeau prospect : l'ÉTAT RÉEL du dossier. Liste ce qui reste à compléter (depuis le backend),
+ *  AVANT le clic « Activer » — l'utilisateur sait quoi faire. « Prête à activer » sinon. */
+function BandeauProspect({ tierId }: { tierId: string }) {
+  const requete = useQuery({
+    queryKey: ['tiers', 'conditions', tierId],
+    queryFn: () => lireConditionsActivation(tierId),
+  })
+  if (requete.isPending) {
+    return (
+      <Alert>
+        <AlertDescription>{P.prospectChargement}</AlertDescription>
+      </Alert>
+    )
+  }
+  if (requete.isError || !requete.data) {
+    return null
+  }
+  if (requete.data.activable) {
+    return (
+      <Alert>
+        <AlertDescription>
+          <span className="font-medium">{P.prospectTitre}.</span> {P.prospectPret}
+        </AlertDescription>
+      </Alert>
+    )
+  }
+  return (
+    <Alert>
+      <AlertDescription>
+        <span className="font-medium">{P.prospectACompleter}</span>
+        <ul className="mt-1 list-inside list-disc space-y-0.5 text-sm">
+          {requete.data.conditions.map((c) => (
+            <li key={c.code}>{c.libelle}</li>
+          ))}
+        </ul>
+      </AlertDescription>
+    </Alert>
+  )
+}
+
+/** Bascule Coordonnées / Pièces / KYC. Un seul onglet monté à la fois. */
+function OngletsDetail({ fiche }: { fiche: FicheTier }) {
+  const [onglet, setOnglet] = useState<'coordonnees' | 'pieces' | 'kyc'>('coordonnees')
+  // L'onglet KYC détaillé ne concerne que la personne physique (T3c).
+  const kycDispo = Boolean(fiche.individu)
   return (
     <section className="rounded-md border">
       <div className="flex border-b" role="tablist">
@@ -173,12 +244,22 @@ function OngletsDetail({ tierId }: { tierId: string }) {
         <BoutonOnglet actif={onglet === 'pieces'} onClick={() => setOnglet('pieces')}>
           {O.pieces}
         </BoutonOnglet>
+        {kycDispo && (
+          <BoutonOnglet actif={onglet === 'kyc'} onClick={() => setOnglet('kyc')}>
+            {O.kyc}
+          </BoutonOnglet>
+        )}
       </div>
       <div className="p-4">
-        {onglet === 'coordonnees' ? (
-          <OngletCoordonnees tierId={tierId} />
-        ) : (
-          <OngletPieces tierId={tierId} />
+        {onglet === 'coordonnees' && <OngletCoordonnees tierId={fiche.id} />}
+        {onglet === 'pieces' && <OngletPieces tierId={fiche.id} />}
+        {onglet === 'kyc' && (
+          <OngletKyc
+            tierId={fiche.id}
+            individu={fiche.individu}
+            riskLevel={fiche.risk_level}
+            riskProvisional={Boolean(fiche.risk_provisional)}
+          />
         )}
       </div>
     </section>
@@ -200,8 +281,10 @@ function BoutonOnglet({
       role="tab"
       aria-selected={actif}
       onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium ${
-        actif ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'
+      className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+        actif
+          ? 'border-primary text-primary'
+          : 'border-transparent text-muted-foreground hover:text-foreground'
       }`}
     >
       {children}
@@ -211,8 +294,11 @@ function BoutonOnglet({
 
 function RetourListe() {
   return (
-    <Link to="/tiers" className="text-sm text-muted-foreground underline underline-offset-2">
-      ← {T.retour}
+    <Link
+      to="/tiers"
+      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+    >
+      <ArrowLeft className="size-4" /> {T.retour}
     </Link>
   )
 }
@@ -220,12 +306,13 @@ function RetourListe() {
 function DetailIndividu({ detail }: { detail: NonNullable<FicheTier['individu']> }) {
   return (
     <>
-      <Ligne label={T.dateNaissance} valeur={formaterDate(detail.birth_date)} />
+      <Ligne label={T.dateNaissance} valeur={formaterDate(detail.birth_date)} icone={CalendarDays} />
       <Ligne
         label={T.sexe}
         valeur={detail.gender === 'M' ? LIBELLES.tiersCreation.sexeM : LIBELLES.tiersCreation.sexeF}
+        icone={Venus}
       />
-      <Ligne label={T.profession} valeur={detail.profession} />
+      <Ligne label={T.profession} valeur={detail.profession} icone={Briefcase} />
     </>
   )
 }
@@ -236,8 +323,13 @@ function DetailMorale({ detail }: { detail: NonNullable<FicheTier['personne_mora
       <Ligne
         label={T.formeJuridique}
         valeur={LIBELLES.tiersCreation.formesJuridiques[detail.legal_form] ?? detail.legal_form}
+        icone={Building2}
       />
-      <Ligne label={T.dateConstitution} valeur={formaterDate(detail.constitution_date)} />
+      <Ligne
+        label={T.dateConstitution}
+        valeur={formaterDate(detail.constitution_date)}
+        icone={CalendarDays}
+      />
     </>
   )
 }
@@ -248,10 +340,39 @@ function DetailGroupement({ detail }: { detail: NonNullable<FicheTier['groupemen
       <Ligne
         label={T.typeGroupement}
         valeur={LIBELLES.tiersCreation.typesGroupement[detail.group_type] ?? detail.group_type}
+        icone={UserRound}
       />
-      <Ligne label={T.dateConstitution} valeur={formaterDate(detail.constitution_date)} />
+      <Ligne
+        label={T.dateConstitution}
+        valeur={formaterDate(detail.constitution_date)}
+        icone={CalendarDays}
+      />
     </>
   )
+}
+
+// Icône + ton par nature d'événement : le point de la frise se colore selon le sens de l'acte
+// (création/réactivation vert, suspension/désactivation rouge, reste neutre) — jamais la couleur
+// seule, l'icône et le libellé portent aussi le sens.
+const EVENEMENT_META: Record<string, { icone: Icone; ton: 'success' | 'danger' | 'brand' | 'neutral' }> =
+  {
+    created: { icone: FilePlus2, ton: 'brand' },
+    updated: { icone: PencilLine, ton: 'neutral' },
+    activated: { icone: CheckCircle2, ton: 'success' },
+    suspended: { icone: PauseCircle, ton: 'danger' },
+    reactivated: { icone: PlayCircle, ton: 'success' },
+    deactivated: { icone: Ban, ton: 'danger' },
+    restored: { icone: RotateCcw, ton: 'success' },
+    marked_deceased: { icone: UserRound, ton: 'neutral' },
+    marked_dissolved: { icone: Building2, ton: 'neutral' },
+    merged: { icone: Tag, ton: 'neutral' },
+  }
+
+const TON_TEXTE: Record<string, string> = {
+  success: 'bg-success-subtle text-success',
+  danger: 'bg-danger-subtle text-danger',
+  brand: 'bg-brand-subtle text-brand',
+  neutral: 'bg-muted text-muted-foreground',
 }
 
 function SectionTimeline({
@@ -260,32 +381,40 @@ function SectionTimeline({
   requete: ReturnType<typeof useQuery<EvenementTimeline[], Error>>
 }) {
   return (
-    <section className="rounded-md border p-4">
+    <section className="rounded-lg border bg-card p-4">
       <h2 className="mb-3 text-sm font-semibold">{T.timeline}</h2>
       {requete.isSuccess && requete.data.length === 0 && (
         <p className="text-sm text-muted-foreground">{T.timelineVide}</p>
       )}
       {requete.isSuccess && requete.data.length > 0 && (
-        <ol className="space-y-3">
-          {requete.data.map((ev, i) => (
-            <li key={i} className="flex gap-3 text-sm">
-              <span className="whitespace-nowrap text-xs text-muted-foreground">
-                {new Date(ev.occurred_at).toLocaleString('fr-FR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
-              <span>
-                <span className="font-medium">{G.evenements[ev.event_type] ?? ev.event_type}</span>
-                {ev.auteur_nom && (
-                  <span className="text-muted-foreground"> — {ev.auteur_nom}</span>
-                )}
-              </span>
-            </li>
-          ))}
+        <ol className="space-y-4">
+          {requete.data.map((ev, i) => {
+            const meta = EVENEMENT_META[ev.event_type] ?? { icone: PencilLine, ton: 'neutral' }
+            const Icone = meta.icone
+            return (
+              <li key={i} className="flex gap-3 text-sm">
+                <span
+                  className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full ${TON_TEXTE[meta.ton]}`}
+                  aria-hidden
+                >
+                  <Icone className="size-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-medium">{G.evenements[ev.event_type] ?? ev.event_type}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(ev.occurred_at).toLocaleString('fr-FR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                    {ev.auteur_nom && <> — {ev.auteur_nom}</>}
+                  </p>
+                </div>
+              </li>
+            )
+          })}
         </ol>
       )}
     </section>
