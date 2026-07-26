@@ -1,4 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -212,14 +213,16 @@ function Rangee({ ligne }: { ligne: LigneAudit }) {
         <td className="px-3 py-2">{ligne.cible_nom ?? A.sansValeur}</td>
         <td className="px-3 py-2">
           {aDetail ? (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
               onClick={() => setOuvert((o) => !o)}
               aria-expanded={ouvert}
-              className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
             >
+              {ouvert ? <ChevronDown /> : <ChevronRight />}
               {ouvert ? A.masquerDetail : A.voirDetail}
-            </button>
+            </Button>
           ) : (
             <span className="text-muted-foreground">{A.sansValeur}</span>
           )}

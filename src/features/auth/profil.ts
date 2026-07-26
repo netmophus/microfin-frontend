@@ -39,8 +39,9 @@ export async function chargerProfil(): Promise<Profil> {
   return reponse.data
 }
 
-/** Nom d'affichage : « Prénom Nom », ou l'identifiant à défaut. */
+/** Nom d'affichage : « Nom Prénom », ou l'identifiant à défaut. Ordre UNIFIÉ avec le module
+ *  Tiers (backend concat_ws last+first) — un seul format nom/prénom dans tout le produit. */
 export function nomAffiche(profil: Profil): string {
-  const complet = `${profil.first_name} ${profil.last_name}`.trim()
+  const complet = `${profil.last_name} ${profil.first_name}`.trim()
   return complet || profil.username
 }

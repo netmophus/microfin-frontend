@@ -79,6 +79,6 @@ describe('PageAccueil', () => {
     profil([], [])
     afficher()
 
-    expect(await screen.findByText(/bienvenue, amadou diallo/i)).toBeVisible()
+    expect(await screen.findByText(/bienvenue, diallo amadou/i)).toBeVisible()
   })
 })

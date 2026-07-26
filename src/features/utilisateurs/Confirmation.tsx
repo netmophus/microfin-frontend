@@ -33,7 +33,7 @@ export function Confirmation({
       className={
         danger
           ? 'space-y-3 rounded-lg border-2 border-destructive/40 bg-destructive/5 p-4'
-          : 'space-y-3 rounded-lg border-2 border-amber-300 bg-amber-50 p-4'
+          : 'space-y-3 rounded-lg border-2 border-warning/40 bg-warning-subtle p-4'
       }
     >
       <h3 className="font-semibold">{titre}</h3>

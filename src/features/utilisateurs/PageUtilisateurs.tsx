@@ -5,10 +5,12 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AvatarInitiales } from '@/components/ui/avatar-initiales'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAPermission } from '@/features/auth/useProfil'
@@ -20,22 +22,11 @@ import {
   type LigneUtilisateur,
   type PageUtilisateurs,
 } from '@/features/utilisateurs/api'
+import { BadgeStatutUtilisateur } from '@/features/utilisateurs/badges'
 import { useDebounce } from '@/lib/useDebounce'
 import { LIBELLES } from '@/libelles/fr'
 
 const T = LIBELLES.utilisateurs
-
-/** Pastille de statut : le cas le plus urgent l'emporte — verrouillé prime sur inactif. */
-function Statut({ ligne }: { ligne: LigneUtilisateur }) {
-  const classe = 'inline-block rounded px-2 py-0.5 text-xs font-medium'
-  if (ligne.is_locked) {
-    return <span className={`${classe} bg-red-100 text-red-800`}>{T.verrouille}</span>
-  }
-  if (!ligne.is_active) {
-    return <span className={`${classe} bg-gray-100 text-gray-700`}>{T.inactif}</span>
-  }
-  return <span className={`${classe} bg-emerald-100 text-emerald-800`}>{T.actif}</span>
-}
 
 const colonne = createColumnHelper<LigneUtilisateur>()
 
@@ -46,8 +37,19 @@ export function PageUtilisateurs() {
 
   const colonnes = useMemo(
     () => [
-      colonne.accessor('matricule', { header: T.colonneMatricule }),
-      colonne.accessor('last_name', { header: T.colonneNom }),
+      colonne.accessor('matricule', {
+        header: T.colonneMatricule,
+        cell: (c) => <span className="font-mono text-xs text-muted-foreground">{c.getValue()}</span>,
+      }),
+      colonne.accessor('last_name', {
+        header: T.colonneNom,
+        cell: (c) => (
+          <div className="flex items-center gap-2.5">
+            <AvatarInitiales nom={`${c.row.original.last_name} ${c.row.original.first_name}`} />
+            <span className="font-medium">{c.getValue()}</span>
+          </div>
+        ),
+      }),
       colonne.accessor('first_name', { header: T.colonnePrenom }),
       colonne.accessor('email', { header: T.colonneEmail }),
       colonne.accessor((l) => l.agence?.name ?? T.sansAgence, {
@@ -57,7 +59,7 @@ export function PageUtilisateurs() {
       colonne.display({
         id: 'statut',
         header: T.colonneStatut,
-        cell: (contexte) => <Statut ligne={contexte.row.original} />,
+        cell: (contexte) => <BadgeStatutUtilisateur ligne={contexte.row.original} />,
       }),
     ],
     [],
@@ -107,19 +109,26 @@ export function PageUtilisateurs() {
         </div>
         {peutCreer && (
           <Link to="/utilisateurs/nouveau" className={buttonVariants({ size: 'sm' })}>
+            <Plus />
             {LIBELLES.creation.bouton}
           </Link>
         )}
       </div>
 
-      <Input
-        type="search"
-        placeholder={T.rechercher}
-        value={recherche}
-        onChange={(e) => majRecherche(e.target.value)}
-        className="max-w-sm"
-        aria-label={T.rechercher}
-      />
+      <div className="relative max-w-sm">
+        <Search
+          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+        <Input
+          type="search"
+          placeholder={T.rechercher}
+          value={recherche}
+          onChange={(e) => majRecherche(e.target.value)}
+          className="pl-8"
+          aria-label={T.rechercher}
+        />
+      </div>
 
       <ContenuListe requete={requete} table={table} recherche={rechercheDifferee} />
 

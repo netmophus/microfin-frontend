@@ -46,7 +46,7 @@ function ListeRegles({ nouveau }: { nouveau: string }) {
                 vide
                   ? 'flex items-center gap-2 text-sm text-muted-foreground'
                   : ok
-                    ? 'flex items-center gap-2 text-sm text-emerald-700'
+                    ? 'flex items-center gap-2 text-sm text-success'
                     : 'flex items-center gap-2 text-sm text-muted-foreground'
               }
             >

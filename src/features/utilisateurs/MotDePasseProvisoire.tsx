@@ -42,15 +42,15 @@ export function MotDePasseProvisoire({
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-5 rounded-lg border-2 border-amber-400 bg-amber-50 p-6">
-      <div className="flex items-center gap-2 text-amber-900">
+    <div className="mx-auto max-w-lg space-y-5 rounded-lg border-2 border-warning/40 bg-warning-subtle p-6">
+      <div className="flex items-center gap-2 text-warning">
         <KeyRound className="size-5 shrink-0" aria-hidden />
         <h2 className="text-lg font-semibold">{T.titre}</h2>
       </div>
 
-      <p className="text-sm text-amber-900">{T.intro(nom)}</p>
+      <p className="text-sm text-warning">{T.intro(nom)}</p>
 
-      <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-white p-3">
+      <div className="flex items-center gap-2 rounded-md border border-warning/30 bg-background p-3">
         <code className="flex-1 select-all font-mono text-lg tracking-wide">{motDePasse}</code>
         <Button type="button" variant="outline" size="sm" onClick={() => void copier()}>
           {copie ? (
@@ -67,10 +67,10 @@ export function MotDePasseProvisoire({
         </Button>
       </div>
 
-      <p className="text-sm font-medium text-amber-900">{T.avertissement}</p>
-      <p className="text-sm text-amber-900">{T.transmission}</p>
+      <p className="text-sm font-medium text-warning">{T.avertissement}</p>
+      <p className="text-sm text-warning">{T.transmission}</p>
 
-      <label className="flex items-start gap-2 text-sm text-amber-900">
+      <label className="flex items-start gap-2 text-sm text-warning">
         <input
           type="checkbox"
           checked={confirme}

@@ -87,8 +87,10 @@ function Entree({ entree }: { entree: EntreeMenu }) {
       to={entree.chemin}
       className={({ isActive }) =>
         cn(
-          'block rounded px-2 py-1.5 pl-7 text-sm hover:bg-muted',
-          isActive && 'bg-muted font-medium text-foreground',
+          'block rounded-md py-1.5 pr-2 pl-7 text-sm text-muted-foreground hover:bg-muted hover:text-foreground',
+          // Entrée courante : accent bleu institutionnel (barre + fond léger), cohérent avec les Tiers.
+          isActive &&
+            'border-l-2 border-primary bg-brand-subtle pl-[calc(1.75rem-2px)] font-medium text-primary hover:bg-brand-subtle hover:text-primary',
         )
       }
     >

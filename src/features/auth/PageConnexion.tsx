@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
+import { Landmark } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -119,6 +120,12 @@ export function PageConnexion() {
     <main className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <div className="w-full max-w-sm">
         <header className="mb-8 text-center">
+          <span
+            className="mx-auto mb-3 flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground"
+            aria-hidden
+          >
+            <Landmark className="size-6" />
+          </span>
           <h1 className="text-2xl font-semibold tracking-tight">{LIBELLES.application.nom}</h1>
           <p className="text-sm text-muted-foreground">{LIBELLES.application.sousTitre}</p>
         </header>

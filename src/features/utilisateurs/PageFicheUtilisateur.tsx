@@ -4,8 +4,10 @@ import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AvatarInitiales } from '@/components/ui/avatar-initiales'
 import { Button } from '@/components/ui/button'
 import { useProfil } from '@/features/auth/useProfil'
+import { BadgeStatutUtilisateur } from '@/features/utilisateurs/badges'
 import { Confirmation } from '@/features/utilisateurs/Confirmation'
 import {
   chargerFiche,
@@ -160,12 +162,16 @@ export function PageFicheUtilisateur() {
     <div className="max-w-3xl space-y-5">
       <RetourListe />
 
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">
-          {fiche.first_name} {fiche.last_name}
-        </h1>
-        <p className="text-sm text-muted-foreground">{fiche.username}</p>
-      </div>
+      <header className="flex items-center gap-4 rounded-lg border bg-card p-4">
+        <AvatarInitiales nom={`${fiche.last_name} ${fiche.first_name}`} taille="lg" />
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-xl font-semibold tracking-tight">
+            {fiche.last_name} {fiche.first_name}
+          </h1>
+          <p className="text-sm text-muted-foreground">{fiche.username}</p>
+        </div>
+        <BadgeStatutUtilisateur ligne={fiche} />
+      </header>
 
       {echec && (
         <Alert variant="destructive" role="alert">

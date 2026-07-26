@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { KeyRound, LogOut } from 'lucide-react'
+import { KeyRound, Landmark, LogOut } from 'lucide-react'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 
+import { AvatarInitiales } from '@/components/ui/avatar-initiales'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { seDeconnecter } from '@/features/auth/api'
 import { chargerProfil, nomAffiche } from '@/features/auth/profil'
@@ -41,9 +42,15 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
-      <header className="border-b bg-background">
+      <header className="border-b border-t-2 border-t-primary bg-background">
         <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-center gap-2">
+            <span
+              className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground"
+              aria-hidden
+            >
+              <Landmark className="size-4" />
+            </span>
             <span className="font-semibold tracking-tight">{LIBELLES.application.nom}</span>
             <span className="hidden text-xs text-muted-foreground sm:inline">
               {LIBELLES.application.sousTitre}
@@ -52,18 +59,21 @@ export function AppLayout() {
 
           <div className="flex items-center gap-3">
             {nom && (
-              <div className="text-right leading-tight">
-                <div className="text-sm text-muted-foreground">
-                  {LIBELLES.navigation.utilisateurLabel} :{' '}
-                  <span className="font-medium text-foreground">{nom}</span>
-                </div>
-                {(roles || agence) && (
-                  <div className="text-xs text-muted-foreground">
-                    {roles}
-                    {roles && agence ? ' · ' : ''}
-                    {agence}
+              <div className="flex items-center gap-2">
+                <AvatarInitiales nom={nom} />
+                <div className="text-right leading-tight">
+                  <div className="text-sm text-muted-foreground">
+                    {LIBELLES.navigation.utilisateurLabel} :{' '}
+                    <span className="font-medium text-foreground">{nom}</span>
                   </div>
-                )}
+                  {(roles || agence) && (
+                    <div className="text-xs text-muted-foreground">
+                      {roles}
+                      {roles && agence ? ' · ' : ''}
+                      {agence}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {/* Changer SON mot de passe : la réinitialisation par un admin est interdite sur

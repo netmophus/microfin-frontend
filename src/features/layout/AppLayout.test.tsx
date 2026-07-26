@@ -49,7 +49,7 @@ describe('AppLayout', () => {
 
     afficher()
 
-    expect(await screen.findByText('Ramatou Dodo')).toBeVisible()
+    expect(await screen.findByText('Dodo Ramatou')).toBeVisible()
     // Les deux rôles ET l'agence, sur une même ligne discrète sous le nom.
     expect(screen.getByText(/Chargé de clientèle, Caissier/)).toBeVisible()
     expect(screen.getByText(/Siège/)).toBeVisible()
