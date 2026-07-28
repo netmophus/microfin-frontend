@@ -173,6 +173,8 @@ export const LIBELLES = {
       tiers: 'Tiers (clients / membres)',
       caisseGuichet: 'Caisse / Guichet',
       guichetEpargne: 'Guichet épargne',
+      versementInterets: 'Versement des intérêts',
+      rapprochementEpargne: 'Rapprochement épargne',
       epargneDepots: 'Épargne / Dépôts',
       credit: 'Crédit',
       recouvrement: 'Recouvrement',
@@ -697,6 +699,106 @@ export const LIBELLES = {
     fermetureEchec: 'La fermeture a échoué. Réessayez.',
     // La boucle rendue LISIBLE : après fermeture, plus de blocage à la désactivation.
     desactivable: 'Ce membre n’a plus de compte d’épargne ouvert : il peut être désactivé.',
+  },
+
+  interets: {
+    titre: 'Versement des intérêts',
+    intro:
+      'Choisissez une période, prévisualisez, puis versez. Rien n’est versé tant que vous n’avez pas confirmé.',
+
+    // Réservé à la direction (acte d'institution). Message si on n'a pas le droit — mais la
+    // route le garde déjà en amont, ceci est une ceinture supplémentaire.
+    periodeLabel: 'Période (libellé)',
+    periodePlaceholder: 'Ex. : 2026-S1',
+    periodeAide:
+      'Le libellé identifie la période et empêche un double versement : la même période ne peut être versée deux fois.',
+    debutLabel: 'Du',
+    finLabel: 'Au',
+    previsualiser: 'Prévisualiser',
+    previsualisationEnCours: 'Calcul en cours…',
+
+    // Prévisualisation : le TOTAL et le DÉTAIL, avant tout versement.
+    apercuTitre: 'Prévisualisation — rien n’est encore versé',
+    // {comptes} et {total} injectés.
+    apercuResume: '{comptes} comptes concernés, total à verser : {total}',
+    apercuPeriode: 'Période du {debut} au {fin} ({jours} jours)',
+
+    // Rien à verser : on ne reste JAMAIS muet — on affiche un titre ET la raison précise.
+    apercuAucunTitre: 'Aucun intérêt à verser sur cette période',
+    raisonTauxZero:
+      'Les produits d’épargne sont à taux 0 : le barème n’a pas encore été fixé par l’expert. Posez un taux avant de verser.',
+    raisonAucunCompte:
+      'Aucun compte d’épargne actif à traiter pour cette période.',
+    raisonSoldes:
+      'Les comptes actifs n’ont pas de solde rémunérable sur cette période (soldes insuffisants ou aucun mouvement).',
+    // Champs incomplets : le clic ne doit pas rester sans effet.
+    saisieIncomplete: 'Renseignez la période (libellé) et les deux dates avant de prévisualiser.',
+    // Provisoire : le barème (taux/méthode) n'est pas validé.
+    provisoireBanniere:
+      'Barème PROVISOIRE : le taux et la méthode de calcul ne sont pas encore validés par l’expert. Vérifiez le détail ci-dessous avant de verser.',
+
+    // Déjà versé (anti-double) : on le DIT clairement, on n'échoue pas en silence.
+    dejaVerseTitre: 'Intérêts déjà versés pour cette période',
+    // {date} injectée.
+    dejaVerseDetail:
+      'Cette période a déjà été traitée le {date}. Aucun nouveau versement ne sera fait.',
+    dejaTraites: '{n} comptes déjà versés.',
+
+    // Le détail par compte : de quoi vérifier « ça a l'air juste ».
+    detailTitre: 'Détail (échantillon)',
+    colCompte: 'Compte',
+    colProduit: 'Produit',
+    colTaux: 'Taux',
+    colMethode: 'Méthode',
+    colBase: 'Base de calcul',
+    colMontant: 'Intérêt',
+    methodes: {
+      min_periode: 'Solde minimum de la période',
+      moyen_quotidien: 'Solde moyen quotidien',
+      fin_periode: 'Solde en fin de période',
+    } as Record<string, string>,
+
+    // Confirmation RENFORCÉE (comme la désactivation) : on crée de l'argent sur des comptes.
+    confirmerTitre: 'Confirmer le versement des intérêts ?',
+    // {comptes} et {total} injectés.
+    confirmerAvert:
+      'Vous allez verser {total} sur {comptes} comptes. Cette opération crédite l’argent sur les comptes des membres et passe les écritures comptables. Elle ne s’annule pas d’un clic.',
+    confirmer: 'Verser les intérêts',
+    versementEnCours: 'Versement en cours…',
+    annuler: 'Annuler',
+    recommencer: 'Nouvelle période',
+
+    // Résultat.
+    succesTitre: 'Versement effectué',
+    // {credites} et {total} injectés.
+    succesDetail: '{credites} comptes crédités, pour un total de {total}.',
+    succesRienAVerser:
+      'Aucun compte n’a été crédité (période déjà versée, ou aucun intérêt dû).',
+
+    echec: 'Le versement a échoué. Réessayez, puis prévenez votre administrateur.',
+    champsRequis: 'Renseignez la période et les deux dates.',
+  },
+
+  rapprochement: {
+    titre: 'Rapprochement épargne ↔ comptabilité',
+    intro:
+      'Pour chaque compte collectif : la somme des soldes d’épargne (auxiliaire) face au solde comptable (général). Ils doivent concorder.',
+    chargement: 'Chargement du rapprochement…',
+    erreur: 'Impossible de charger le rapprochement. Réessayez dans un instant.',
+    vide: 'Aucun compte collectif à rapprocher pour l’instant.',
+
+    colCompte: 'Compte collectif',
+    colAuxiliaire: 'Auxiliaire (Σ soldes)',
+    colGeneral: 'Général (comptabilité)',
+    colEtat: 'État',
+
+    concordant: 'Concordant',
+    // {montant} injecté (valeur absolue de l'écart).
+    ecart: 'Écart : {montant}',
+    // Bandeau de synthèse : tout va bien, ou il y a au moins un écart à traiter.
+    toutConcordant: 'Tous les comptes concordent.',
+    ecartsDetectes:
+      'Au moins un écart détecté. Un écart entre l’auxiliaire et le général est le premier signe d’une anomalie : à investiguer.',
   },
 
   guichet: {

@@ -120,9 +120,81 @@ export async function fermerCompte(compteId: string): Promise<CompteEpargne> {
   return data
 }
 
+// --- Intérêts (F4) : prévisualisation obligatoire, puis versement ----------------------
+
+/** Une période à prévisualiser ou verser : le libellé (clé anti-double) et ses bornes. */
+export interface DemandeInterets {
+  periode: string
+  debut: string // AAAA-MM-JJ
+  fin: string
+}
+
+/** Un compte de l'échantillon : de quoi vérifier « ça a l'air juste » avant de lancer. */
+export interface LigneApercuInterets {
+  account_number: string
+  produit: string
+  taux_bp: number
+  methode: string
+  base_solde: number
+  montant: number
+}
+
+export interface ApercuInterets {
+  periode: string
+  debut: string
+  fin: string
+  jours: number
+  comptes_actifs: number
+  comptes_taux_zero: number
+  comptes_a_crediter: number
+  total: number
+  deja_traites: number
+  deja_verse_le: string | null
+  echantillon: LigneApercuInterets[]
+}
+
+export interface RapportInterets {
+  traites: number
+  credites: number
+  ignores: number
+  total: number
+}
+
+export interface LigneRapprochement {
+  compte_general: string
+  auxiliaire: number
+  general: number
+  concordant: boolean
+  ecart: number
+}
+
+/** Prévisualise (dry-run) : calcule sans rien verser. */
+export async function previsualiserInterets(demande: DemandeInterets): Promise<ApercuInterets> {
+  const { data } = await api.post<ApercuInterets>('/epargne/interets/apercu', demande)
+  return data
+}
+
+/** Verse effectivement les intérêts de la période. Idempotent côté serveur (anti-double). */
+export async function verserInterets(demande: DemandeInterets): Promise<RapportInterets> {
+  const { data } = await api.post<RapportInterets>('/epargne/interets', demande)
+  return data
+}
+
+/** Vue de contrôle : une ligne par compte collectif (auxiliaire vs général). */
+export async function chargerRapprochement(): Promise<LigneRapprochement[]> {
+  const { data } = await api.get<LigneRapprochement[]>('/epargne/rapprochement')
+  return data
+}
+
 /** Francs CFA entiers, séparateur de milliers, jamais de décimale. Ex. « 110 000 F ». */
 export function formatFcfa(montant: number): string {
   return `${montant.toLocaleString('fr-FR')} F`
+}
+
+/** Points de base -> pourcentage lisible. Ex. 1000 -> « 10 % », 350 -> « 3,5 % ». */
+export function formatTaux(tauxBp: number): string {
+  const pourcent = (tauxBp / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+  return `${pourcent} %`
 }
 
 /**

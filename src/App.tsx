@@ -11,6 +11,8 @@ import { AppLayout } from '@/features/layout/AppLayout'
 import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
 import { PageGuichet } from '@/features/epargne/PageGuichet'
+import { PageRapprochement } from '@/features/epargne/PageRapprochement'
+import { PageVersementInterets } from '@/features/epargne/PageVersementInterets'
 import { PageCreationTier } from '@/features/tiers/PageCreationTier'
 import { PageFicheTier } from '@/features/tiers/PageFicheTier'
 import { PageTiers } from '@/features/tiers/PageTiers'
@@ -128,6 +130,22 @@ export function App() {
                 element={
                   <RoutePermission permission="epargne.operation.deposit">
                     <PageGuichet />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/epargne/interets"
+                element={
+                  <RoutePermission permission="epargne.interet.executer">
+                    <PageVersementInterets />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/epargne/rapprochement"
+                element={
+                  <RoutePermission permission="epargne.rapprochement.read">
+                    <PageRapprochement />
                   </RoutePermission>
                 }
               />

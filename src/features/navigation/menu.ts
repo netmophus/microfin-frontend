@@ -90,6 +90,13 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/guichet',
         permission: 'epargne.operation.deposit',
       },
+      // Versement des intérêts : acte d'INSTITUTION, réservé à la direction.
+      {
+        etat: 'actif',
+        libelle: M.entrees.versementInterets,
+        chemin: '/epargne/interets',
+        permission: 'epargne.interet.executer',
+      },
       aVenir(M.entrees.credit),
       aVenir(M.entrees.recouvrement),
     ],
@@ -100,6 +107,13 @@ export const MENU: readonly GroupeMenu[] = [
     entrees: [
       aVenir(M.entrees.comptaGenerale),
       aVenir(M.entrees.comptaAnalytique),
+      // Rapprochement épargne : vue de contrôle réservée à l'audit/direction/comptable.
+      {
+        etat: 'actif',
+        libelle: M.entrees.rapprochementEpargne,
+        chemin: '/epargne/rapprochement',
+        permission: 'epargne.rapprochement.read',
+      },
       aVenir(M.entrees.tresorerieImmo),
     ],
   },
