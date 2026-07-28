@@ -83,7 +83,13 @@ export const MENU: readonly GroupeMenu[] = [
     titre: M.groupes.operations,
     entrees: [
       aVenir(M.entrees.caisseGuichet),
-      aVenir(M.entrees.epargneDepots),
+      // Guichet épargne : dépôt/retrait. Visible pour qui opère (le caissier).
+      {
+        etat: 'actif',
+        libelle: M.entrees.guichetEpargne,
+        chemin: '/guichet',
+        permission: 'epargne.operation.deposit',
+      },
       aVenir(M.entrees.credit),
       aVenir(M.entrees.recouvrement),
     ],

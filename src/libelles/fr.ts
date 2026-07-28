@@ -172,6 +172,7 @@ export const LIBELLES = {
       parametrage: 'Paramétrage',
       tiers: 'Tiers (clients / membres)',
       caisseGuichet: 'Caisse / Guichet',
+      guichetEpargne: 'Guichet épargne',
       epargneDepots: 'Épargne / Dépôts',
       credit: 'Crédit',
       recouvrement: 'Recouvrement',
@@ -675,6 +676,36 @@ export const LIBELLES = {
     provisoire: 'provisoire',
     provisoireAide:
       'Rattachement comptable et/ou taux non encore validés par l’expert : valeur non réglementaire confirmée.',
+  },
+
+  guichet: {
+    titre: 'Guichet — dépôt / retrait',
+    intro: 'Saisissez le numéro du livret pour trouver le compte, puis opérez.',
+    numeroLabel: 'Numéro de compte',
+    numeroPlaceholder: 'EP-2026-0000001',
+    chercher: 'Chercher',
+    rechercheEnCours: 'Recherche…',
+    introuvable: 'Aucun compte à ce numéro dans votre agence. Vérifiez le numéro.',
+    // Vérification humaine : le nom est proéminent, on confirme « c'est bien la personne ».
+    membre: 'Titulaire',
+    solde: 'Solde',
+    compteFerme: 'Ce compte est fermé : aucune opération possible.',
+    depot: 'Dépôt',
+    retrait: 'Retrait',
+    montantLabel: 'Montant (F)',
+    montantPlaceholder: 'Ex. 10000',
+    continuer: 'Continuer',
+    // Confirmation renforcée — le nom du titulaire est répété.
+    confirmerDepot: 'Déposer {montant} sur {numero}',
+    confirmerRetrait: 'Retirer {montant} de {numero}',
+    confirmerQuestion: 'Confirmez-vous l’opération pour {membre} ?',
+    confirmer: 'Confirmer',
+    annuler: 'Annuler',
+    enCours: 'Traitement…',
+    succesDepot: 'Dépôt de {montant} enregistré. Pièce {piece}. Nouveau solde : {solde}.',
+    succesRetrait: 'Retrait de {montant} enregistré. Pièce {piece}. Nouveau solde : {solde}.',
+    echec: 'L’opération a échoué. Réessayez.',
+    autreOperation: 'Nouvelle opération',
   },
 
   tiersKyc: {

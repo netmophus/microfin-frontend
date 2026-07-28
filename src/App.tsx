@@ -10,6 +10,7 @@ import { RouteProtegee } from '@/features/auth/RouteProtegee'
 import { AppLayout } from '@/features/layout/AppLayout'
 import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
+import { PageGuichet } from '@/features/epargne/PageGuichet'
 import { PageCreationTier } from '@/features/tiers/PageCreationTier'
 import { PageFicheTier } from '@/features/tiers/PageFicheTier'
 import { PageTiers } from '@/features/tiers/PageTiers'
@@ -119,6 +120,14 @@ export function App() {
                 element={
                   <RoutePermission permission="audit.read">
                     <PageJournalAudit />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/guichet"
+                element={
+                  <RoutePermission permission="epargne.operation.deposit">
+                    <PageGuichet />
                   </RoutePermission>
                 }
               />

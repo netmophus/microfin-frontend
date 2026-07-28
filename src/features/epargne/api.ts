@@ -68,6 +68,52 @@ export async function lireCompte(compteId: string): Promise<CompteEpargneDetail>
   return data
 }
 
+// --- Guichet : recherche par numéro + dépôt/retrait -----------------------------------
+
+/** Ce que le caissier voit après recherche : le NOM du membre est proéminent (vérif humaine). */
+export interface CompteGuichet {
+  id: string
+  account_number: string
+  tier_id: string
+  membre_nom: string
+  product_name: string
+  product_type: string
+  currency: string
+  balance: number
+  status: string
+  is_provisional: boolean
+}
+
+export interface ResultatOperation {
+  account_number: string
+  nouveau_solde: number
+  entry_number: string | null
+}
+
+export async function rechercherCompte(numero: string): Promise<CompteGuichet> {
+  const { data } = await api.get<CompteGuichet>('/epargne/recherche-compte', {
+    params: { numero },
+  })
+  return data
+}
+
+export async function deposerGuichet(compteId: string, montant: number): Promise<ResultatOperation> {
+  const { data } = await api.post<ResultatOperation>(`/epargne/comptes/${compteId}/depot`, {
+    montant,
+  })
+  return data
+}
+
+export async function retirerGuichet(
+  compteId: string,
+  montant: number,
+): Promise<ResultatOperation> {
+  const { data } = await api.post<ResultatOperation>(`/epargne/comptes/${compteId}/retrait`, {
+    montant,
+  })
+  return data
+}
+
 /** Francs CFA entiers, séparateur de milliers, jamais de décimale. Ex. « 110 000 F ». */
 export function formatFcfa(montant: number): string {
   return `${montant.toLocaleString('fr-FR')} F`
