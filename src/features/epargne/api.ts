@@ -114,6 +114,12 @@ export async function retirerGuichet(
   return data
 }
 
+/** Ferme un compte (responsable) : restitution du solde résiduel + clôture définitive. */
+export async function fermerCompte(compteId: string): Promise<CompteEpargne> {
+  const { data } = await api.post<CompteEpargne>(`/epargne/comptes/${compteId}/fermeture`)
+  return data
+}
+
 /** Francs CFA entiers, séparateur de milliers, jamais de décimale. Ex. « 110 000 F ». */
 export function formatFcfa(montant: number): string {
   return `${montant.toLocaleString('fr-FR')} F`

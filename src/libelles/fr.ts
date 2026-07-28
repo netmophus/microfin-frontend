@@ -676,6 +676,27 @@ export const LIBELLES = {
     provisoire: 'provisoire',
     provisoireAide:
       'Rattachement comptable et/ou taux non encore validés par l’expert : valeur non réglementaire confirmée.',
+
+    // Panneau compte : relevé + fermeture (F3).
+    chargementReleve: 'Chargement du relevé…',
+    releve: 'Relevé des mouvements',
+    releveVide: 'Aucun mouvement.',
+    operations: {
+      depot: 'Dépôt',
+      retrait: 'Retrait',
+      interet: 'Intérêts',
+      cloture: 'Clôture (restitution)',
+    } as Record<string, string>,
+    piece: 'Pièce',
+    fermer: 'Fermer le compte',
+    // La restitution est PROÉMINENTE avant de confirmer — on ne ferme pas à l'aveugle.
+    fermetureRestitution: 'Le solde de {montant} sera restitué au membre.',
+    fermetureSoldeNul: 'Ce compte est vide : il sera simplement fermé.',
+    fermerConfirmer: 'Confirmer la fermeture',
+    fermetureEnCours: 'Fermeture…',
+    fermetureEchec: 'La fermeture a échoué. Réessayez.',
+    // La boucle rendue LISIBLE : après fermeture, plus de blocage à la désactivation.
+    desactivable: 'Ce membre n’a plus de compte d’épargne ouvert : il peut être désactivé.',
   },
 
   guichet: {
