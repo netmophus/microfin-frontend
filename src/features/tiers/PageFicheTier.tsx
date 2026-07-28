@@ -25,6 +25,7 @@ import { AvatarInitiales } from '@/components/ui/avatar-initiales'
 import { useAPermission } from '@/features/auth/useProfil'
 import { ActionsTier } from '@/features/tiers/actions-tier'
 import { BadgeStatut } from '@/features/tiers/badges'
+import { OngletComptesEpargne } from '@/features/epargne/OngletComptesEpargne'
 import { OngletCoordonnees } from '@/features/tiers/OngletCoordonnees'
 import { OngletKyc } from '@/features/tiers/OngletKyc'
 import { OngletPieces } from '@/features/tiers/OngletPieces'
@@ -230,9 +231,9 @@ function BandeauProspect({ tierId }: { tierId: string }) {
   )
 }
 
-/** Bascule Coordonnées / Pièces / KYC. Un seul onglet monté à la fois. */
+/** Bascule Coordonnées / Pièces / KYC / Épargne. Un seul onglet monté à la fois. */
 function OngletsDetail({ fiche }: { fiche: FicheTier }) {
-  const [onglet, setOnglet] = useState<'coordonnees' | 'pieces' | 'kyc'>('coordonnees')
+  const [onglet, setOnglet] = useState<'coordonnees' | 'pieces' | 'kyc' | 'epargne'>('coordonnees')
   // L'onglet KYC détaillé ne concerne que la personne physique (T3c).
   const kycDispo = Boolean(fiche.individu)
   return (
@@ -249,10 +250,16 @@ function OngletsDetail({ fiche }: { fiche: FicheTier }) {
             {O.kyc}
           </BoutonOnglet>
         )}
+        <BoutonOnglet actif={onglet === 'epargne'} onClick={() => setOnglet('epargne')}>
+          {O.epargne}
+        </BoutonOnglet>
       </div>
       <div className="p-4">
         {onglet === 'coordonnees' && <OngletCoordonnees tierId={fiche.id} />}
         {onglet === 'pieces' && <OngletPieces tierId={fiche.id} />}
+        {onglet === 'epargne' && (
+          <OngletComptesEpargne tierId={fiche.id} tierStatut={fiche.status} />
+        )}
         {onglet === 'kyc' && (
           <OngletKyc
             tierId={fiche.id}

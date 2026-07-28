@@ -651,7 +651,30 @@ export const LIBELLES = {
     coordonnees: 'Coordonnées',
     pieces: 'Pièces d’identité',
     kyc: 'KYC / Risque',
+    epargne: 'Comptes d’épargne',
     frise: 'Historique',
+  },
+
+  epargne: {
+    titre: 'Comptes d’épargne',
+    chargement: 'Chargement des comptes…',
+    erreur: 'Impossible de charger les comptes d’épargne.',
+    vide: 'Aucun compte d’épargne.',
+    ouvrir: 'Ouvrir un compte',
+    // Gate KYC visible : on explique POURQUOI le bouton d’ouverture est absent.
+    gateNonActif:
+      'Ce membre doit être activé (KYC validé) avant de pouvoir ouvrir un compte d’épargne. Un prospect n’y a pas droit.',
+    produit: 'Produit d’épargne',
+    produitChoisir: 'Choisir un produit…',
+    produitProvisoireSuffixe: '(provisoire)',
+    confirmerOuverture: 'Ouvrir le compte',
+    ouvertureEnCours: 'Ouverture…',
+    annuler: 'Annuler',
+    ouvertureEchec: 'L’ouverture a échoué. Réessayez.',
+    statuts: { actif: 'Ouvert', cloture: 'Fermé' } as Record<string, string>,
+    provisoire: 'provisoire',
+    provisoireAide:
+      'Rattachement comptable et/ou taux non encore validés par l’expert : valeur non réglementaire confirmée.',
   },
 
   tiersKyc: {
