@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { KeyRound, Landmark, LogOut } from 'lucide-react'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 
@@ -20,6 +20,7 @@ import { LIBELLES } from '@/libelles/fr'
  */
 export function AppLayout() {
   const naviguer = useNavigate()
+  const client = useQueryClient()
   const fermerSession = useAuth((etat) => etat.fermerSession)
   const identifiantSecours = useAuth((etat) => etat.identifiant)
 
@@ -28,6 +29,10 @@ export function AppLayout() {
   const deconnecter = async () => {
     await seDeconnecter()
     fermerSession()
+    // Vider TOUT le cache react-query : sans ça, le profil (donc les permissions) et les autres
+    // données d'une session survivraient au changement de compte -> boutons/affichages d'un rôle
+    // qu'on n'a plus (le serveur refuse, mais l'écran ne doit pas mentir). Sessions non mêlées.
+    client.clear()
     void naviguer('/connexion', { replace: true })
   }
 
