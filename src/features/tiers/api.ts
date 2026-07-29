@@ -20,6 +20,7 @@ export interface LigneTier {
   tier_type: string
   display_name: string
   status: string
+  is_member: boolean
   primary_agency_id: string
 }
 
@@ -126,6 +127,7 @@ export interface FicheTier {
   tier_number: string
   tier_type: string
   status: string
+  is_member: boolean
   primary_agency_id: string
   // Présents sur la vue complète (tiers.read) :
   primary_phone?: string | null

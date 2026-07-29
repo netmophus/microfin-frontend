@@ -8,7 +8,7 @@ import { AvatarInitiales } from '@/components/ui/avatar-initiales'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAPermission } from '@/features/auth/useProfil'
-import { BadgeStatut } from '@/features/tiers/badges'
+import { BadgeSocietariat, BadgeStatut } from '@/features/tiers/badges'
 import {
   ErreurListe,
   listerTiers,
@@ -187,6 +187,7 @@ function Contenu({
             <th className="px-3 py-2 text-left font-medium">{T.colonneType}</th>
             <th className="px-3 py-2 text-left font-medium">{T.colonneAgence}</th>
             <th className="px-3 py-2 text-left font-medium">{T.colonneStatut}</th>
+            <th className="px-3 py-2 text-left font-medium">{T.colonneSocietariat}</th>
           </tr>
         </thead>
         <tbody>
@@ -218,6 +219,9 @@ function Contenu({
               </td>
               <td className="px-3 py-2">
                 <BadgeStatut code={ligne.status} />
+              </td>
+              <td className="px-3 py-2">
+                <BadgeSocietariat isMember={ligne.is_member} />
               </td>
             </tr>
           ))}

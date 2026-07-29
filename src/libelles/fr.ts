@@ -419,7 +419,11 @@ export const LIBELLES = {
     colonneType: 'Type',
     colonneAgence: 'Agence',
     colonneStatut: 'Statut',
+    colonneSocietariat: 'Sociétariat',
     sansAgence: '—',
+
+    // Sociétariat (marqueur membre/client, 0025) — dimension distincte du statut.
+    societariat: { membre: 'Membre', client: 'Client' } as Record<string, string>,
 
     rechercher: 'Rechercher — numéro ou nom',
     afficherDesactives: 'Afficher les fiches désactivées',

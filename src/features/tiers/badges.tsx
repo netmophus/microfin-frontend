@@ -34,6 +34,20 @@ export function BadgeStatut({ code }: { code: string }) {
   return <Badge ton={TON_STATUT[code] ?? 'neutral'}>{LIBELLES.tiers.statuts[code] ?? code}</Badge>
 }
 
+/**
+ * Sociétariat — dimension DISTINCTE du statut (cycle de vie). Membre = bleu institutionnel
+ * (`brand`, non utilisé par les statuts, donc pas de confusion avec Actif/Suspendu) ; Client =
+ * neutre (l'état par défaut, discret). Les deux badges coexistent sur une fiche : « Membre » +
+ * « Actif » se lisent comme deux informations différentes.
+ */
+export function BadgeSocietariat({ isMember }: { isMember: boolean }) {
+  return isMember ? (
+    <Badge ton="brand">{LIBELLES.tiers.societariat.membre}</Badge>
+  ) : (
+    <Badge ton="neutral">{LIBELLES.tiers.societariat.client}</Badge>
+  )
+}
+
 export function BadgeRisque({ niveau }: { niveau: string }) {
   return <Badge ton={TON_RISQUE[niveau] ?? 'neutral'}>{LIBELLES.tiersKyc.niveaux[niveau] ?? niveau}</Badge>
 }

@@ -24,7 +24,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AvatarInitiales } from '@/components/ui/avatar-initiales'
 import { useAPermission } from '@/features/auth/useProfil'
 import { ActionsTier } from '@/features/tiers/actions-tier'
-import { BadgeStatut } from '@/features/tiers/badges'
+import { BadgeSocietariat, BadgeStatut } from '@/features/tiers/badges'
 import { OngletComptesEpargne } from '@/features/epargne/OngletComptesEpargne'
 import { OngletCoordonnees } from '@/features/tiers/OngletCoordonnees'
 import { OngletKyc } from '@/features/tiers/OngletKyc'
@@ -127,14 +127,18 @@ export function PageFicheTier() {
     <div className="mx-auto max-w-5xl space-y-5">
       <RetourListe />
 
-      {/* En-tête : avatar + nom + numéro mono + badge de statut. */}
+      {/* En-tête : avatar + nom + numéro mono + badges. Statut (cycle de vie) et sociétariat
+          (membre/client) sont DEUX dimensions : empilés, ils se lisent sans confusion. */}
       <header className="flex items-center gap-4 rounded-lg border bg-card p-4">
         <AvatarInitiales nom={nomAffichage(fiche)} taille="lg" />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-semibold tracking-tight">{nomAffichage(fiche)}</h1>
           <p className="font-mono text-xs text-muted-foreground">{fiche.tier_number}</p>
         </div>
-        <BadgeStatut code={fiche.status} />
+        <div className="flex flex-col items-end gap-1.5">
+          <BadgeStatut code={fiche.status} />
+          <BadgeSocietariat isMember={fiche.is_member} />
+        </div>
       </header>
 
       {fiche.status === 'prospect' && peutVoirDetail && <BandeauProspect tierId={fiche.id} />}
