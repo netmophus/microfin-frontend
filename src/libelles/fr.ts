@@ -659,7 +659,46 @@ export const LIBELLES = {
     pieces: 'Pièces d’identité',
     kyc: 'KYC / Risque',
     epargne: 'Comptes d’épargne',
+    parts: 'Parts sociales',
     frise: 'Historique',
+  },
+
+  tiersParts: {
+    chargement: 'Chargement des parts sociales…',
+    erreur: 'Impossible de charger les parts sociales.',
+    aucune: 'Ce tiers ne détient aucune part sociale.',
+
+    // Capital et parts détenues.
+    capitalLibere: 'Capital libéré',
+    capitalNonLibere: 'À libérer',
+    partsLiberees: (n: number) => (n <= 1 ? `${n} part libérée` : `${n} parts libérées`),
+    partsNonLiberees: (n: number) =>
+      n <= 1 ? `${n} part souscrite non libérée` : `${n} parts souscrites non libérées`,
+
+    // Barème PROVISOIRE (comme le taux d'épargne / le barème KYC).
+    baremeTitre: 'Barème des parts',
+    valeurPart: 'Valeur d’une part',
+    minimum: 'Minimum pour adhérer',
+    minimumValeur: (n: number) => (n <= 1 ? `${n} part` : `${n} parts`),
+    provisoireAide:
+      'Valeur d’une part et minimum non encore validés par l’expert / les statuts : valeurs non réglementaires confirmées.',
+
+    // Cas LISIBLE : client qui détient encore des parts (remboursement partiel sous le minimum).
+    // {parts} et {capital} injectés.
+    ancienSocietaire:
+      'N’est plus sociétaire (sous le minimum), mais détient encore {parts} — capital {capital}. Non désactivable tant qu’elles ne sont pas remboursées.',
+
+    // Historique.
+    historique: 'Historique des parts',
+    historiqueVide: 'Aucun mouvement de parts.',
+    piece: 'Pièce',
+    operations: {
+      souscription: 'Souscription (engagement)',
+      liberation: 'Libération',
+      souscription_comptant: 'Souscription au comptant',
+      remboursement: 'Remboursement',
+      annulation: 'Annulation',
+    } as Record<string, string>,
   },
 
   epargne: {

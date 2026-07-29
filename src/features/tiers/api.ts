@@ -179,6 +179,36 @@ export async function lireTimeline(id: string): Promise<EvenementTimeline[]> {
   return reponse.data
 }
 
+// --- parts sociales (PS1b) -------------------------------------------------------------
+
+export interface MouvementParts {
+  type: string // souscription | liberation | souscription_comptant | remboursement | annulation
+  shares_count: number
+  unit_value: number
+  amount: number
+  entry_number: string | null
+  created_at: string
+}
+
+export interface FichePartsSociales {
+  is_member: boolean
+  shares_liberees: number
+  shares_non_liberees: number
+  capital_libere: number // parts libérées x valeur d'une part (francs)
+  capital_non_libere: number
+  unit_value: number // valeur d'une part (PROVISOIRE)
+  minimum_shares: number // minimum pour adhérer (PROVISOIRE)
+  is_refundable: boolean
+  membership_on: string // souscription | liberation
+  is_provisional: boolean
+  mouvements: MouvementParts[]
+}
+
+export async function chargerParts(tierId: string): Promise<FichePartsSociales> {
+  const { data } = await api.get<FichePartsSociales>(`/tiers/${tierId}/parts`)
+  return data
+}
+
 // --- création --------------------------------------------------------------------------
 
 /** Communs à toute création. primary_agency_id null = « mon agence » (dérivée du claim). */

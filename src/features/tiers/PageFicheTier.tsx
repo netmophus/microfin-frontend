@@ -28,6 +28,7 @@ import { BadgeSocietariat, BadgeStatut } from '@/features/tiers/badges'
 import { OngletComptesEpargne } from '@/features/epargne/OngletComptesEpargne'
 import { OngletCoordonnees } from '@/features/tiers/OngletCoordonnees'
 import { OngletKyc } from '@/features/tiers/OngletKyc'
+import { OngletParts } from '@/features/tiers/OngletParts'
 import { OngletPieces } from '@/features/tiers/OngletPieces'
 import {
   ErreurFiche,
@@ -237,9 +238,13 @@ function BandeauProspect({ tierId }: { tierId: string }) {
 
 /** Bascule Coordonnées / Pièces / KYC / Épargne. Un seul onglet monté à la fois. */
 function OngletsDetail({ fiche }: { fiche: FicheTier }) {
-  const [onglet, setOnglet] = useState<'coordonnees' | 'pieces' | 'kyc' | 'epargne'>('coordonnees')
+  const [onglet, setOnglet] = useState<'coordonnees' | 'pieces' | 'kyc' | 'epargne' | 'parts'>(
+    'coordonnees',
+  )
   // L'onglet KYC détaillé ne concerne que la personne physique (T3c).
   const kycDispo = Boolean(fiche.individu)
+  // L'onglet Parts sociales n'apparaît que pour qui peut le lire (le chargé de clientèle l'a).
+  const partsDispo = useAPermission('tiers.shares.read')
   return (
     <section className="rounded-md border">
       <div className="flex border-b" role="tablist">
@@ -257,6 +262,11 @@ function OngletsDetail({ fiche }: { fiche: FicheTier }) {
         <BoutonOnglet actif={onglet === 'epargne'} onClick={() => setOnglet('epargne')}>
           {O.epargne}
         </BoutonOnglet>
+        {partsDispo && (
+          <BoutonOnglet actif={onglet === 'parts'} onClick={() => setOnglet('parts')}>
+            {O.parts}
+          </BoutonOnglet>
+        )}
       </div>
       <div className="p-4">
         {onglet === 'coordonnees' && <OngletCoordonnees tierId={fiche.id} />}
@@ -264,6 +274,7 @@ function OngletsDetail({ fiche }: { fiche: FicheTier }) {
         {onglet === 'epargne' && (
           <OngletComptesEpargne tierId={fiche.id} tierStatut={fiche.status} />
         )}
+        {onglet === 'parts' && <OngletParts tierId={fiche.id} />}
         {onglet === 'kyc' && (
           <OngletKyc
             tierId={fiche.id}
