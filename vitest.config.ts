@@ -12,5 +12,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/tests/setup.ts'],
+    // Marge pour la suite complète sous forte charge parallèle : un findBy* peut attendre jusqu'à
+    // 5 s (asyncUtilTimeout), le test doit lui laisser plus que ce plafond. Voir src/tests/setup.ts.
+    testTimeout: 15000,
   },
 })
