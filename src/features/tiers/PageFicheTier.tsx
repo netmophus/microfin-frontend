@@ -274,7 +274,7 @@ function OngletsDetail({ fiche }: { fiche: FicheTier }) {
         {onglet === 'epargne' && (
           <OngletComptesEpargne tierId={fiche.id} tierStatut={fiche.status} />
         )}
-        {onglet === 'parts' && <OngletParts tierId={fiche.id} />}
+        {onglet === 'parts' && <OngletParts tierId={fiche.id} tierStatut={fiche.status} />}
         {onglet === 'kyc' && (
           <OngletKyc
             tierId={fiche.id}

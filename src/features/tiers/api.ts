@@ -209,6 +209,49 @@ export async function chargerParts(tierId: string): Promise<FichePartsSociales> 
   return data
 }
 
+export interface ResultatParts {
+  is_member: boolean
+  shares_liberees: number
+  shares_non_liberees: number
+  entry_number: string | null
+}
+
+/** Souscription ENGAGEMENT (chargé de clientèle) — sans paiement. */
+export async function souscrireParts(tierId: string, sharesCount: number): Promise<ResultatParts> {
+  const { data } = await api.post<ResultatParts>(`/tiers/${tierId}/parts/souscription`, {
+    shares_count: sharesCount,
+  })
+  return data
+}
+
+/** Souscription AU COMPTANT (caissier) — souscrire + payer d'un geste : devient membre. */
+export async function souscrireComptant(
+  tierId: string,
+  sharesCount: number,
+): Promise<ResultatParts> {
+  const { data } = await api.post<ResultatParts>(`/tiers/${tierId}/parts/souscription-comptant`, {
+    shares_count: sharesCount,
+  })
+  return data
+}
+
+/** Libération (caissier) — paiement de parts souscrites non libérées : le capital devient réel. */
+export async function libererParts(tierId: string, sharesCount: number): Promise<ResultatParts> {
+  const { data } = await api.post<ResultatParts>(`/tiers/${tierId}/parts/liberation`, {
+    shares_count: sharesCount,
+  })
+  return data
+}
+
+/** Message d'un refus serveur (detail métier) affiché TEL QUEL — langage humain, jamais brut. */
+export function messageRefusParts(erreur: unknown, defaut: string): string {
+  if (erreur instanceof AxiosError) {
+    const detail = erreur.response?.data?.detail
+    if (typeof detail === 'string') return detail
+  }
+  return defaut
+}
+
 // --- création --------------------------------------------------------------------------
 
 /** Communs à toute création. primary_agency_id null = « mon agence » (dérivée du claim). */

@@ -699,6 +699,39 @@ export const LIBELLES = {
       remboursement: 'Remboursement',
       annulation: 'Annulation',
     } as Record<string, string>,
+
+    // --- Actions (bloc 2) : souscrire / libérer = « devenir membre » ---
+    // Réservé au tiers ACTIF ; sinon on l'explique (comme le gate KYC de l'épargne).
+    gateNonActif:
+      'Ce tiers doit être actif (dossier validé) avant de souscrire des parts sociales.',
+    // Le geste central, guidé : combien de parts -> total à payer -> confirmer.
+    actionComptant: 'Souscrire au comptant (devenir membre)',
+    actionComptantAide:
+      'Le membre souscrit ET paie ses parts en une fois au guichet : il devient sociétaire immédiatement.',
+    actionEngagement: 'Souscrire (engagement, à libérer ensuite)',
+    actionEngagementAide:
+      'Enregistre l’engagement du membre sans paiement. Il deviendra sociétaire à la libération.',
+    actionLiberer: 'Libérer des parts (encaisser)',
+    actionLibererAide:
+      'Le membre paie des parts déjà souscrites : le capital devient réel, il devient sociétaire.',
+    nbParts: 'Nombre de parts',
+    nbPartsPlaceholder: 'Ex. 10',
+    // {parts}, {valeur}, {total} injectés.
+    totalAPayer: '{parts} parts × {valeur} = {total} à encaisser',
+    totalSouscrit: '{parts} parts × {valeur} = {total} souscrits',
+    continuer: 'Continuer',
+    // Confirmation — on répète le geste et son effet.
+    confirmerComptant: 'Encaisser {total} et rendre ce tiers MEMBRE ?',
+    confirmerEngagement: 'Enregistrer la souscription de {parts} parts (sans paiement) ?',
+    confirmerLiberation: 'Encaisser {total} pour libérer {parts} parts ?',
+    confirmer: 'Confirmer',
+    enCours: 'Traitement…',
+    annuler: 'Annuler',
+    // Succès — le badge a basculé, on le dit.
+    succesMembre: 'Fait. Ce tiers est désormais MEMBRE (sociétaire).',
+    succesEngagement: 'Souscription enregistrée. À libérer pour devenir membre.',
+    autreOperation: 'Nouvelle opération',
+    echec: 'L’opération a échoué. Réessayez.',
   },
 
   epargne: {

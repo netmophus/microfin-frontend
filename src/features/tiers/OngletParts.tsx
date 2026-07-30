@@ -1,9 +1,21 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Coins } from 'lucide-react'
+import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { chargerParts } from '@/features/tiers/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useAPermission } from '@/features/auth/useProfil'
+import {
+  chargerParts,
+  libererParts,
+  messageRefusParts,
+  souscrireComptant,
+  souscrireParts,
+  type FichePartsSociales,
+} from '@/features/tiers/api'
 import { BadgeSocietariat } from '@/features/tiers/badges'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -19,12 +31,13 @@ function fmt(gabarit: string, valeurs: Record<string, string>): string {
 }
 
 /**
- * Onglet « Parts sociales » de la fiche tiers — LECTURE (bloc 1). Montre le capital détenu, les
- * parts (libérées / non libérées), l'état de sociétariat, le barème PROVISOIRE, et l'historique.
- * Rend LISIBLE le cas « client qui détient encore des parts » (remboursement partiel sous le
- * minimum) par un bandeau explicite. Les actions (souscrire/libérer/rembourser) viennent ensuite.
+ * Onglet « Parts sociales » — consultation + actions (« devenir membre »). Séparation des rôles :
+ * souscription (engagement) = chargé de clientèle ; libération / comptant (encaissement) =
+ * caissier ; remboursement = responsable (bloc suivant). Au comptant / à la libération, le badge
+ * Client → Membre bascule sous les yeux (invalidation de la fiche). Le cas « client qui détient
+ * encore des parts » est rendu LISIBLE par un bandeau.
  */
-export function OngletParts({ tierId }: { tierId: string }) {
+export function OngletParts({ tierId, tierStatut }: { tierId: string; tierStatut: string }) {
   const requete = useQuery({
     queryKey: ['tiers', 'parts', tierId],
     queryFn: () => chargerParts(tierId),
@@ -79,6 +92,9 @@ export function OngletParts({ tierId }: { tierId: string }) {
         </Alert>
       )}
 
+      {/* Actions : souscrire / libérer (« devenir membre »). */}
+      <ActionsParts tierId={tierId} tierStatut={tierStatut} fiche={f} />
+
       {/* Barème PROVISOIRE (valeur d'une part, minimum) — non validé par l'expert. */}
       <div className="rounded-md border p-3 text-sm">
         <div className="mb-1 flex items-center gap-2">
@@ -91,7 +107,8 @@ export function OngletParts({ tierId }: { tierId: string }) {
         </div>
         <div className="flex flex-wrap gap-x-8 gap-y-1 text-muted-foreground">
           <span>
-            {P.valeurPart} : <span className="tabular-nums text-foreground">{fcfa(f.unit_value)}</span>
+            {P.valeurPart} :{' '}
+            <span className="tabular-nums text-foreground">{fcfa(f.unit_value)}</span>
           </span>
           <span>
             {P.minimum} :{' '}
@@ -135,5 +152,174 @@ export function OngletParts({ tierId }: { tierId: string }) {
         )}
       </div>
     </div>
+  )
+}
+
+type Mode = 'comptant' | 'engagement' | 'liberation'
+
+function ActionsParts({
+  tierId,
+  tierStatut,
+  fiche,
+}: {
+  tierId: string
+  tierStatut: string
+  fiche: FichePartsSociales
+}) {
+  const client = useQueryClient()
+  const peutPayer = useAPermission('tiers.shares.pay') // caissier : encaisse
+  const peutSouscrire = useAPermission('tiers.shares.subscribe') // chargé : engagement
+  const [mode, setMode] = useState<Mode | null>(null)
+  const [nb, setNb] = useState('')
+  const [confirmation, setConfirmation] = useState(false)
+  const [succes, setSucces] = useState<string | null>(null)
+
+  const nbNum = Number.parseInt(nb.replace(/\D/g, ''), 10) || 0
+  const total = nbNum * fiche.unit_value
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      if (mode === 'comptant') return souscrireComptant(tierId, nbNum)
+      if (mode === 'engagement') return souscrireParts(tierId, nbNum)
+      return libererParts(tierId, nbNum)
+    },
+    onSuccess: (res) => {
+      // Invalide la fiche (le badge Client/Membre en tête) ET les parts : la bascule est visible.
+      void client.invalidateQueries({ queryKey: ['tiers'] })
+      setSucces(res.is_member ? P.succesMembre : P.succesEngagement)
+      setMode(null)
+      setNb('')
+      setConfirmation(false)
+    },
+  })
+
+  // Aucun droit d'action : rien (la consultation reste visible au-dessus).
+  if (!peutPayer && !peutSouscrire) return null
+
+  // Réservé au tiers ACTIF (gate KYC) — on l'explique, comme l'ouverture d'un compte d'épargne.
+  if (tierStatut !== 'actif') {
+    return (
+      <Alert role="note">
+        <AlertDescription>{P.gateNonActif}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (succes) {
+    return (
+      <Alert role="status">
+        <AlertDescription className="space-y-2">
+          <p>{succes}</p>
+          <Button size="sm" variant="ghost" onClick={() => setSucces(null)}>
+            {P.autreOperation}
+          </Button>
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  const gabaritTotal = mode === 'engagement' ? P.totalSouscrit : P.totalAPayer
+  const gabaritConfirme =
+    mode === 'comptant'
+      ? P.confirmerComptant
+      : mode === 'engagement'
+        ? P.confirmerEngagement
+        : P.confirmerLiberation
+
+  return (
+    <section className="space-y-3 rounded-md border p-4">
+      {/* Choix de l'action selon le rôle et l'état. */}
+      {!mode && (
+        <div className="flex flex-wrap gap-2">
+          {peutPayer && (
+            <Button size="sm" onClick={() => setMode('comptant')}>
+              {P.actionComptant}
+            </Button>
+          )}
+          {peutSouscrire && (
+            <Button size="sm" variant="outline" onClick={() => setMode('engagement')}>
+              {P.actionEngagement}
+            </Button>
+          )}
+          {peutPayer && fiche.shares_non_liberees > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setMode('liberation')}>
+              {P.actionLiberer}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Saisie guidée : combien de parts -> total. */}
+      {mode && !confirmation && (
+        <form
+          className="space-y-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (nbNum > 0) setConfirmation(true)
+          }}
+        >
+          <Label htmlFor="nb-parts">{P.nbParts}</Label>
+          <Input
+            id="nb-parts"
+            inputMode="numeric"
+            value={nb}
+            onChange={(e) => setNb(e.target.value)}
+            placeholder={P.nbPartsPlaceholder}
+          />
+          {nbNum > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {fmt(gabaritTotal, {
+                parts: String(nbNum),
+                valeur: fcfa(fiche.unit_value),
+                total: fcfa(total),
+              })}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={nbNum <= 0}>
+              {P.continuer}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setMode(null)
+                setNb('')
+              }}
+            >
+              {P.annuler}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {/* Confirmation — on répète le geste et son effet (le badge va basculer). */}
+      {mode && confirmation && (
+        <div className="space-y-3 rounded-md border border-brand/40 bg-brand-subtle/40 p-3">
+          <p className="text-sm font-medium">
+            {fmt(gabaritConfirme, { parts: String(nbNum), total: fcfa(total) })}
+          </p>
+          {mutation.isError && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>{messageRefusParts(mutation.error, P.echec)}</AlertDescription>
+            </Alert>
+          )}
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+              {mutation.isPending ? P.enCours : P.confirmer}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setConfirmation(false)}
+              disabled={mutation.isPending}
+            >
+              {P.annuler}
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
