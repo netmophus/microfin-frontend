@@ -650,6 +650,13 @@ export const LIBELLES = {
     activationIntro: 'L’activation requiert que toutes ces conditions soient remplies :',
     activationEnCours: 'Vérification des conditions…',
 
+    // Désactivation bloquée par des engagements — MÊME motif que l'activation : on affiche ce qui
+    // bloque et QUOI faire, et on n'offre pas de bouton qui échouerait. Le bouton revient quand il
+    // n'y a plus d'engagement.
+    desactiverBloqueTitre: 'Désactivation impossible pour l’instant',
+    desactiverBloqueIntro: 'Réglez d’abord ces engagements :',
+    desactiverVerification: 'Vérification des engagements…',
+
     erreur: 'L’action a échoué. Réessayez dans un instant.',
     interdit: 'Vous n’avez pas la permission d’effectuer cette action.',
   },

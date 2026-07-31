@@ -5,7 +5,12 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ActionsTier } from '@/features/tiers/actions-tier'
-import { ErreurTransition, executerTransition, type FicheTier } from '@/features/tiers/api'
+import {
+  ErreurTransition,
+  executerTransition,
+  lireEngagementsDesactivation,
+  type FicheTier,
+} from '@/features/tiers/api'
 
 /**
  * Boutons de transition — selon le statut ET les permissions, avec confirmation. Le cas
@@ -22,10 +27,11 @@ vi.mock('@/features/auth/useProfil', () => ({
 
 vi.mock('@/features/tiers/api', async () => {
   const reel = await vi.importActual<typeof import('@/features/tiers/api')>('@/features/tiers/api')
-  return { ...reel, executerTransition: vi.fn() }
+  return { ...reel, executerTransition: vi.fn(), lireEngagementsDesactivation: vi.fn() }
 })
 
 const executerSimule = vi.mocked(executerTransition)
+const engagementsSimule = vi.mocked(lireEngagementsDesactivation)
 
 function fiche(partiel: Partial<FicheTier>): FicheTier {
   return {
@@ -52,6 +58,7 @@ function afficher(f: FicheTier) {
 beforeEach(() => {
   vi.clearAllMocks()
   etat.permissions = []
+  engagementsSimule.mockResolvedValue([]) // par défaut : aucun blocage
 })
 
 describe('ActionsTier', () => {
@@ -134,6 +141,53 @@ describe('ActionsTier', () => {
     afficher(fiche({ status: 'desactive', tier_type: 'individual' }))
 
     expect(screen.queryByRole('button', { name: 'Réactiver la fiche' })).toBeNull()
+  })
+
+  it('« Désactiver » avec engagements : AUCUN bouton Confirmer, on affiche ce qui bloque et quoi faire', async () => {
+    etat.permissions = ['tiers.deactivate']
+    engagementsSimule.mockResolvedValue([
+      {
+        domaine: 'parts_sociales',
+        reference: 'x',
+        libelle:
+          'Ce membre détient 10 part(s) sociale(s) — capital 50 000 F. Remboursez-les avant de le désactiver.',
+      },
+      {
+        domaine: 'epargne',
+        reference: 'EP-1',
+        libelle: 'Ce membre a un compte d’épargne EP-1 ouvert (solde 0) : fermez-le avant de désactiver.',
+      },
+    ])
+    const user = userEvent.setup()
+
+    afficher(fiche({ status: 'actif', tier_type: 'individual' }))
+    await user.click(screen.getByRole('button', { name: 'Désactiver' }))
+    const dialogue = screen.getByRole('alertdialog')
+
+    // Les DEUX blocages (parts + épargne), traités du même motif, avec le message actionnable.
+    expect(await within(dialogue).findByText(/Remboursez-les avant/)).toBeVisible()
+    expect(within(dialogue).getByText(/fermez-le avant/)).toBeVisible()
+    expect(within(dialogue).getByText(/Désactivation impossible/)).toBeVisible()
+    // Pas de bouton qui échouerait.
+    expect(
+      within(dialogue).queryByRole('button', { name: 'Désactiver définitivement' }),
+    ).toBeNull()
+    expect(executerSimule).not.toHaveBeenCalled()
+  })
+
+  it('« Désactiver » sans engagement : le bouton Confirmer est proposé', async () => {
+    etat.permissions = ['tiers.deactivate']
+    engagementsSimule.mockResolvedValue([]) // plus aucun engagement
+    const user = userEvent.setup()
+
+    afficher(fiche({ status: 'actif', tier_type: 'individual' }))
+    await user.click(screen.getByRole('button', { name: 'Désactiver' }))
+    const dialogue = screen.getByRole('alertdialog')
+
+    // Le bouton revient quand il n'y a plus de blocage.
+    expect(
+      await within(dialogue).findByRole('button', { name: 'Désactiver définitivement' }),
+    ).toBeVisible()
   })
 
   it('une collision de pièce à la restauration nomme la fiche avec un lien', async () => {

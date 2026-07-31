@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -9,8 +9,10 @@ import { useProfil } from '@/features/auth/useProfil'
 import {
   ErreurTransition,
   executerTransition,
+  lireEngagementsDesactivation,
   type ConditionManquante,
   type EchecTransition,
+  type EngagementDesactivation,
   type FicheTier,
   type TransitionNom,
 } from '@/features/tiers/api'
@@ -149,6 +151,14 @@ export function ActionsTier({ tier, onChangement }: { tier: FicheTier; onChangem
     },
   })
 
+  // Les engagements qui BLOQUENT la désactivation, chargés AVANT de proposer « Confirmer ».
+  // Même motif que les conditions d'activation : on ne montre pas un bouton qui échouerait.
+  const engagements = useQuery({
+    queryKey: ['tiers', 'engagements-desactivation', tier.id],
+    queryFn: () => lireEngagementsDesactivation(tier.id),
+    enabled: action === 'deactivate',
+  })
+
   const possibles = actionsPossibles(tier.status, tier.tier_type).filter((nom) =>
     permissions.includes(META[nom].permission),
   )
@@ -207,6 +217,9 @@ export function ActionsTier({ tier, onChangement }: { tier: FicheTier; onChangem
           erreur={erreur}
           doublon={doublon}
           enCours={mutation.isPending}
+          // Seule la désactivation porte des engagements bloquants ; sinon undefined = pas de blocage.
+          engagements={action === 'deactivate' ? (engagements.data ?? []) : undefined}
+          engagementsEnCours={action === 'deactivate' && engagements.isPending}
           onConfirmer={() => mutation.mutate(action)}
           onAnnuler={fermer}
         />
@@ -223,6 +236,8 @@ function PanneauConfirmation({
   erreur,
   doublon,
   enCours,
+  engagements,
+  engagementsEnCours,
   onConfirmer,
   onAnnuler,
 }: {
@@ -232,9 +247,14 @@ function PanneauConfirmation({
   erreur: string | null
   doublon: Doublon | null
   enCours: boolean
+  // undefined = transition sans blocage ; [] = vérifié, aucun blocage ; [...] = blocages actifs.
+  engagements?: EngagementDesactivation[]
+  engagementsEnCours?: boolean
   onConfirmer: () => void
   onAnnuler: () => void
 }) {
+  const bloque = (engagements?.length ?? 0) > 0
+
   return (
     <div
       role="alertdialog"
@@ -243,10 +263,26 @@ function PanneauConfirmation({
         meta.danger ? 'border-destructive/40 bg-destructive/5' : 'border-amber-300 bg-amber-50'
       }`}
     >
-      <h3 className="font-semibold">{meta.titre}</h3>
-      <p className="text-sm">{meta.avertissement}</p>
+      <h3 className="font-semibold">{bloque ? A.desactiverBloqueTitre : meta.titre}</h3>
 
-      {meta.motif && (
+      {/* BLOQUÉ : on affiche ce qui empêche (et QUOI faire), sans bouton qui échouerait. Même
+          motif que les conditions d'activation. Le bouton Confirmer revient quand la liste est vide. */}
+      {bloque ? (
+        <>
+          <p className="text-sm">{A.desactiverBloqueIntro}</p>
+          <ul className="list-disc space-y-1 pl-5 text-sm">
+            {engagements?.map((e) => <li key={`${e.domaine}-${e.reference}`}>{e.libelle}</li>)}
+          </ul>
+        </>
+      ) : (
+        <p className="text-sm">{meta.avertissement}</p>
+      )}
+
+      {engagementsEnCours && (
+        <p className="text-sm text-muted-foreground">{A.desactiverVerification}</p>
+      )}
+
+      {meta.motif && !bloque && (
         <div className="space-y-1.5">
           <Label htmlFor="motif-transition">{A.motif}</Label>
           <textarea
@@ -285,16 +321,19 @@ function PanneauConfirmation({
       )}
 
       <div className="flex gap-3">
-        <Button
-          type="button"
-          variant={meta.danger ? 'destructive' : 'default'}
-          disabled={enCours}
-          onClick={onConfirmer}
-        >
-          {meta.confirmer}
-        </Button>
+        {/* Le bouton n'existe PAS tant qu'un engagement bloque (ni tant qu'on vérifie). */}
+        {!bloque && !engagementsEnCours && (
+          <Button
+            type="button"
+            variant={meta.danger ? 'destructive' : 'default'}
+            disabled={enCours}
+            onClick={onConfirmer}
+          >
+            {meta.confirmer}
+          </Button>
+        )}
         <Button type="button" variant="outline" disabled={enCours} onClick={onAnnuler}>
-          {A.annuler}
+          {bloque ? A.fermer : A.annuler}
         </Button>
       </div>
     </div>

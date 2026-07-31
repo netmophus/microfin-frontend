@@ -179,6 +179,21 @@ export async function lireTimeline(id: string): Promise<EvenementTimeline[]> {
   return reponse.data
 }
 
+/** Un engagement ouvert qui empêche la désactivation. `libelle` est actionnable (dit quoi faire). */
+export interface EngagementDesactivation {
+  domaine: string // 'epargne' | 'parts_sociales' | …
+  reference: string
+  libelle: string
+}
+
+/** Les blocages à la désactivation, AVANT de proposer le bouton (symétrie des conditions KYC). */
+export async function lireEngagementsDesactivation(
+  id: string,
+): Promise<EngagementDesactivation[]> {
+  const { data } = await api.get<EngagementDesactivation[]>(`/tiers/${id}/deactivation-engagements`)
+  return data
+}
+
 // --- parts sociales (PS1b) -------------------------------------------------------------
 
 export interface MouvementParts {
