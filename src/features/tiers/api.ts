@@ -243,6 +243,22 @@ export async function libererParts(tierId: string, sharesCount: number): Promise
   return data
 }
 
+/** Remboursement (responsable) — rend le capital libéré : le membre récupère son argent (D 1021 / C caisse). */
+export async function rembourserParts(tierId: string, sharesCount: number): Promise<ResultatParts> {
+  const { data } = await api.post<ResultatParts>(`/tiers/${tierId}/parts/remboursement`, {
+    shares_count: sharesCount,
+  })
+  return data
+}
+
+/** Annulation (responsable) — solde des parts NON libérées (promesse jamais payée), sans caisse. */
+export async function annulerParts(tierId: string, sharesCount: number): Promise<ResultatParts> {
+  const { data } = await api.post<ResultatParts>(`/tiers/${tierId}/parts/annulation`, {
+    shares_count: sharesCount,
+  })
+  return data
+}
+
 /** Message d'un refus serveur (detail métier) affiché TEL QUEL — langage humain, jamais brut. */
 export function messageRefusParts(erreur: unknown, defaut: string): string {
   if (erreur instanceof AxiosError) {

@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
 import {
+  annulerParts,
   chargerParts,
   libererParts,
   messageRefusParts,
+  rembourserParts,
   souscrireComptant,
   souscrireParts,
   type FichePartsSociales,
@@ -155,7 +157,7 @@ export function OngletParts({ tierId, tierStatut }: { tierId: string; tierStatut
   )
 }
 
-type Mode = 'comptant' | 'engagement' | 'liberation'
+type Mode = 'comptant' | 'engagement' | 'liberation' | 'remboursement' | 'annulation'
 
 function ActionsParts({
   tierId,
@@ -169,6 +171,7 @@ function ActionsParts({
   const client = useQueryClient()
   const peutPayer = useAPermission('tiers.shares.pay') // caissier : encaisse
   const peutSouscrire = useAPermission('tiers.shares.subscribe') // chargé : engagement
+  const peutRembourser = useAPermission('tiers.shares.refund') // responsable : sortie
   const [mode, setMode] = useState<Mode | null>(null)
   const [nb, setNb] = useState('')
   const [confirmation, setConfirmation] = useState(false)
@@ -176,17 +179,26 @@ function ActionsParts({
 
   const nbNum = Number.parseInt(nb.replace(/\D/g, ''), 10) || 0
   const total = nbNum * fiche.unit_value
+  const sortie = mode === 'remboursement' || mode === 'annulation'
 
   const mutation = useMutation({
     mutationFn: () => {
       if (mode === 'comptant') return souscrireComptant(tierId, nbNum)
       if (mode === 'engagement') return souscrireParts(tierId, nbNum)
-      return libererParts(tierId, nbNum)
+      if (mode === 'liberation') return libererParts(tierId, nbNum)
+      if (mode === 'remboursement') return rembourserParts(tierId, nbNum)
+      return annulerParts(tierId, nbNum)
     },
     onSuccess: (res) => {
       // Invalide la fiche (le badge Client/Membre en tête) ET les parts : la bascule est visible.
       void client.invalidateQueries({ queryKey: ['tiers'] })
-      setSucces(res.is_member ? P.succesMembre : P.succesEngagement)
+      if (mode === 'remboursement') {
+        setSucces(res.is_member ? P.succesRembourse : P.succesRedevientClient)
+      } else if (mode === 'annulation') {
+        setSucces(P.succesRembourse)
+      } else {
+        setSucces(res.is_member ? P.succesMembre : P.succesEngagement)
+      }
       setMode(null)
       setNb('')
       setConfirmation(false)
@@ -194,16 +206,9 @@ function ActionsParts({
   })
 
   // Aucun droit d'action : rien (la consultation reste visible au-dessus).
-  if (!peutPayer && !peutSouscrire) return null
+  if (!peutPayer && !peutSouscrire && !peutRembourser) return null
 
-  // Réservé au tiers ACTIF (gate KYC) — on l'explique, comme l'ouverture d'un compte d'épargne.
-  if (tierStatut !== 'actif') {
-    return (
-      <Alert role="note">
-        <AlertDescription>{P.gateNonActif}</AlertDescription>
-      </Alert>
-    )
-  }
+  const actif = tierStatut === 'actif'
 
   if (succes) {
     return (
@@ -218,35 +223,60 @@ function ActionsParts({
     )
   }
 
+  // Souscrire/libérer = gate KYC (tiers actif) ; rembourser/annuler = sortie, pas de gate
+  // (un membre suspendu doit pouvoir récupérer son capital).
   const gabaritTotal = mode === 'engagement' ? P.totalSouscrit : P.totalAPayer
+  const remboursementTotal = mode === 'remboursement' && nbNum === fiche.shares_liberees
   const gabaritConfirme =
     mode === 'comptant'
       ? P.confirmerComptant
       : mode === 'engagement'
         ? P.confirmerEngagement
-        : P.confirmerLiberation
+        : mode === 'liberation'
+          ? P.confirmerLiberation
+          : mode === 'annulation'
+            ? P.confirmerAnnulation
+            : remboursementTotal
+              ? P.confirmerRemboursementTotal
+              : P.confirmerRemboursement
 
   return (
     <section className="space-y-3 rounded-md border p-4">
       {/* Choix de l'action selon le rôle et l'état. */}
       {!mode && (
         <div className="flex flex-wrap gap-2">
-          {peutPayer && (
+          {actif && peutPayer && (
             <Button size="sm" onClick={() => setMode('comptant')}>
               {P.actionComptant}
             </Button>
           )}
-          {peutSouscrire && (
+          {actif && peutSouscrire && (
             <Button size="sm" variant="outline" onClick={() => setMode('engagement')}>
               {P.actionEngagement}
             </Button>
           )}
-          {peutPayer && fiche.shares_non_liberees > 0 && (
+          {actif && peutPayer && fiche.shares_non_liberees > 0 && (
             <Button size="sm" variant="outline" onClick={() => setMode('liberation')}>
               {P.actionLiberer}
             </Button>
           )}
+          {/* Sortie du sociétariat — responsable, sans gate KYC. */}
+          {peutRembourser && fiche.shares_liberees > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setMode('remboursement')}>
+              {P.actionRembourser}
+            </Button>
+          )}
+          {peutRembourser && fiche.shares_non_liberees > 0 && (
+            <Button size="sm" variant="ghost" onClick={() => setMode('annulation')}>
+              {P.actionAnnuler}
+            </Button>
+          )}
         </div>
+      )}
+
+      {/* Souscription indisponible pour un tiers non actif : on l'explique. */}
+      {!mode && !actif && (peutPayer || peutSouscrire) && (
+        <p className="text-sm text-muted-foreground">{P.gateNonActif}</p>
       )}
 
       {/* Saisie guidée : combien de parts -> total. */}
@@ -266,7 +296,18 @@ function ActionsParts({
             onChange={(e) => setNb(e.target.value)}
             placeholder={P.nbPartsPlaceholder}
           />
-          {nbNum > 0 && (
+          {nbNum > 0 && mode === 'remboursement' && (
+            <p className="text-sm font-medium">
+              {/* Montant restitué AFFICHÉ avant de confirmer — on ne rembourse pas à l'aveugle. */}
+              {fmt(P.restitution, { parts: String(nbNum), total: fcfa(total) })}
+            </p>
+          )}
+          {nbNum > 0 && mode === 'annulation' && (
+            <p className="text-sm text-muted-foreground">
+              {nbNum} {nbNum > 1 ? 'parts' : 'part'} — {P.actionAnnuler.toLowerCase()}
+            </p>
+          )}
+          {nbNum > 0 && !sortie && (
             <p className="text-sm text-muted-foreground">
               {fmt(gabaritTotal, {
                 parts: String(nbNum),
@@ -294,9 +335,16 @@ function ActionsParts({
         </form>
       )}
 
-      {/* Confirmation — on répète le geste et son effet (le badge va basculer). */}
+      {/* Confirmation — on répète le geste et son effet (le badge va basculer). Sortie = ton
+          d'avertissement (on rend de l'argent / on quitte le sociétariat) ; adhésion = bleu. */}
       {mode && confirmation && (
-        <div className="space-y-3 rounded-md border border-brand/40 bg-brand-subtle/40 p-3">
+        <div
+          className={
+            sortie
+              ? 'space-y-3 rounded-md border border-warning/40 bg-warning-subtle/40 p-3'
+              : 'space-y-3 rounded-md border border-brand/40 bg-brand-subtle/40 p-3'
+          }
+        >
           <p className="text-sm font-medium">
             {fmt(gabaritConfirme, { parts: String(nbNum), total: fcfa(total) })}
           </p>

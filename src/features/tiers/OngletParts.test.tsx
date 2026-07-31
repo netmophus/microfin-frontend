@@ -2,7 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { chargerParts, souscrireComptant, type FichePartsSociales } from '@/features/tiers/api'
+import {
+  chargerParts,
+  rembourserParts,
+  souscrireComptant,
+  type FichePartsSociales,
+} from '@/features/tiers/api'
 import { OngletParts } from '@/features/tiers/OngletParts'
 
 /**
@@ -27,11 +32,14 @@ vi.mock('@/features/tiers/api', async () => {
     souscrireComptant: vi.fn(),
     souscrireParts: vi.fn(),
     libererParts: vi.fn(),
+    rembourserParts: vi.fn(),
+    annulerParts: vi.fn(),
   }
 })
 
 const partsSimule = vi.mocked(chargerParts)
 const comptantSimule = vi.mocked(souscrireComptant)
+const rembourserSimule = vi.mocked(rembourserParts)
 
 function base(o: Partial<FichePartsSociales> = {}): FichePartsSociales {
   return {
@@ -126,5 +134,38 @@ describe('OngletParts', () => {
 
     expect(await screen.findByText(/doit être actif/)).toBeVisible()
     expect(screen.queryByRole('button', { name: /Souscrire au comptant/ })).toBeNull()
+  })
+
+  it('responsable : remboursement total → capital restitué affiché, redevient CLIENT', async () => {
+    etat.permissions = ['tiers.shares.read', 'tiers.shares.refund']
+    partsSimule.mockResolvedValue(base({ is_member: true, shares_liberees: 10, capital_libere: 50000 }))
+    rembourserSimule.mockResolvedValue({
+      is_member: false,
+      shares_liberees: 0,
+      shares_non_liberees: 0,
+      entry_number: 'CA-2026-000009',
+    })
+    afficher('actif')
+
+    fireEvent.click(await screen.findByRole('button', { name: /Rembourser des parts/ }))
+    fireEvent.change(screen.getByLabelText('Nombre de parts'), { target: { value: '10' } })
+    // Montant restitué AFFICHÉ avant de confirmer (on ne rembourse pas à l'aveugle).
+    expect(screen.getByText(/50 000 F seront restitués/)).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    // Confirmation : le remboursement TOTAL prévient qu'il redevient client.
+    expect(screen.getByText(/récupère tout son capital/)).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
+
+    await waitFor(() => expect(rembourserSimule).toHaveBeenCalledWith('t1', 10))
+    expect(await screen.findByText(/a quitté le sociétariat/)).toBeVisible()
+  })
+
+  it('le chargé ne voit PAS le bouton Rembourser (réservé responsable)', async () => {
+    etat.permissions = ['tiers.shares.read', 'tiers.shares.subscribe']
+    partsSimule.mockResolvedValue(base({ is_member: true, shares_liberees: 10, capital_libere: 50000 }))
+    afficher('actif')
+
+    expect(await screen.findByText('50 000 F')).toBeVisible()
+    expect(screen.queryByRole('button', { name: /Rembourser/ })).toBeNull()
   })
 })

@@ -732,6 +732,24 @@ export const LIBELLES = {
     succesEngagement: 'Souscription enregistrée. À libérer pour devenir membre.',
     autreOperation: 'Nouvelle opération',
     echec: 'L’opération a échoué. Réessayez.',
+
+    // --- Remboursement / annulation (bloc 3, responsable) ---
+    actionRembourser: 'Rembourser des parts',
+    actionRembourserAide:
+      'Rendre au membre le capital de ses parts libérées. Remboursement total = il quitte le sociétariat et redevient client.',
+    actionAnnuler: 'Annuler une souscription non libérée',
+    // Montant restitué AFFICHÉ avant de confirmer (on ne rembourse pas à l'aveugle).
+    // {parts}, {total} injectés.
+    restitution: '{total} seront restitués au membre pour {parts} parts.',
+    confirmerRemboursement: 'Restituer {total} et retirer {parts} parts ?',
+    confirmerRemboursementTotal:
+      'Restituer {total} : ce membre récupère tout son capital et redevient CLIENT. Confirmer ?',
+    confirmerAnnulation: 'Annuler {parts} parts souscrites non libérées (aucun mouvement d’argent) ?',
+    succesRembourse: 'Capital restitué.',
+    succesRedevientClient: 'Capital restitué. Ce tiers redevient CLIENT (a quitté le sociétariat).',
+    // Résiduel après remboursement partiel — lisible.
+    // {parts}, {capital} injectés.
+    residuel: 'Capital restant : {capital} ({parts}).',
   },
 
   epargne: {
