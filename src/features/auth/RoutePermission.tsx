@@ -20,12 +20,16 @@ import { LIBELLES } from '@/libelles/fr'
  * ATTENDRE LE PROFIL est essentiel : pendant son chargement, la permission paraît « absente »
  * et rediriger alors renverrait à tort quelqu'un qui a pourtant le droit. Même précaution que
  * l'attente de l'amorçage dans RouteProtegee.
+ *
+ * `permission` accepte un tableau pour un écran couvert par PLUSIEURS permissions distinctes
+ * (ex. /guichet : épargne OU parts) — ANY-OF, la première suffit. Un écran à onglets où chaque
+ * onglet gate sa propre action reste accessible dès qu'on a de quoi faire AU MOINS une chose.
  */
 export function RoutePermission({
   permission,
   children,
 }: {
-  permission: string
+  permission: string | string[]
   children: ReactNode
 }) {
   const profil = useProfil()
@@ -34,7 +38,9 @@ export function RoutePermission({
     return <p className="py-8 text-sm text-muted-foreground">{LIBELLES.chargement}</p>
   }
 
-  if (!profil.data?.permissions.includes(permission)) {
+  const requises = Array.isArray(permission) ? permission : [permission]
+  const detenues = profil.data?.permissions ?? []
+  if (!requises.some((p) => detenues.includes(p))) {
     return <Navigate to="/" replace />
   }
 

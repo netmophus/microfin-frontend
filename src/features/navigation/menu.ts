@@ -21,8 +21,9 @@ interface EntreeActive {
   etat: 'actif'
   libelle: string
   chemin: string
-  /** Code de permission requis pour VOIR l'entrée. Absente = visible par tout connecté. */
-  permission?: string
+  /** Permission(s) requise(s) pour VOIR l'entrée. Un tableau = ANY-OF (le guichet : épargne OU
+   * parts, un seul onglet suffit à justifier l'entrée). Absente = visible par tout connecté. */
+  permission?: string | string[]
 }
 
 /** Une entrée À VENIR : montrée, mais non disponible. Ni chemin, ni clic. */
@@ -83,12 +84,13 @@ export const MENU: readonly GroupeMenu[] = [
     titre: M.groupes.operations,
     entrees: [
       aVenir(M.entrees.caisseGuichet),
-      // Guichet épargne : dépôt/retrait. Visible pour qui opère (le caissier).
+      // Guichet (dépôt/retrait épargne + comptant/libération parts) : à onglets, visible dès
+      // qu'on opère sur AU MOINS l'un des deux (le caissier a généralement les deux).
       {
         etat: 'actif',
         libelle: M.entrees.guichetEpargne,
         chemin: '/guichet',
-        permission: 'epargne.operation.deposit',
+        permission: ['epargne.operation.deposit', 'tiers.shares.pay'],
       },
       // Versement des intérêts : acte d'INSTITUTION, réservé à la direction.
       {
@@ -148,11 +150,12 @@ export const MENU: readonly GroupeMenu[] = [
  */
 export function menuVisible(permissions: readonly string[]): GroupeMenu[] {
   const detient = new Set(permissions)
+  const visible = (p: string | string[]) =>
+    Array.isArray(p) ? p.some((x) => detient.has(x)) : detient.has(p)
   return MENU.map((groupe) => ({
     ...groupe,
     entrees: groupe.entrees.filter(
-      (entree) =>
-        entree.etat === 'a_venir' || entree.permission === undefined || detient.has(entree.permission),
+      (entree) => entree.etat === 'a_venir' || entree.permission === undefined || visible(entree.permission),
     ),
   })).filter((groupe) => groupe.entrees.length > 0)
 }

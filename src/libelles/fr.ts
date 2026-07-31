@@ -172,7 +172,7 @@ export const LIBELLES = {
       parametrage: 'Paramétrage',
       tiers: 'Tiers (clients / membres)',
       caisseGuichet: 'Caisse / Guichet',
-      guichetEpargne: 'Guichet épargne',
+      guichetEpargne: 'Guichet',
       versementInterets: 'Versement des intérêts',
       rapprochementEpargne: 'Rapprochement épargne',
       epargneDepots: 'Épargne / Dépôts',
@@ -903,7 +903,12 @@ export const LIBELLES = {
   },
 
   guichet: {
-    titre: 'Guichet — dépôt / retrait',
+    // Titre générique de l'écran à ONGLETS (Épargne / Parts sociales) — un seul poste, deux
+    // encaissements possibles, pas de navigation entre deux écrans pendant qu'un client attend.
+    titre: 'Guichet',
+    ongletEpargne: 'Épargne',
+    ongletParts: 'Parts sociales',
+
     intro: 'Saisissez le numéro du livret pour trouver le compte, puis opérez.',
     numeroLabel: 'Numéro de compte',
     numeroPlaceholder: 'EP-2026-0000001',
@@ -930,6 +935,26 @@ export const LIBELLES = {
     succesRetrait: 'Retrait de {montant} enregistré. Pièce {piece}. Nouveau solde : {solde}.',
     echec: 'L’opération a échoué. Réessayez.',
     autreOperation: 'Nouvelle opération',
+  },
+
+  // Onglet « Parts sociales » du guichet — l'encaissement du caissier (comptant / libération).
+  // Le vocabulaire des actions (confirmations, succès, barème) est PARTAGÉ avec tiersParts —
+  // même geste, même mot, qu'on le fasse depuis la fiche ou depuis le guichet.
+  guichetParts: {
+    intro: 'Cherchez un tiers par numéro ou nom, puis encaissez.',
+    rechercherLabel: 'Numéro ou nom',
+    rechercherPlaceholder: 'M-2026-0000001 ou nom',
+    chercher: 'Chercher',
+    rechercheEnCours: 'Recherche…',
+    aucunResultat: 'Aucun tiers ne correspond à cette recherche.',
+    changerRecherche: 'Nouvelle recherche',
+    // Vérification humaine : le nom est proéminent, comme au guichet épargne.
+    tiers: 'Tiers',
+
+    // Confirmations — le NOM est RÉPÉTÉ (même règle qu'au guichet épargne : {montant} sur
+    // {numero}, puis « Confirmez-vous… {membre} »). {parts}, {total}, {nom} injectés.
+    confirmerComptant: 'Encaisser {total} et faire adhérer {nom} ({parts} parts) ?',
+    confirmerLiberation: 'Encaisser {total} pour libérer {parts} parts de {nom} ?',
   },
 
   tiersKyc: {

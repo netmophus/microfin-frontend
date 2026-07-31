@@ -18,7 +18,7 @@ vi.mock('@/features/auth/useProfil', () => ({
   useAPermission: (p: string) => etat.permissions.includes(p),
 }))
 
-function afficher() {
+function afficher(permission: string | string[] = 'tiers.read.basic') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
@@ -28,7 +28,7 @@ function afficher() {
           <Route
             path="/protege"
             element={
-              <RoutePermission permission="tiers.read.basic">
+              <RoutePermission permission={permission}>
                 <div>CONTENU PROTÉGÉ</div>
               </RoutePermission>
             }
@@ -67,5 +67,20 @@ describe('RoutePermission', () => {
     // Ni le contenu (pas encore décidé), ni une redirection prématurée vers l'accueil.
     expect(screen.queryByText('CONTENU PROTÉGÉ')).toBeNull()
     expect(screen.queryByText('ACCUEIL')).toBeNull()
+  })
+
+  it('tableau de permissions (ANY-OF) : une seule des deux suffit (guichet épargne/parts)', () => {
+    etat.permissions = ['tiers.shares.pay'] // n'a QUE l'une des deux
+    afficher(['epargne.operation.deposit', 'tiers.shares.pay'])
+
+    expect(screen.getByText('CONTENU PROTÉGÉ')).toBeVisible()
+  })
+
+  it('tableau de permissions : aucune des deux -> redirige', () => {
+    etat.permissions = ['tiers.read.basic'] // ni l'une ni l'autre
+    afficher(['epargne.operation.deposit', 'tiers.shares.pay'])
+
+    expect(screen.getByText('ACCUEIL')).toBeVisible()
+    expect(screen.queryByText('CONTENU PROTÉGÉ')).toBeNull()
   })
 })

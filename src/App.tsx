@@ -128,7 +128,9 @@ export function App() {
               <Route
                 path="/guichet"
                 element={
-                  <RoutePermission permission="epargne.operation.deposit">
+                  // ANY-OF : le guichet a deux onglets (épargne, parts) ; un seul droit suffit
+                  // pour y entrer, l'autre onglet est simplement absent.
+                  <RoutePermission permission={['epargne.operation.deposit', 'tiers.shares.pay']}>
                     <PageGuichet />
                   </RoutePermission>
                 }
