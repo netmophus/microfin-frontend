@@ -175,6 +175,7 @@ export const LIBELLES = {
       guichetEpargne: 'Guichet',
       versementInterets: 'Versement des intérêts',
       rapprochementEpargne: 'Rapprochement épargne',
+      planComptable: 'Plan de comptes',
       epargneDepots: 'Épargne / Dépôts',
       credit: 'Crédit',
       recouvrement: 'Recouvrement',
@@ -955,6 +956,89 @@ export const LIBELLES = {
     // {numero}, puis « Confirmez-vous… {membre} »). {parts}, {total}, {nom} injectés.
     confirmerComptant: 'Encaisser {total} et faire adhérer {nom} ({parts} parts) ?',
     confirmerLiberation: 'Encaisser {total} pour libérer {parts} parts de {nom} ?',
+  },
+
+  planComptable: {
+    titre: 'Plan de comptes',
+    sousTitre: 'Les comptes du plan RCSFD — consultation et gestion.',
+    rechercher: 'Rechercher — numéro ou libellé',
+    filtreClasse: 'Classe',
+    toutesClasses: 'Toutes les classes',
+    afficherInactifs: 'Afficher les comptes désactivés',
+    nouveauCompte: 'Nouveau compte',
+
+    colonneNumero: 'Numéro',
+    colonneLibelle: 'Libellé',
+    colonneClasse: 'Classe',
+    colonneSens: 'Sens',
+    colonneNature: 'Nature',
+    colonneStatut: 'Statut',
+
+    total: (n: number) => (n <= 1 ? `${n} compte` : `${n} comptes`),
+    page: (courante: number, sur: number) => `Page ${courante} sur ${sur}`,
+    precedent: 'Précédent',
+    suivant: 'Suivant',
+
+    chargement: 'Chargement du plan de comptes…',
+    listeVide: 'Aucun compte pour le moment.',
+    aucunResultat: 'Aucun compte ne correspond à cette recherche.',
+    interdit: 'Vous n’avez pas la permission de consulter le plan de comptes.',
+    erreur: 'Impossible de charger le plan de comptes. Réessayez dans un instant.',
+    introuvable: 'Ce compte est introuvable.',
+
+    sens: { D: 'Débit', C: 'Crédit' } as Record<string, string>,
+    nature: { posting: 'Saisie', regroupement: 'Regroupement' } as Record<string, string>,
+    systeme: 'Système',
+    provisoire: 'provisoire',
+    provisoireAide: 'Compte importé du modèle générique, non encore validé par l’expert.',
+    actif: 'Actif',
+    inactif: 'Désactivé',
+
+    // Création — formulaire inline (comme l'ouverture d'un compte d'épargne).
+    creationNumero: 'Numéro de compte',
+    creationNumeroPlaceholder: 'Ex. 6033',
+    creationLibelle: 'Libellé',
+    creationLibelleCourt: 'Libellé court (facultatif)',
+    creationClasse: 'Classe',
+    creationParent: 'Compte parent (facultatif)',
+    creationParentPlaceholder: 'Ex. 60 — laisser vide si aucun',
+    creationSens: 'Sens normal',
+    creationNature: 'Nature',
+    creationNatureSaisie: 'Compte de saisie (reçoit des écritures)',
+    creationNatureRegroupement: 'Compte de regroupement (total, ne reçoit pas d’écriture)',
+    creationNotes: 'Notes (facultatif)',
+    creer: 'Créer le compte',
+    creationEnCours: 'Création…',
+    annuler: 'Annuler',
+    creationEchec: 'La création a échoué. Réessayez.',
+
+    // Fiche : modifier le libellé (partiel), changer le sens, désactiver — motif obligatoire
+    // sur les deux derniers (acte sensible, tracé).
+    retour: 'Retour au plan de comptes',
+    modifier: 'Modifier le libellé',
+    modifierNotes: 'Notes',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    modificationEchec: 'La modification a échoué. Réessayez.',
+
+    changerSens: 'Changer le sens',
+    changerSensTitre: 'Changer le sens de ce compte ?',
+    changerSensAide:
+      'Le sens normal détermine la lecture du solde (débit ou crédit). Ce changement est tracé.',
+    nouveauSens: 'Nouveau sens',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce changement ?',
+    motifRequis: 'Le motif est obligatoire (au moins 3 caractères).',
+    confirmer: 'Confirmer',
+    changementEnCours: 'Enregistrement…',
+    changerSensEchec: 'Le changement de sens a échoué.',
+
+    desactiver: 'Désactiver ce compte',
+    desactiverTitre: 'Désactiver ce compte ?',
+    desactiverAide:
+      'Un compte désactivé sort des listes courantes et ne peut plus recevoir d’écritures. Refusé s’il porte déjà des écritures ou a des comptes enfants actifs.',
+    desactiverConfirmer: 'Désactiver',
+    desactivationEchec: 'La désactivation a échoué.',
   },
 
   tiersKyc: {

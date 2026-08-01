@@ -107,6 +107,13 @@ export const MENU: readonly GroupeMenu[] = [
     id: 'comptabilite',
     titre: M.groupes.comptabilite,
     entrees: [
+      // Plan de comptes : consultation + gestion unitaire (Bloc 1 du paramétrage comptable).
+      {
+        etat: 'actif',
+        libelle: M.entrees.planComptable,
+        chemin: '/comptabilite/plan',
+        permission: 'compta.plan.read',
+      },
       aVenir(M.entrees.comptaGenerale),
       aVenir(M.entrees.comptaAnalytique),
       // Rapprochement épargne : vue de contrôle réservée à l'audit/direction/comptable.

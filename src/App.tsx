@@ -10,6 +10,8 @@ import { RouteProtegee } from '@/features/auth/RouteProtegee'
 import { AppLayout } from '@/features/layout/AppLayout'
 import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
+import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
+import { PagePlanComptable } from '@/features/comptabilite/PagePlanComptable'
 import { PageGuichet } from '@/features/epargne/PageGuichet'
 import { PageRapprochement } from '@/features/epargne/PageRapprochement'
 import { PageVersementInterets } from '@/features/epargne/PageVersementInterets'
@@ -148,6 +150,22 @@ export function App() {
                 element={
                   <RoutePermission permission="epargne.rapprochement.read">
                     <PageRapprochement />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/plan"
+                element={
+                  <RoutePermission permission="compta.plan.read">
+                    <PagePlanComptable />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/plan/:id"
+                element={
+                  <RoutePermission permission="compta.plan.read">
+                    <PageFicheCompte />
                   </RoutePermission>
                 }
               />
