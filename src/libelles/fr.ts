@@ -176,6 +176,9 @@ export const LIBELLES = {
       versementInterets: 'Versement des intérêts',
       rapprochementEpargne: 'Rapprochement épargne',
       planComptable: 'Plan de comptes',
+      rattachementsEpargne: 'Rattachements épargne',
+      rattachementsCaisse: 'Caisse par agence',
+      parametresParts: 'Paramètres des parts sociales',
       epargneDepots: 'Épargne / Dépôts',
       credit: 'Crédit',
       recouvrement: 'Recouvrement',
@@ -1071,6 +1074,88 @@ export const LIBELLES = {
     importReussi: (crees: number, misAJour: number) =>
       `Import terminé : ${crees} compte(s) créé(s), ${misAJour} compte(s) modifié(s).`,
     recommencer: 'Recommencer',
+  },
+
+  rattachementsEpargne: {
+    titre: 'Rattachements épargne',
+    sousTitre: 'Le compte comptable rattaché à chaque produit d’épargne.',
+    // Répété sur les 3 écrans du Bloc 5 : un rattachement ne change QUE les prochaines
+    // opérations, jamais les écritures déjà passées (elles référencent un compte, pas ce
+    // paramètre) — jamais laissé au silence.
+    avertissement:
+      'Ce changement s’applique aux prochaines opérations, jamais aux écritures déjà passées.',
+    chargement: 'Chargement des rattachements…',
+    listeVide: 'Aucun produit d’épargne actif.',
+    interdit: 'Vous n’avez pas la permission de consulter ces rattachements.',
+    erreur: 'Impossible de charger les rattachements. Réessayez dans un instant.',
+
+    colonneProduit: 'Produit',
+    colonneEpargne: 'Compte épargne (membre)',
+    colonneEpargneClient: 'Compte épargne (client)',
+    colonneInteret: 'Compte charge d’intérêts',
+    aucun: '— non rattaché —',
+
+    modifier: 'Modifier',
+    annuler: 'Annuler',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce changement ?',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    echec: 'La modification a échoué. Réessayez.',
+  },
+
+  rattachementsCaisse: {
+    titre: 'Caisse par agence',
+    sousTitre: 'Le compte de caisse comptable rattaché à chaque agence.',
+    avertissement:
+      'Ce changement s’applique aux prochaines opérations, jamais aux écritures déjà passées.',
+    chargement: 'Chargement des rattachements…',
+    listeVide: 'Aucune agence active.',
+    interdit: 'Vous n’avez pas la permission de consulter ces rattachements.',
+    erreur: 'Impossible de charger les rattachements. Réessayez dans un instant.',
+
+    colonneAgence: 'Agence',
+    colonneCaisse: 'Compte de caisse',
+    aucun: '— non rattaché —',
+
+    modifier: 'Modifier',
+    annuler: 'Annuler',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce changement ?',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    echec: 'La modification a échoué. Réessayez.',
+  },
+
+  parametresParts: {
+    titre: 'Paramètres des parts sociales',
+    sousTitre: 'Valeurs d’institution — valeur d’une part, minimum d’adhésion, rattachements.',
+    avertissement:
+      'Ce changement s’applique aux prochaines opérations, jamais aux écritures déjà passées.',
+    chargement: 'Chargement des paramètres…',
+    interdit: 'Vous n’avez pas la permission de consulter ces paramètres.',
+    erreur: 'Impossible de charger les paramètres. Réessayez dans un instant.',
+    nonParametre: 'Les parts sociales ne sont pas encore paramétrées.',
+    provisoire: 'provisoire',
+    provisoireAide: 'Valeurs non encore validées par l’expert-comptable SFD.',
+
+    valeurPart: 'Valeur d’une part (francs CFA)',
+    minimumParts: 'Minimum de parts pour adhérer',
+    remboursable: 'Les parts sont remboursables',
+    momentAdhesion: 'Moment de l’adhésion',
+    momentSouscription: 'À la souscription',
+    momentLiberation: 'À la libération',
+    compteLiberees: 'Compte des parts libérées (57111)',
+    compteNonLiberees: 'Compte des parts non libérées (57112)',
+    aucun: '— non rattaché —',
+
+    modifier: 'Modifier',
+    annuler: 'Annuler',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce changement ?',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    echec: 'La modification a échoué. Réessayez.',
   },
 
   tiersKyc: {

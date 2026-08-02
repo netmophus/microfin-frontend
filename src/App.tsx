@@ -11,7 +11,10 @@ import { AppLayout } from '@/features/layout/AppLayout'
 import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
+import { PageParametresParts } from '@/features/comptabilite/PageParametresParts'
 import { PagePlanComptable } from '@/features/comptabilite/PagePlanComptable'
+import { PageRattachementsCaisse } from '@/features/comptabilite/PageRattachementsCaisse'
+import { PageRattachementsEpargne } from '@/features/comptabilite/PageRattachementsEpargne'
 import { PageGuichet } from '@/features/epargne/PageGuichet'
 import { PageRapprochement } from '@/features/epargne/PageRapprochement'
 import { PageVersementInterets } from '@/features/epargne/PageVersementInterets'
@@ -166,6 +169,30 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.plan.read">
                     <PageFicheCompte />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/rattachements-epargne"
+                element={
+                  <RoutePermission permission="compta.plan.read">
+                    <PageRattachementsEpargne />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/rattachements-caisse"
+                element={
+                  <RoutePermission permission="compta.plan.read">
+                    <PageRattachementsCaisse />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/parametres-parts"
+                element={
+                  <RoutePermission permission="compta.plan.read">
+                    <PageParametresParts />
                   </RoutePermission>
                 }
               />

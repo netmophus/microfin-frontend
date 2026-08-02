@@ -114,6 +114,26 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/plan',
         permission: 'compta.plan.read',
       },
+      // Rattachements (Bloc 5) : consultation ouverte à compta.plan.read, édition gérée par
+      // l'écran lui-même (bouton « Modifier » masqué sans compta.plan.manage).
+      {
+        etat: 'actif',
+        libelle: M.entrees.rattachementsEpargne,
+        chemin: '/comptabilite/rattachements-epargne',
+        permission: 'compta.plan.read',
+      },
+      {
+        etat: 'actif',
+        libelle: M.entrees.rattachementsCaisse,
+        chemin: '/comptabilite/rattachements-caisse',
+        permission: 'compta.plan.read',
+      },
+      {
+        etat: 'actif',
+        libelle: M.entrees.parametresParts,
+        chemin: '/comptabilite/parametres-parts',
+        permission: 'compta.plan.read',
+      },
       aVenir(M.entrees.comptaGenerale),
       aVenir(M.entrees.comptaAnalytique),
       // Rapprochement épargne : vue de contrôle réservée à l'audit/direction/comptable.

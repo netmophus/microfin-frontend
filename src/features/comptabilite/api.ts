@@ -208,3 +208,124 @@ export async function exporterComptes(inclureInactifs: boolean): Promise<void> {
   document.body.removeChild(lien)
   window.URL.revokeObjectURL(url)
 }
+
+// --- Rattachements (Bloc 5) : sélecteur partagé + les 3 écrans de paramétrage ------------
+//
+// Chaque sélecteur de compte ne propose QUE des comptes de saisie actifs — filtré côté
+// SERVEUR (comptes.lister_pour_selecteur), jamais seulement à l'affichage. Le serveur
+// revérifie aussi à l'écriture (compte_saisie_actif) : ce sélecteur est un confort, pas la
+// seule protection.
+
+export interface CompteSelecteur {
+  id: string
+  account_number: string
+  name: string
+}
+
+export async function listerComptesSelecteur(q?: string): Promise<CompteSelecteur[]> {
+  const { data } = await api.get<CompteSelecteur[]>('/comptabilite/comptes/selecteur', {
+    params: { q: q?.trim() || undefined },
+  })
+  return data
+}
+
+/** Un compte résolu — numéro + libellé, jamais l'UUID (règle du projet), partagé par les 3
+ * écrans de rattachement (produits, agences, parts). */
+export interface CompteRattachement {
+  account_number: string
+  name: string
+}
+
+// --- 5.1 Rattachements épargne (par produit) --------------------------------------------
+
+export interface RattachementsProduit {
+  id: string
+  code: string
+  name: string
+  compte_epargne: CompteRattachement | null
+  compte_epargne_client: CompteRattachement | null
+  compte_charge_interet: CompteRattachement | null
+}
+
+export interface ModificationRattachementsProduit {
+  compte_epargne: string | null
+  compte_epargne_client: string | null
+  compte_charge_interet: string | null
+  motif: string
+}
+
+export async function listerRattachementsProduits(): Promise<RattachementsProduit[]> {
+  const { data } = await api.get<RattachementsProduit[]>('/epargne/produits/rattachements')
+  return data
+}
+
+export async function modifierRattachementsProduit(
+  id: string,
+  modifications: ModificationRattachementsProduit,
+): Promise<RattachementsProduit> {
+  const { data } = await api.patch<RattachementsProduit>(
+    `/epargne/produits/${id}/rattachements`,
+    modifications,
+  )
+  return data
+}
+
+// --- 5.2 Caisse par agence -----------------------------------------------------------------
+
+export interface AgenceRattachement {
+  id: string
+  code: string
+  name: string
+  compte_caisse: CompteRattachement | null
+}
+
+export async function listerRattachementsAgences(): Promise<AgenceRattachement[]> {
+  const { data } = await api.get<AgenceRattachement[]>('/agencies/rattachements')
+  return data
+}
+
+export async function modifierCompteCaisse(
+  id: string,
+  compteCaisse: string | null,
+  motif: string,
+): Promise<AgenceRattachement> {
+  const { data } = await api.patch<AgenceRattachement>(`/agencies/${id}/compte-caisse`, {
+    compte_caisse: compteCaisse,
+    motif,
+  })
+  return data
+}
+
+// --- 5.3 Paramètres des parts sociales -----------------------------------------------------
+
+export interface ParametresParts {
+  unit_value: number
+  minimum_shares: number
+  is_refundable: boolean
+  membership_on: 'souscription' | 'liberation'
+  compte_parts_liberees: CompteRattachement | null
+  compte_parts_non_liberees: CompteRattachement | null
+  is_provisional: boolean
+}
+
+export interface ModificationParametresParts {
+  unit_value: number
+  minimum_shares: number
+  is_refundable: boolean
+  membership_on: 'souscription' | 'liberation'
+  compte_parts_liberees: string | null
+  compte_parts_non_liberees: string | null
+  motif: string
+}
+
+export async function lireParametresParts(): Promise<ParametresParts> {
+  const { data } = await api.get<ParametresParts>('/tiers/parts/parametres')
+  return data
+}
+
+export async function modifierParametresParts(
+  modifications: ModificationParametresParts,
+): Promise<ParametresParts> {
+  const { data } = await api.patch<ParametresParts>('/tiers/parts/parametres', modifications)
+  return data
+}
