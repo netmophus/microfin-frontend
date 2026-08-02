@@ -1039,6 +1039,38 @@ export const LIBELLES = {
       'Un compte désactivé sort des listes courantes et ne peut plus recevoir d’écritures. Refusé s’il porte déjà des écritures ou a des comptes enfants actifs.',
     desactiverConfirmer: 'Désactiver',
     desactivationEchec: 'La désactivation a échoué.',
+
+    // Import / export CSV (Bloc 2) — aperçu en deux temps, rien n'est écrit avant confirmation.
+    importExportTitre: 'Importer / exporter le plan',
+    exporter: 'Exporter en CSV',
+    exportEnCours: 'Export…',
+    exportEchec: 'L’export a échoué. Réessayez.',
+
+    importerFichier: 'Fichier CSV',
+    importerApercu: 'Aperçu',
+    apercuEnCours: 'Analyse du fichier…',
+    apercuEchec: 'L’aperçu a échoué. Vérifiez le fichier.',
+    aucunFichier: 'Choisissez un fichier CSV avant de lancer l’aperçu.',
+
+    anomaliesTitre: (n: number) =>
+      n <= 1 ? '1 anomalie — rien ne sera importé' : `${n} anomalies — rien ne sera importé`,
+
+    apercuCreesTitre: (n: number) => (n <= 1 ? '1 compte à créer' : `${n} comptes à créer`),
+    apercuModifiesTitre: (n: number) =>
+      n <= 1 ? '1 compte à modifier' : `${n} comptes à modifier`,
+    apercuInchanges: (n: number) => (n <= 1 ? '1 compte inchangé' : `${n} comptes inchangés`),
+    apercuRienAFaire: 'Ce fichier ne change rien au plan actuel.',
+
+    importerMotif: 'Motif (obligatoire)',
+    importerMotifPlaceholder: 'Pourquoi cette correction ?',
+    leverProvisoire:
+      'Cette correction est la validation définitive de l’expert — lever le provisoire sur les comptes touchés.',
+    confirmerImport: 'Confirmer l’import',
+    confirmationEnCours: 'Import en cours…',
+    confirmationEchec: 'L’import a échoué. Relancez l’aperçu.',
+    importReussi: (crees: number, misAJour: number) =>
+      `Import terminé : ${crees} compte(s) créé(s), ${misAJour} compte(s) modifié(s).`,
+    recommencer: 'Recommencer',
   },
 
   tiersKyc: {

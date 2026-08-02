@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
-import { Plus, Search } from 'lucide-react'
-import { useState } from 'react'
+import { FileDown, FileUp, Plus, Search } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -11,11 +11,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
 import {
+  apercevoirImportComptes,
+  confirmerImportComptes,
   creerCompte,
+  exporterComptes,
   listerComptes,
   messageRefusCompte,
   TAILLE_PAGE,
+  type ApercuImportComptes,
   type CompteResume,
+  type ConfirmationImportComptes,
   type CreationCompte,
 } from '@/features/comptabilite/api'
 import { useDebounce } from '@/lib/useDebounce'
@@ -35,6 +40,7 @@ export function PagePlanComptable() {
   const [inclureInactifs, setInclureInactifs] = useState(false)
   const [page, setPage] = useState(1)
   const [creationVisible, setCreationVisible] = useState(false)
+  const [importExportVisible, setImportExportVisible] = useState(false)
   const rechercheDifferee = useDebounce(recherche)
   const naviguer = useNavigate()
   const client = useQueryClient()
@@ -63,13 +69,30 @@ export function PagePlanComptable() {
           <h1 className="text-xl font-semibold tracking-tight">{P.titre}</h1>
           <p className="text-sm text-muted-foreground">{P.sousTitre}</p>
         </div>
-        {peutGerer && !creationVisible && (
-          <Button size="sm" onClick={() => setCreationVisible(true)}>
-            <Plus className="mr-1 size-4" />
-            {P.nouveauCompte}
+        <div className="flex shrink-0 gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setImportExportVisible((v) => !v)}
+          >
+            <FileUp className="mr-1 size-4" />
+            {P.importExportTitre}
           </Button>
-        )}
+          {peutGerer && !creationVisible && (
+            <Button size="sm" onClick={() => setCreationVisible(true)}>
+              <Plus className="mr-1 size-4" />
+              {P.nouveauCompte}
+            </Button>
+          )}
+        </div>
       </div>
+
+      {importExportVisible && (
+        <PanneauImportExport
+          peutImporter={peutGerer}
+          onImporte={() => void client.invalidateQueries({ queryKey: ['comptabilite', 'comptes'] })}
+        />
+      )}
 
       {creationVisible && (
         <FormulaireCreation
@@ -349,5 +372,247 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
         </Button>
       </div>
     </form>
+  )
+}
+
+/**
+ * Import/export CSV (Bloc 2). Le flux d'import est en DEUX temps : « Aperçu » lit et valide
+ * sans rien écrire (anomalies, ou le diff de ce qui changerait) ; « Confirmer » réécrit — le
+ * MÊME fichier choisi une seule fois reste en mémoire côté écran, jamais reposé par
+ * l'utilisateur. Lever le provisoire est un choix EXPLICITE (case décochée par défaut) : une
+ * correction intermédiaire ne doit pas lever le drapeau par accident.
+ */
+function PanneauImportExport({
+  peutImporter,
+  onImporte,
+}: {
+  peutImporter: boolean
+  onImporte: () => void
+}) {
+  const [inclureInactifsExport, setInclureInactifsExport] = useState(true)
+  const exportMutation = useMutation({ mutationFn: () => exporterComptes(inclureInactifsExport) })
+
+  const [fichier, setFichier] = useState<File | null>(null)
+  const [apercu, setApercu] = useState<ApercuImportComptes | null>(null)
+  const [motif, setMotif] = useState('')
+  const [leverProvisoire, setLeverProvisoire] = useState(false)
+  const [confirmation, setConfirmation] = useState<ConfirmationImportComptes | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const apercuMutation = useMutation({
+    mutationFn: (f: File) => apercevoirImportComptes(f),
+    onSuccess: setApercu,
+  })
+
+  const confirmerMutation = useMutation({
+    mutationFn: () => {
+      if (!fichier || !apercu?.empreinte) throw new Error('Aucun aperçu en cours.')
+      return confirmerImportComptes({
+        fichier,
+        empreinte: apercu.empreinte,
+        motif: motif.trim(),
+        leverProvisoire,
+      })
+    },
+    onSuccess: (donnees) => {
+      setConfirmation(donnees)
+      setApercu(null)
+      onImporte()
+    },
+  })
+
+  const recommencer = () => {
+    setFichier(null)
+    setApercu(null)
+    setMotif('')
+    setLeverProvisoire(false)
+    setConfirmation(null)
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  const aDesChangements = !!apercu && (apercu.a_creer.length > 0 || apercu.a_modifier.length > 0)
+  const motifValide = motif.trim().length >= 3
+
+  return (
+    <div className="space-y-4 rounded-md border bg-muted/20 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+        <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={inclureInactifsExport}
+            onChange={(e) => setInclureInactifsExport(e.target.checked)}
+          />
+          {P.afficherInactifs}
+        </label>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={exportMutation.isPending}
+          onClick={() => exportMutation.mutate()}
+        >
+          <FileDown className="mr-1 size-4" />
+          {exportMutation.isPending ? P.exportEnCours : P.exporter}
+        </Button>
+      </div>
+
+      {exportMutation.isError && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {messageRefusCompte(exportMutation.error, P.exportEchec)}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {peutImporter && (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="pce-fichier">{P.importerFichier}</Label>
+              <input
+                id="pce-fichier"
+                ref={inputRef}
+                type="file"
+                accept=".csv"
+                className="block text-sm"
+                onChange={(e) => {
+                  setFichier(e.target.files?.[0] ?? null)
+                  setApercu(null)
+                  setConfirmation(null)
+                }}
+              />
+            </div>
+            <Button
+              size="sm"
+              disabled={!fichier || apercuMutation.isPending}
+              onClick={() => fichier && apercuMutation.mutate(fichier)}
+            >
+              {apercuMutation.isPending ? P.apercuEnCours : P.importerApercu}
+            </Button>
+            {(apercu ?? confirmation) && (
+              <Button size="sm" variant="ghost" onClick={recommencer}>
+                {P.recommencer}
+              </Button>
+            )}
+          </div>
+
+          {apercuMutation.isError && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>
+                {messageRefusCompte(apercuMutation.error, P.apercuEchec)}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {confirmation && (
+            <Alert role="status">
+              <AlertDescription>
+                {P.importReussi(confirmation.crees, confirmation.mis_a_jour)}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {apercu && apercu.anomalies.length > 0 && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>
+                <p className="font-medium">{P.anomaliesTitre(apercu.anomalies.length)}</p>
+                <ul className="mt-1 list-disc pl-5 text-xs">
+                  {apercu.anomalies.map((a) => (
+                    <li key={a}>{a}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {apercu && apercu.anomalies.length === 0 && !confirmation && (
+            <div className="space-y-3 rounded-md border p-3">
+              {!aDesChangements ? (
+                <p className="text-sm text-muted-foreground">{P.apercuRienAFaire}</p>
+              ) : (
+                <>
+                  {apercu.a_creer.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium">
+                        {P.apercuCreesTitre(apercu.a_creer.length)}
+                      </p>
+                      <ul className="mt-1 text-xs text-muted-foreground">
+                        {apercu.a_creer.map((c) => (
+                          <li key={c.account_number} className="font-mono">
+                            {c.account_number} — {c.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {apercu.a_modifier.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium">
+                        {P.apercuModifiesTitre(apercu.a_modifier.length)}
+                      </p>
+                      <ul className="mt-1 space-y-1 text-xs">
+                        {apercu.a_modifier.map((c) => (
+                          <li key={c.account_number}>
+                            <span className="font-mono">{c.account_number}</span> — {c.name}
+                            <ul className="pl-4 text-muted-foreground">
+                              {c.diffs.map((d) => (
+                                <li key={d.champ}>
+                                  {d.champ} : {d.avant} → {d.apres}
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {P.apercuInchanges(apercu.inchanges)}
+                  </p>
+                </>
+              )}
+
+              {aDesChangements && (
+                <div className="space-y-2 border-t pt-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="pce-motif">{P.importerMotif}</Label>
+                    <Input
+                      id="pce-motif"
+                      value={motif}
+                      onChange={(e) => setMotif(e.target.value)}
+                      placeholder={P.importerMotifPlaceholder}
+                    />
+                  </div>
+                  <label className="flex items-start gap-1.5 text-sm text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={leverProvisoire}
+                      onChange={(e) => setLeverProvisoire(e.target.checked)}
+                      className="mt-0.5"
+                    />
+                    {P.leverProvisoire}
+                  </label>
+
+                  {confirmerMutation.isError && (
+                    <Alert variant="destructive" role="alert">
+                      <AlertDescription>
+                        {messageRefusCompte(confirmerMutation.error, P.confirmationEchec)}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button
+                    size="sm"
+                    disabled={!motifValide || confirmerMutation.isPending}
+                    onClick={() => confirmerMutation.mutate()}
+                  >
+                    {confirmerMutation.isPending ? P.confirmationEnCours : P.confirmerImport}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

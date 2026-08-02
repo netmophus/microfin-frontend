@@ -119,3 +119,92 @@ export function messageRefusCompte(erreur: unknown, defaut: string): string {
   }
   return defaut
 }
+
+// --- Import / export CSV (Bloc 2) -------------------------------------------------------
+//
+// Flux en DEUX temps : apercevoirImportComptes lit et valide SANS RIEN ÉCRIRE (anomalies, ou
+// le diff de ce qui changerait, + une empreinte) ; confirmerImportComptes réécrit — le MÊME
+// fichier (gardé en mémoire côté écran, jamais reposé par l'utilisateur) et la MÊME empreinte
+// sont exigés, sinon le serveur refuse (un fichier différent aurait pu se substituer entre
+// les deux appels).
+
+export interface DiffChampCompte {
+  champ: string
+  avant: string
+  apres: string
+}
+
+export interface CompteApercuLigne {
+  account_number: string
+  name: string
+  diffs: DiffChampCompte[]
+}
+
+export interface ApercuImportComptes {
+  anomalies: string[]
+  empreinte: string | null
+  a_creer: CompteApercuLigne[]
+  a_modifier: CompteApercuLigne[]
+  inchanges: number
+}
+
+export interface ConfirmationImportComptes {
+  crees: number
+  mis_a_jour: number
+  provisoire_leve: boolean
+}
+
+/** Sans Content-Type explicite, le navigateur pose lui-même le boundary multipart — le
+ * poser à la main casserait l'upload (l'instance `api` fixe 'application/json' par défaut). */
+const ENTETES_MULTIPART = { headers: { 'Content-Type': undefined } }
+
+export async function apercevoirImportComptes(fichier: File): Promise<ApercuImportComptes> {
+  const corps = new FormData()
+  corps.append('fichier', fichier)
+  const { data } = await api.post<ApercuImportComptes>(
+    '/comptabilite/comptes/import/apercu',
+    corps,
+    ENTETES_MULTIPART,
+  )
+  return data
+}
+
+export interface ConfirmationImportParams {
+  fichier: File
+  empreinte: string
+  motif: string
+  leverProvisoire: boolean
+}
+
+export async function confirmerImportComptes(
+  params: ConfirmationImportParams,
+): Promise<ConfirmationImportComptes> {
+  const corps = new FormData()
+  corps.append('fichier', params.fichier)
+  corps.append('empreinte', params.empreinte)
+  corps.append('motif', params.motif)
+  corps.append('lever_provisoire', params.leverProvisoire ? 'true' : 'false')
+  const { data } = await api.post<ConfirmationImportComptes>(
+    '/comptabilite/comptes/import/confirmer',
+    corps,
+    ENTETES_MULTIPART,
+  )
+  return data
+}
+
+/** Déclenche un téléchargement — passe par `api` (jeton + cookie) plutôt qu'un lien direct,
+ * qui n'aurait porté ni l'un ni l'autre. */
+export async function exporterComptes(inclureInactifs: boolean): Promise<void> {
+  const reponse = await api.get<Blob>('/comptabilite/comptes/export', {
+    params: { inclure_inactifs: inclureInactifs },
+    responseType: 'blob',
+  })
+  const url = window.URL.createObjectURL(reponse.data)
+  const lien = document.createElement('a')
+  lien.href = url
+  lien.download = 'plan_comptable.csv'
+  document.body.appendChild(lien)
+  lien.click()
+  document.body.removeChild(lien)
+  window.URL.revokeObjectURL(url)
+}
