@@ -1212,8 +1212,8 @@ export const LIBELLES = {
     momentAdhesion: 'Moment de l’adhésion',
     momentSouscription: 'À la souscription',
     momentLiberation: 'À la libération',
-    compteLiberees: 'Compte des parts libérées (57111)',
-    compteNonLiberees: 'Compte des parts non libérées (57112)',
+    compteLiberees: 'Compte des parts libérées',
+    compteNonLiberees: 'Compte des parts non libérées',
     aucun: '— non rattaché —',
 
     modifier: 'Modifier',
