@@ -182,7 +182,8 @@ export const LIBELLES = {
       epargneDepots: 'Épargne / Dépôts',
       credit: 'Crédit',
       recouvrement: 'Recouvrement',
-      comptaGenerale: 'Comptabilité générale',
+      grandLivre: 'Grand livre',
+      balance: 'Balance',
       comptaAnalytique: 'Comptabilité analytique',
       tresorerieImmo: 'Trésorerie et Immobilisations',
       reportingBceao: 'Reporting BCEAO',
@@ -1074,6 +1075,72 @@ export const LIBELLES = {
     importReussi: (crees: number, misAJour: number) =>
       `Import terminé : ${crees} compte(s) créé(s), ${misAJour} compte(s) modifié(s).`,
     recommencer: 'Recommencer',
+  },
+
+  grandLivre: {
+    titre: 'Grand livre',
+    sousTitre: 'Le détail des mouvements d’un compte, avec le solde cumulé.',
+
+    choisirCompte: 'Compte',
+    choisirComptePlaceholder: 'Choisissez un compte…',
+    optionDesactive: (numero: string, nom: string) => `${numero} — ${nom} (désactivé)`,
+    aucunCompteChoisi: 'Choisissez un compte pour voir son grand livre.',
+    compteDesactive: 'Désactivé',
+    compteDesactiveAide:
+      'Ce compte est désactivé — vous consultez son historique, il ne reçoit plus d’écritures.',
+
+    filtreDateDebut: 'Depuis le',
+    filtreDateFin: 'Jusqu’au',
+    reinitialiser: 'Réinitialiser',
+
+    soldeOuverture: (montant: string, date: string) => `Solde au ${date} : ${montant}`,
+
+    colonneDate: 'Date',
+    colonnePiece: 'Pièce',
+    colonneJournal: 'Journal',
+    colonneLibelle: 'Libellé',
+    colonneDebit: 'Débit',
+    colonneCredit: 'Crédit',
+    colonneSolde: 'Solde',
+
+    total: (n: number) => (n <= 1 ? `${n} mouvement` : `${n} mouvements`),
+    page: (courante: number, sur: number) => `Page ${courante} sur ${sur}`,
+    precedent: 'Précédent',
+    suivant: 'Suivant',
+
+    chargementComptes: 'Chargement des comptes…',
+    chargement: 'Chargement du grand livre…',
+    vide: 'Aucun mouvement sur ce compte pour la période choisie.',
+    interdit: 'Vous n’avez pas la permission de consulter les rapports comptables.',
+    erreur: 'Impossible de charger le grand livre. Réessayez dans un instant.',
+  },
+
+  balance: {
+    titre: 'Balance',
+    sousTitre: 'Le récapitulatif de tous les comptes mouvementés sur la période.',
+
+    filtreDateDebut: 'Depuis le',
+    filtreDateFin: 'Jusqu’au',
+    inclureSansMouvement: 'Inclure les comptes sans mouvement',
+    reinitialiser: 'Réinitialiser',
+
+    totalDebit: 'Total débit',
+    totalCredit: 'Total crédit',
+    equilibree: 'Balance équilibrée — Σ débit = Σ crédit.',
+    desequilibree:
+      'Balance DÉSÉQUILIBRÉE — Σ débit ≠ Σ crédit. Cela ne devrait jamais arriver : signalez-le immédiatement.',
+
+    colonneCompte: 'Compte',
+    colonneLibelle: 'Libellé',
+    colonneSoldeOuverture: 'Solde ouverture',
+    colonneDebit: 'Débit',
+    colonneCredit: 'Crédit',
+    colonneSoldeCloture: 'Solde clôture',
+
+    chargement: 'Chargement de la balance…',
+    vide: 'Aucun compte mouvementé sur la période choisie.',
+    interdit: 'Vous n’avez pas la permission de consulter les rapports comptables.',
+    erreur: 'Impossible de charger la balance. Réessayez dans un instant.',
   },
 
   rattachementsEpargne: {

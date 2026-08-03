@@ -229,6 +229,103 @@ export async function listerComptesSelecteur(q?: string): Promise<CompteSelecteu
   return data
 }
 
+// --- Rapports (R1 grand livre, R2 balance) — lecture pure -----------------------------------
+//
+// Sélecteur DÉDIÉ : contrairement à /selecteur (rattachement), celui-ci propose AUSSI les
+// comptes désactivés — un grand livre doit rester consultable même après désactivation du
+// compte. is_active est exposé pour que l'écran le signale, dans le menu ET une fois choisi.
+
+export interface CompteSelecteurRapport extends CompteSelecteur {
+  is_active: boolean
+}
+
+export async function listerComptesSelecteurRapport(q?: string): Promise<CompteSelecteurRapport[]> {
+  const { data } = await api.get<CompteSelecteurRapport[]>(
+    '/comptabilite/comptes/selecteur-rapport',
+    { params: { q: q?.trim() || undefined } },
+  )
+  return data
+}
+
+export interface CompteRapport {
+  account_number: string
+  name: string
+  is_active: boolean
+}
+
+export interface LigneGrandLivre {
+  entry_date: string
+  entry_number: string | null
+  journal_code: string
+  label: string
+  side: 'D' | 'C'
+  amount: number
+  solde_cumule: number
+}
+
+export interface PageGrandLivre {
+  compte: CompteRapport
+  solde_ouverture: number
+  lignes: LigneGrandLivre[]
+  total: number
+  page: number
+  taille: number
+}
+
+export interface ParamsGrandLivre {
+  compteId: string
+  dateDebut?: string
+  dateFin?: string
+  page?: number
+}
+
+export async function chargerGrandLivre(params: ParamsGrandLivre): Promise<PageGrandLivre> {
+  const { data } = await api.get<PageGrandLivre>('/comptabilite/grand-livre', {
+    params: {
+      compte_id: params.compteId,
+      date_debut: params.dateDebut || undefined,
+      date_fin: params.dateFin || undefined,
+      page: params.page ?? 1,
+    },
+  })
+  return data
+}
+
+export interface LigneBalance {
+  account_number: string
+  name: string
+  solde_ouverture: number
+  total_debit: number
+  total_credit: number
+  solde_cloture: number
+}
+
+export interface Balance {
+  date_debut: string | null
+  date_fin: string | null
+  lignes: LigneBalance[]
+  total_debit: number
+  total_credit: number
+  equilibree: boolean
+}
+
+export interface ParamsBalance {
+  dateDebut?: string
+  dateFin?: string
+  inclureSansMouvement?: boolean
+}
+
+export async function chargerBalance(params: ParamsBalance): Promise<Balance> {
+  const { data } = await api.get<Balance>('/comptabilite/balance', {
+    params: {
+      date_debut: params.dateDebut || undefined,
+      date_fin: params.dateFin || undefined,
+      inclure_sans_mouvement: params.inclureSansMouvement || undefined,
+    },
+  })
+  return data
+}
+
 /** Un compte résolu — numéro + libellé, jamais l'UUID (règle du projet), partagé par les 3
  * écrans de rattachement (produits, agences, parts). */
 export interface CompteRattachement {

@@ -134,7 +134,19 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/parametres-parts',
         permission: 'compta.plan.read',
       },
-      aVenir(M.entrees.comptaGenerale),
+      // Rapports (R1/R2) : lecture pure, réservés à compta.rapport.read.
+      {
+        etat: 'actif',
+        libelle: M.entrees.grandLivre,
+        chemin: '/comptabilite/grand-livre',
+        permission: 'compta.rapport.read',
+      },
+      {
+        etat: 'actif',
+        libelle: M.entrees.balance,
+        chemin: '/comptabilite/balance',
+        permission: 'compta.rapport.read',
+      },
       aVenir(M.entrees.comptaAnalytique),
       // Rapprochement épargne : vue de contrôle réservée à l'audit/direction/comptable.
       {

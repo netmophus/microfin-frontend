@@ -10,7 +10,9 @@ import { RouteProtegee } from '@/features/auth/RouteProtegee'
 import { AppLayout } from '@/features/layout/AppLayout'
 import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
+import { PageBalance } from '@/features/comptabilite/PageBalance'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
+import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
 import { PageParametresParts } from '@/features/comptabilite/PageParametresParts'
 import { PagePlanComptable } from '@/features/comptabilite/PagePlanComptable'
 import { PageRattachementsCaisse } from '@/features/comptabilite/PageRattachementsCaisse'
@@ -193,6 +195,22 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.plan.read">
                     <PageParametresParts />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/grand-livre"
+                element={
+                  <RoutePermission permission="compta.rapport.read">
+                    <PageGrandLivre />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/balance"
+                element={
+                  <RoutePermission permission="compta.rapport.read">
+                    <PageBalance />
                   </RoutePermission>
                 }
               />
