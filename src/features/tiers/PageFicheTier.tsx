@@ -25,6 +25,7 @@ import { AvatarInitiales } from '@/components/ui/avatar-initiales'
 import { useAPermission } from '@/features/auth/useProfil'
 import { ActionsTier } from '@/features/tiers/actions-tier'
 import { BadgeSocietariat, BadgeStatut } from '@/features/tiers/badges'
+import { OngletCredit } from '@/features/credit/OngletCredit'
 import { OngletComptesEpargne } from '@/features/epargne/OngletComptesEpargne'
 import { OngletCoordonnees } from '@/features/tiers/OngletCoordonnees'
 import { OngletKyc } from '@/features/tiers/OngletKyc'
@@ -236,15 +237,17 @@ function BandeauProspect({ tierId }: { tierId: string }) {
   )
 }
 
-/** Bascule Coordonnées / Pièces / KYC / Épargne. Un seul onglet monté à la fois. */
+/** Bascule Coordonnées / Pièces / KYC / Épargne / Parts / Crédit. Un seul onglet monté à la fois. */
 function OngletsDetail({ fiche }: { fiche: FicheTier }) {
-  const [onglet, setOnglet] = useState<'coordonnees' | 'pieces' | 'kyc' | 'epargne' | 'parts'>(
-    'coordonnees',
-  )
+  const [onglet, setOnglet] = useState<
+    'coordonnees' | 'pieces' | 'kyc' | 'epargne' | 'parts' | 'credit'
+  >('coordonnees')
   // L'onglet KYC détaillé ne concerne que la personne physique (T3c).
   const kycDispo = Boolean(fiche.individu)
   // L'onglet Parts sociales n'apparaît que pour qui peut le lire (le chargé de clientèle l'a).
   const partsDispo = useAPermission('tiers.shares.read')
+  // L'onglet Crédit n'apparaît que pour qui peut lire des dossiers (chargé, comité, responsable).
+  const creditDispo = useAPermission('credit.demande.read')
   return (
     <section className="rounded-md border">
       <div className="flex border-b" role="tablist">
@@ -267,6 +270,11 @@ function OngletsDetail({ fiche }: { fiche: FicheTier }) {
             {O.parts}
           </BoutonOnglet>
         )}
+        {creditDispo && (
+          <BoutonOnglet actif={onglet === 'credit'} onClick={() => setOnglet('credit')}>
+            {O.credit}
+          </BoutonOnglet>
+        )}
       </div>
       <div className="p-4">
         {onglet === 'coordonnees' && <OngletCoordonnees tierId={fiche.id} />}
@@ -275,6 +283,7 @@ function OngletsDetail({ fiche }: { fiche: FicheTier }) {
           <OngletComptesEpargne tierId={fiche.id} tierStatut={fiche.status} />
         )}
         {onglet === 'parts' && <OngletParts tierId={fiche.id} tierStatut={fiche.status} />}
+        {onglet === 'credit' && <OngletCredit tierId={fiche.id} tierStatut={fiche.status} />}
         {onglet === 'kyc' && (
           <OngletKyc
             tierId={fiche.id}

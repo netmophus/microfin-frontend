@@ -99,7 +99,12 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/epargne/interets',
         permission: 'epargne.interet.executer',
       },
-      aVenir(M.entrees.credit),
+      {
+        etat: 'actif',
+        libelle: M.entrees.credit,
+        chemin: '/credit',
+        permission: 'credit.demande.read',
+      },
       aVenir(M.entrees.recouvrement),
     ],
   },

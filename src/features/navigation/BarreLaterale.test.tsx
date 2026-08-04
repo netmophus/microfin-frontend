@@ -32,10 +32,21 @@ describe('BarreLaterale', () => {
 
   it('affiche les entrées à venir mais NON cliquables', () => {
     afficher(['users.read'])
-    const credit = screen.getByText('Crédit')
+    const recouvrement = screen.getByText('Recouvrement')
     // Ni lien, ni bouton : rien à cliquer. Et marqué indisponible pour l'accessibilité.
-    expect(credit.closest('a')).toBeNull()
-    expect(credit).toHaveAttribute('aria-disabled', 'true')
+    expect(recouvrement.closest('a')).toBeNull()
+    expect(recouvrement).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('rend « Crédit » comme un vrai lien quand credit.demande.read est détenu (CR6a)', () => {
+    afficher(['credit.demande.read'])
+    const lien = screen.getByRole('link', { name: 'Crédit' })
+    expect(lien).toHaveAttribute('href', '/credit')
+  })
+
+  it('CACHE « Crédit » quand credit.demande.read manque', () => {
+    afficher([])
+    expect(screen.queryByText('Crédit')).toBeNull()
   })
 
   it('montre tous les groupes, y compris ceux sans entrée active', () => {

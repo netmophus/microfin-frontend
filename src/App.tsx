@@ -17,6 +17,8 @@ import { PageParametresParts } from '@/features/comptabilite/PageParametresParts
 import { PagePlanComptable } from '@/features/comptabilite/PagePlanComptable'
 import { PageRattachementsCaisse } from '@/features/comptabilite/PageRattachementsCaisse'
 import { PageRattachementsEpargne } from '@/features/comptabilite/PageRattachementsEpargne'
+import { PageCredit } from '@/features/credit/PageCredit'
+import { PageDossierCredit } from '@/features/credit/PageDossierCredit'
 import { PageGuichet } from '@/features/epargne/PageGuichet'
 import { PageRapprochement } from '@/features/epargne/PageRapprochement'
 import { PageVersementInterets } from '@/features/epargne/PageVersementInterets'
@@ -155,6 +157,22 @@ export function App() {
                 element={
                   <RoutePermission permission="epargne.rapprochement.read">
                     <PageRapprochement />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/credit"
+                element={
+                  <RoutePermission permission="credit.demande.read">
+                    <PageCredit />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/credit/:id"
+                element={
+                  <RoutePermission permission="credit.demande.read">
+                    <PageDossierCredit />
                   </RoutePermission>
                 }
               />

@@ -672,6 +672,7 @@ export const LIBELLES = {
     kyc: 'KYC / Risque',
     epargne: 'Comptes d’épargne',
     parts: 'Parts sociales',
+    credit: 'Crédit',
     frise: 'Historique',
   },
 
@@ -805,6 +806,78 @@ export const LIBELLES = {
     fermetureEchec: 'La fermeture a échoué. Réessayez.',
     // La boucle rendue LISIBLE : après fermeture, plus de blocage à la désactivation.
     desactivable: 'Ce membre n’a plus de compte d’épargne ouvert : il peut être désactivé.',
+  },
+
+  credit: {
+    // --- Onglet sur la fiche tiers : historique + création (CR6a) ---
+    titre: 'Demandes de crédit',
+    chargement: 'Chargement des demandes de crédit…',
+    erreur: 'Impossible de charger les demandes de crédit.',
+    vide: 'Aucune demande de crédit.',
+    nouvelleDemande: 'Nouvelle demande',
+    // Gate KYC visible : on explique POURQUOI le bouton est absent (même patron qu’Épargne/Parts).
+    gateNonActif:
+      'Ce tiers doit être actif (dossier validé) avant de pouvoir demander un crédit.',
+
+    // Formulaire de création.
+    produit: 'Produit de crédit',
+    produitChoisir: 'Choisir un produit…',
+    produitProvisoireSuffixe: ' (provisoire)',
+    montantDemande: 'Montant demandé',
+    montantPlaceholder: 'Ex. 500000',
+    dureeEcheances: 'Durée (nombre d’échéances)',
+    dureePlaceholder: 'Ex. 12',
+    dureeValeur: (n: number) => (n <= 1 ? `${n} échéance` : `${n} échéances`),
+    objet: 'Objet (facultatif)',
+    objetPlaceholder: 'Ex. Achat de matériel',
+    confirmerCreation: 'Créer la demande',
+    creationEnCours: 'Création…',
+    creationEchec: 'La création a échoué. Réessayez.',
+    annuler: 'Annuler',
+
+    // Statuts (badge + filtre).
+    statuts: {
+      en_instruction: 'En instruction',
+      approuve: 'Approuvée',
+      refuse: 'Refusée',
+      decaisse: 'Décaissée',
+    } as Record<string, string>,
+
+    // --- Page liste (réseau, filtrable) ---
+    listeTitre: 'Crédit',
+    listeSousTitre: 'Les dossiers de demande de crédit, tous statuts.',
+    filtrerParStatut: 'Filtrer par statut',
+    filtreTous: 'Tous les statuts',
+    colonneNumero: 'N° de dossier',
+    colonneTiers: 'Tiers',
+    colonneProduit: 'Produit',
+    colonneMontant: 'Montant demandé',
+    colonneStatut: 'Statut',
+    listeVide: 'Aucun dossier de crédit pour ce filtre.',
+    erreurListe: 'Impossible de charger la liste des dossiers de crédit.',
+
+    // --- Vue détail d'un dossier ---
+    retour: 'Retour à la liste',
+    dossierIntrouvable: 'Ce dossier de crédit est introuvable.',
+    creeLe: 'Créé le',
+
+    // --- Décision (comité) ---
+    decisionTitre: 'Décision',
+    actionApprouver: 'Approuver',
+    actionRefuser: 'Refuser',
+    montantDecide: 'Montant accordé',
+    // {max} injecté (déjà formaté en francs).
+    montantDecideAide: (max: string) => `Ne peut pas dépasser le montant demandé (${max}).`,
+    motif: 'Motif',
+    motifLabel: 'Motif :',
+    motifPlaceholder: 'Ex. Dossier complet, garanties suffisantes',
+    confirmerDecision: 'Confirmer la décision',
+    decisionEnCours: 'Enregistrement…',
+    decisionEchec: 'La décision a échoué. Réessayez.',
+    // Résultat déjà connu (dossier pas en_instruction). {montant} déjà formaté.
+    decisionApprouvee: (montant: string) => `Approuvée pour ${montant}.`,
+    decisionRefusee: 'Refusée.',
+    decisionDecaissee: 'Décaissée : les fonds ont été versés.',
   },
 
   interets: {
