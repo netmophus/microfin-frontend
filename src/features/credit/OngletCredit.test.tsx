@@ -45,6 +45,7 @@ function base() {
   return {
     id: 'd1',
     application_number: 'CR-2026-0000001',
+    tier_id: 't1',
     tier_number: 'M-2026-0000001',
     tier_nom: 'Diallo Amadou',
     is_member: true,

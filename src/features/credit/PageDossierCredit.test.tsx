@@ -13,6 +13,7 @@ import {
   type DemandeCreditDetail,
 } from '@/features/credit/api'
 import { PageDossierCredit } from '@/features/credit/PageDossierCredit'
+import { listerComptesMembre } from '@/features/epargne/api'
 
 /**
  * Vue détail d'un dossier. Points durs (CR6a) : la décision n'apparaît QUE pour
@@ -46,17 +47,26 @@ vi.mock('@/features/credit/api', async () => {
   }
 })
 
+vi.mock('@/features/epargne/api', async () => {
+  const reel = await vi.importActual<typeof import('@/features/epargne/api')>(
+    '@/features/epargne/api',
+  )
+  return { ...reel, listerComptesMembre: vi.fn() }
+})
+
 const lireSimule = vi.mocked(lireDemandeCredit)
 const deciderSimule = vi.mocked(deciderDemandeCredit)
 const decaisserSimule = vi.mocked(decaisserDemandeCredit)
 const echeancierSimule = vi.mocked(lireEcheancierCredit)
 const apercuSimule = vi.mocked(lireApercuEcheancierCredit)
+const comptesSimules = vi.mocked(listerComptesMembre)
 const ID = 'd1'
 
 function unDossier(o: Partial<DemandeCreditDetail> = {}): DemandeCreditDetail {
   return {
     id: ID,
     application_number: 'CR-2026-0000001',
+    tier_id: 't1',
     tier_number: 'M-2026-0000001',
     tier_nom: 'Diallo Amadou',
     is_member: true,
@@ -90,8 +100,9 @@ function afficher() {
 beforeEach(() => {
   vi.clearAllMocks()
   etat.permissions = ['credit.demande.decide']
-  // Défaut neutre : les tests qui ne portent pas sur l'aperçu n'ont pas à s'en soucier.
+  // Défaut neutre : les tests qui ne portent pas sur l'aperçu/les comptes n'ont pas à s'en soucier.
   apercuSimule.mockResolvedValue([])
+  comptesSimules.mockResolvedValue([])
 })
 
 describe('PageDossierCredit', () => {
@@ -222,7 +233,7 @@ describe('PageDossierCredit', () => {
     expect(decaisserSimule).not.toHaveBeenCalled()
 
     expect(
-      screen.getByText('400 000 F seront décaissés vers le compte de crédit de ce tiers.'),
+      screen.getByText('400 000 F seront décaissés depuis la caisse de l’agence.'),
     ).toBeVisible()
     expect(
       screen.getByText(
@@ -232,7 +243,12 @@ describe('PageDossierCredit', () => {
     ).toBeVisible()
 
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer le décaissement' }))
-    await waitFor(() => expect(decaisserSimule).toHaveBeenCalledWith(ID))
+    await waitFor(() =>
+      expect(decaisserSimule).toHaveBeenCalledWith(ID, {
+        mode: 'caisse',
+        compte_epargne_id: undefined,
+      }),
+    )
   })
 
   it('décaissement : dit « compte de crédit du client » si le tiers n’est pas membre', async () => {
@@ -267,6 +283,103 @@ describe('PageDossierCredit', () => {
     // Rien n'a basculé côté écran : pas d'échéancier, toujours le panneau de décaissement.
     expect(screen.queryByText('Échéancier')).toBeNull()
     expect(screen.getByRole('button', { name: 'Confirmer le décaissement' })).toBeVisible()
+  })
+
+  // --- Décaissement multi-mode : caisse ou compte du tiers, tous produits confondus --------
+
+  function unCompte(o: Partial<ReturnType<typeof compteBase>> = {}) {
+    return { ...compteBase(), ...o }
+  }
+  function compteBase() {
+    return {
+      id: 'c1',
+      account_number: 'EP-2026-0000006',
+      product_code: 'EAV',
+      product_name: 'Épargne à vue',
+      product_type: 'a_vue',
+      currency: 'XOF',
+      balance: 15000,
+      status: 'actif',
+      is_provisional: true,
+    }
+  }
+
+  it('option « crédit sur le compte » ABSENTE si le tiers n’a aucun compte ouvert', async () => {
+    etat.permissions = ['credit.decaissement.create']
+    comptesSimules.mockResolvedValue([])
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Décaisser' }))
+    await waitFor(() => expect(comptesSimules).toHaveBeenCalledWith('t1'))
+
+    expect(screen.getByText('Espèces à la caisse')).toBeVisible()
+    expect(screen.queryByText('Crédit sur le compte')).toBeNull()
+  })
+
+  it('le sélecteur liste les comptes ACTIFS, tous produits confondus, avec numéro/produit/solde', async () => {
+    etat.permissions = ['credit.decaissement.create']
+    comptesSimules.mockResolvedValue([
+      unCompte({ id: 'c1', account_number: 'EP-2026-0000006', product_name: 'Épargne à vue' }),
+      unCompte({
+        id: 'c2', account_number: 'DT-2026-0000002', product_name: 'Dépôt à terme',
+        balance: 250000, status: 'actif',
+      }),
+      unCompte({ id: 'c3', product_name: 'Épargne programmée', status: 'cloture' }),
+    ])
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Décaisser' }))
+    fireEvent.click(await screen.findByText('Crédit sur le compte'))
+
+    // Les deux comptes ACTIFS, EAV et DAT mélangés — pas figé sur un seul type.
+    expect(
+      screen.getByText('EP-2026-0000006 — Épargne à vue — solde actuel 15 000 F'),
+    ).toBeVisible()
+    expect(
+      screen.getByText('DT-2026-0000002 — Dépôt à terme — solde actuel 250 000 F'),
+    ).toBeVisible()
+    // Le compte fermé n'apparaît pas.
+    expect(screen.queryByText(/Épargne programmée/)).toBeNull()
+  })
+
+  it('choisir un compte adapte le texte de confirmation et l’appel de décaissement', async () => {
+    etat.permissions = ['credit.decaissement.create']
+    comptesSimules.mockResolvedValue([unCompte()])
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Décaisser' }))
+    fireEvent.click(await screen.findByText('Crédit sur le compte'))
+    fireEvent.click(
+      screen.getByText('EP-2026-0000006 — Épargne à vue — solde actuel 15 000 F'),
+    )
+
+    expect(
+      screen.getByText(
+        '400 000 F seront crédités sur le compte ' +
+          'EP-2026-0000006 — Épargne à vue — solde actuel 15 000 F.',
+      ),
+    ).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le décaissement' }))
+    await waitFor(() =>
+      expect(decaisserSimule).toHaveBeenCalledWith(ID, { mode: 'epargne', compte_epargne_id: 'c1' }),
+    )
+  })
+
+  it('mode compte choisi mais AUCUN compte sélectionné : la confirmation reste bloquée', async () => {
+    etat.permissions = ['credit.decaissement.create']
+    comptesSimules.mockResolvedValue([unCompte()])
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Décaisser' }))
+    fireEvent.click(await screen.findByText('Crédit sur le compte'))
+
+    expect(screen.getByRole('button', { name: 'Confirmer le décaissement' })).toBeDisabled()
+    expect(decaisserSimule).not.toHaveBeenCalled()
   })
 
   it('échéancier affiché une fois décaissé, et reste visible à la revisite du dossier', async () => {

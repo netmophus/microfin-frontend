@@ -21,6 +21,8 @@ export interface ProduitCredit {
 export interface DemandeCredit {
   id: string
   application_number: string
+  // Pour lister les comptes epargne.accounts éligibles au décaissement sur compte.
+  tier_id: string
   tier_number: string
   tier_nom: string
   // Membre ou client — dit quel compte de crédit reçoit la créance au décaissement (ancré à
@@ -44,6 +46,9 @@ export interface DemandeCreditDetail extends DemandeCredit {
 export interface DemandeCreditDecaissee extends DemandeCreditDetail {
   disbursed_at: string | null
   compte_credit_number: string | null
+  mode_decaissement: string // 'caisse' | 'epargne'
+  // Le compte réellement crédité : la caisse, ou le compte du tiers choisi (mode 'epargne').
+  compte_destination_number: string | null
   nb_echeances: number
   premiere_echeance_le: string | null
   derniere_echeance_le: string | null
@@ -74,6 +79,12 @@ export interface DecisionCredit {
   decision: 'approuve' | 'refuse'
   montant_decide?: number
   motif: string
+}
+
+export interface DecaissementCredit {
+  mode: 'caisse' | 'epargne'
+  // Obligatoire si mode='epargne' (le compte epargne.accounts choisi) ; absent si 'caisse'.
+  compte_epargne_id?: string
 }
 
 export async function listerProduitsCredit(): Promise<ProduitCredit[]> {
@@ -114,9 +125,19 @@ export async function deciderDemandeCredit(
   return data
 }
 
-/** Décaisse une demande APPROUVÉE : pièce comptable + échéancier générés en une transaction. */
-export async function decaisserDemandeCredit(id: string): Promise<DemandeCreditDecaissee> {
-  const { data } = await api.post<DemandeCreditDecaissee>(`/credit/demandes/${id}/decaissement`)
+/**
+ * Décaisse une demande APPROUVÉE : pièce comptable + échéancier générés en une transaction.
+ * `corps.mode` : 'caisse' (espèces, défaut) ou 'epargne' (crédit direct sur un compte choisi
+ * du tiers, n'importe quel produit).
+ */
+export async function decaisserDemandeCredit(
+  id: string,
+  corps: DecaissementCredit,
+): Promise<DemandeCreditDecaissee> {
+  const { data } = await api.post<DemandeCreditDecaissee>(
+    `/credit/demandes/${id}/decaissement`,
+    corps,
+  )
   return data
 }
 

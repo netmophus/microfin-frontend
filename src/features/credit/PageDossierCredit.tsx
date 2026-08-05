@@ -21,7 +21,7 @@ import {
   type EcheanceApercuCredit,
   type EcheanceCredit,
 } from '@/features/credit/api'
-import { formatFcfa } from '@/features/epargne/api'
+import { formatFcfa, listerComptesMembre } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
 const C = LIBELLES.credit
@@ -251,10 +251,15 @@ function PanneauDecision({
   )
 }
 
+type ModeDecaissement = 'caisse' | 'epargne'
+
 /**
  * Décaissement (CR6b), réservé au responsable d'agence. Confirmation en 2 temps — jamais un
- * clic aveugle : le montant, le compte destinataire, la génération de l'échéancier et le
- * caractère définitif sont tous énoncés AVANT le bouton de confirmation.
+ * clic aveugle : le MODE (espèces ou crédit sur un compte du tiers — n'importe quel produit,
+ * pas figé sur l'épargne classique), le montant, le compte destinataire, la génération de
+ * l'échéancier et le caractère définitif sont tous énoncés AVANT le bouton de confirmation.
+ * L'option "crédit sur un compte" est ABSENTE si le tiers n'a aucun compte ouvert — jamais un
+ * choix qui échouerait au clic.
  */
 function PanneauDecaissement({
   dossier,
@@ -265,9 +270,23 @@ function PanneauDecaissement({
 }) {
   const peutDecaisser = useAPermission('credit.decaissement.create')
   const [confirmation, setConfirmation] = useState(false)
+  const [mode, setMode] = useState<ModeDecaissement>('caisse')
+  const [compteChoisiId, setCompteChoisiId] = useState('')
+
+  const comptes = useQuery({
+    queryKey: ['epargne', 'comptes', dossier.tier_id],
+    queryFn: () => listerComptesMembre(dossier.tier_id),
+    enabled: confirmation,
+  })
+  const comptesActifs = (comptes.data ?? []).filter((c) => c.status === 'actif')
+  const compteChoisi = comptesActifs.find((c) => c.id === compteChoisiId)
 
   const mutation = useMutation({
-    mutationFn: () => decaisserDemandeCredit(dossier.id),
+    mutationFn: () =>
+      decaisserDemandeCredit(dossier.id, {
+        mode,
+        compte_epargne_id: mode === 'epargne' ? compteChoisiId : undefined,
+      }),
     onSuccess: onDecaisse,
   })
 
@@ -286,12 +305,73 @@ function PanneauDecaissement({
   const compteLabelCreance = dossier.is_member
     ? C.decaissementCompteMembre
     : C.decaissementCompteClient
+  const pretAConfirmer = mode === 'caisse' || Boolean(compteChoisi)
 
   return (
     <section className="space-y-3 rounded-lg border border-warning/40 bg-warning-subtle/40 p-4">
       <h2 className="text-sm font-semibold">{C.decaissementTitre}</h2>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">{C.decaissementModeTitre}</legend>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="radio"
+            name="mode-decaissement"
+            checked={mode === 'caisse'}
+            onChange={() => {
+              setMode('caisse')
+              setCompteChoisiId('')
+            }}
+          />
+          {C.decaissementModeCaisseLabel}
+        </label>
+
+        {comptes.isPending && (
+          <p className="pl-6 text-xs text-muted-foreground">{C.decaissementComptesChargement}</p>
+        )}
+
+        {comptesActifs.length > 0 && (
+          <>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="mode-decaissement"
+                checked={mode === 'epargne'}
+                onChange={() => setMode('epargne')}
+              />
+              {C.decaissementModeCompteLabel}
+            </label>
+            {mode === 'epargne' && (
+              <div className="space-y-1 pl-6">
+                {comptesActifs.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="compte-decaissement"
+                      checked={compteChoisiId === c.id}
+                      onChange={() => setCompteChoisiId(c.id)}
+                    />
+                    {C.decaissementCompteLigne(c.account_number, c.product_name, formatFcfa(c.balance))}
+                  </label>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </fieldset>
+
       <p className="text-sm font-medium">
-        {C.decaissementMontant(formatFcfa(dossier.montant_decide ?? 0))}
+        {mode === 'caisse'
+          ? C.decaissementMontantCaisse(formatFcfa(dossier.montant_decide ?? 0))
+          : compteChoisi &&
+            C.decaissementMontantCompte(
+              formatFcfa(dossier.montant_decide ?? 0),
+              C.decaissementCompteLigne(
+                compteChoisi.account_number,
+                compteChoisi.product_name,
+                formatFcfa(compteChoisi.balance),
+              ),
+            )}
       </p>
       <p className="text-sm">
         {C.decaissementExplication(compteLabelCreance, C.dureeValeur(dossier.duree_echeances))}
@@ -306,7 +386,11 @@ function PanneauDecaissement({
       )}
 
       <div className="flex gap-2">
-        <Button size="sm" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+        <Button
+          size="sm"
+          onClick={() => mutation.mutate()}
+          disabled={!pretAConfirmer || mutation.isPending}
+        >
           {mutation.isPending ? C.decaissementEnCours : C.decaissementConfirmer}
         </Button>
         <Button

@@ -795,6 +795,9 @@ export const LIBELLES = {
       retrait: 'Retrait',
       interet: 'Intérêts',
       cloture: 'Clôture (restitution)',
+      // Décaissement de crédit crédité directement sur ce compte (mode 'epargne') — distinct
+      // d'un dépôt classique, pour qu'un contrôleur identifie l'origine dans le relevé.
+      decaissement_credit: 'Décaissement de crédit',
     } as Record<string, string>,
     piece: 'Pièce',
     fermer: 'Fermer le compte',
@@ -885,9 +888,21 @@ export const LIBELLES = {
     // --- Décaissement (CR6b, responsable d'agence) ---
     actionDecaisser: 'Décaisser',
     decaissementTitre: 'Décaissement',
-    // {montant} déjà formaté. Le PREMIER fait à dire, avant tout le reste.
-    decaissementMontant: (montant: string) =>
-      `${montant} seront décaissés vers le compte de crédit de ce tiers.`,
+    // Choix du mode — AVANT tout montant/confirmation.
+    decaissementModeTitre: 'Comment décaisser ?',
+    decaissementModeCaisseLabel: 'Espèces à la caisse',
+    decaissementModeCompteLabel: 'Crédit sur le compte',
+    decaissementComptesChargement: 'Chargement des comptes du tiers…',
+    // {numero}/{produit}/{solde} — {solde} déjà formaté. Libellé d'un compte du sélecteur.
+    decaissementCompteLigne: (numero: string, produit: string, solde: string) =>
+      `${numero} — ${produit} — solde actuel ${solde}`,
+    // {montant} déjà formaté. Le PREMIER fait à dire, avant tout le reste — un par mode.
+    decaissementMontantCaisse: (montant: string) =>
+      `${montant} seront décaissés depuis la caisse de l’agence.`,
+    // {compteLigne} = le même libellé que dans le sélecteur (numéro — produit — solde), pour
+    // que le responsable reconnaisse EXACTEMENT le compte qu'il a choisi.
+    decaissementMontantCompte: (montant: string, compteLigne: string) =>
+      `${montant} seront crédités sur le compte ${compteLigne}.`,
     // {compte} = "membre" ou "client" — SELON LE STATUT DU TIERS à cet instant (ancré, jamais
     // recalculé ensuite, comme le routage épargne/parts). {duree} déjà formatée (ex. "12 échéances").
     decaissementExplication: (compte: string, duree: string) =>
