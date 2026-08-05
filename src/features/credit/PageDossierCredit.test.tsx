@@ -4,13 +4,23 @@ import { AxiosError } from 'axios'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { deciderDemandeCredit, lireDemandeCredit, type DemandeCreditDetail } from '@/features/credit/api'
+import {
+  decaisserDemandeCredit,
+  deciderDemandeCredit,
+  lireDemandeCredit,
+  lireEcheancierCredit,
+  type DemandeCreditDetail,
+} from '@/features/credit/api'
 import { PageDossierCredit } from '@/features/credit/PageDossierCredit'
 
 /**
- * Vue détail d'un dossier. Points durs : la décision n'apparaît QUE pour credit.demande.decide,
- * motif obligatoire dans LES DEUX sens, montant réduit possible à l'approbation (jamais au-delà
- * du demandé), et un dossier déjà décidé affiche le résultat au lieu du bloc d'action.
+ * Vue détail d'un dossier. Points durs (CR6a) : la décision n'apparaît QUE pour
+ * credit.demande.decide, motif obligatoire dans LES DEUX sens, montant réduit possible à
+ * l'approbation (jamais au-delà du demandé), un dossier déjà décidé affiche le résultat au lieu
+ * du bloc d'action. Points durs (CR6b) : le décaissement n'apparaît QUE pour
+ * credit.decaissement.create, la confirmation énonce montant/compte/durée/caractère définitif
+ * AVANT le bouton (pas de clic aveugle), l'échéancier s'affiche une fois décaissé et reste
+ * visible à la revisite (requête indépendante de la mutation), un échec serveur ne casse rien.
  */
 
 const etat = vi.hoisted(() => ({ permissions: ['credit.demande.decide'] as string[] }))
@@ -23,11 +33,19 @@ vi.mock('@/features/credit/api', async () => {
   const reel = await vi.importActual<typeof import('@/features/credit/api')>(
     '@/features/credit/api',
   )
-  return { ...reel, lireDemandeCredit: vi.fn(), deciderDemandeCredit: vi.fn() }
+  return {
+    ...reel,
+    lireDemandeCredit: vi.fn(),
+    deciderDemandeCredit: vi.fn(),
+    decaisserDemandeCredit: vi.fn(),
+    lireEcheancierCredit: vi.fn(),
+  }
 })
 
 const lireSimule = vi.mocked(lireDemandeCredit)
 const deciderSimule = vi.mocked(deciderDemandeCredit)
+const decaisserSimule = vi.mocked(decaisserDemandeCredit)
+const echeancierSimule = vi.mocked(lireEcheancierCredit)
 const ID = 'd1'
 
 function unDossier(o: Partial<DemandeCreditDetail> = {}): DemandeCreditDetail {
@@ -36,6 +54,7 @@ function unDossier(o: Partial<DemandeCreditDetail> = {}): DemandeCreditDetail {
     application_number: 'CR-2026-0000001',
     tier_number: 'M-2026-0000001',
     tier_nom: 'Diallo Amadou',
+    is_member: true,
     product_code: 'CRT1',
     product_name: 'Crédit court terme',
     montant_demande: 500000,
@@ -167,5 +186,112 @@ describe('PageDossierCredit', () => {
     afficher()
 
     expect(await screen.findByText('Ce dossier de crédit est introuvable.')).toBeVisible()
+  })
+
+  // --- Décaissement (CR6b) ---------------------------------------------------------------
+
+  it('décaissement : bouton absent sans credit.decaissement.create', async () => {
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    await screen.findByText('Approuvée pour 400 000 F.')
+    expect(screen.queryByRole('button', { name: 'Décaisser' })).toBeNull()
+  })
+
+  it('décaissement : la confirmation énonce montant, compte, durée et caractère définitif AVANT le bouton', async () => {
+    etat.permissions = ['credit.decaissement.create']
+    lireSimule.mockResolvedValue(
+      unDossier({
+        status: 'approuve',
+        montant_decide: 400000,
+        duree_echeances: 12,
+        is_member: true,
+      }),
+    )
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Décaisser' }))
+    // Rien n'est parti tant que la confirmation n'a pas été explicitement donnée.
+    expect(decaisserSimule).not.toHaveBeenCalled()
+
+    expect(
+      screen.getByText('400 000 F seront décaissés vers le compte de crédit de ce tiers.'),
+    ).toBeVisible()
+    expect(
+      screen.getByText(
+        'La créance sera enregistrée sur le compte de crédit du membre de ce tiers, et un ' +
+          'échéancier de 12 échéances sera généré et figé. Cette action est définitive.',
+      ),
+    ).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le décaissement' }))
+    await waitFor(() => expect(decaisserSimule).toHaveBeenCalledWith(ID))
+  })
+
+  it('décaissement : dit « compte de crédit du client » si le tiers n’est pas membre', async () => {
+    etat.permissions = ['credit.decaissement.create']
+    lireSimule.mockResolvedValue(
+      unDossier({ status: 'approuve', montant_decide: 400000, is_member: false }),
+    )
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Décaisser' }))
+
+    expect(screen.getByText(/compte de crédit du client de ce tiers/)).toBeVisible()
+  })
+
+  it('décaissement : échec serveur affiché en langage humain, rien ne bascule', async () => {
+    etat.permissions = ['credit.decaissement.create']
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    decaisserSimule.mockRejectedValue(
+      new AxiosError('rejet', undefined, undefined, undefined, {
+        status: 422,
+        data: { detail: 'Ce tiers n’est plus actif : le décaissement est refusé.' },
+      } as never),
+    )
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Décaisser' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le décaissement' }))
+
+    expect(
+      await screen.findByText('Ce tiers n’est plus actif : le décaissement est refusé.'),
+    ).toBeVisible()
+    // Rien n'a basculé côté écran : pas d'échéancier, toujours le panneau de décaissement.
+    expect(screen.queryByText('Échéancier')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Confirmer le décaissement' })).toBeVisible()
+  })
+
+  it('échéancier affiché une fois décaissé, et reste visible à la revisite du dossier', async () => {
+    lireSimule.mockResolvedValue(unDossier({ status: 'decaisse', montant_decide: 300000 }))
+    echeancierSimule.mockResolvedValue([
+      {
+        numero: 1,
+        due_date: '2026-09-04',
+        capital: 25000,
+        interets: 3000,
+        total: 28000,
+        capital_restant_du: 275000,
+        status: 'a_echoir',
+      },
+      {
+        numero: 2,
+        due_date: '2026-10-04',
+        capital: 25000,
+        interets: 2750,
+        total: 27750,
+        capital_restant_du: 250000,
+        status: 'a_echoir',
+      },
+    ])
+    afficher()
+
+    // « à la revisite » : ce test simule exactement ça — une page chargée fraîche (un seul
+    // GET, pas de mutation dans ce test) qui trouve le dossier déjà décaissé.
+    expect(await screen.findByText('Échéancier')).toBeVisible()
+    expect(screen.getByText('28 000 F')).toBeVisible()
+    expect(screen.getByText('275 000 F')).toBeVisible()
+    expect(echeancierSimule).toHaveBeenCalledWith(ID)
+    expect(screen.getByText('Décaissée : les fonds ont été versés.')).toBeVisible()
   })
 })

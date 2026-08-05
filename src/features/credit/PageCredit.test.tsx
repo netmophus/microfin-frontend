@@ -27,6 +27,7 @@ function base() {
     application_number: 'CR-2026-0000001',
     tier_number: 'M-2026-0000001',
     tier_nom: 'Diallo Amadou',
+    is_member: true,
     product_code: 'CRT1',
     product_name: 'Crédit court terme',
     montant_demande: 500000,

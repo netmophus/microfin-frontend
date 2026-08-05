@@ -17,3 +17,17 @@ export function BadgeStatutDossier({ statut }: { statut: string }) {
   const C = LIBELLES.credit
   return <Badge ton={TON_STATUT_DOSSIER[statut] ?? 'neutral'}>{C.statuts[statut] ?? statut}</Badge>
 }
+
+const TON_STATUT_ECHEANCE: Record<string, BadgeTon> = {
+  a_echoir: 'neutral',
+  paye: 'success',
+}
+
+export function BadgeStatutEcheance({ statut }: { statut: string }) {
+  const C = LIBELLES.credit
+  return (
+    <Badge ton={TON_STATUT_ECHEANCE[statut] ?? 'neutral'}>
+      {C.statutsEcheance[statut] ?? statut}
+    </Badge>
+  )
+}

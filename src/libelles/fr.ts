@@ -878,6 +878,40 @@ export const LIBELLES = {
     decisionApprouvee: (montant: string) => `Approuvée pour ${montant}.`,
     decisionRefusee: 'Refusée.',
     decisionDecaissee: 'Décaissée : les fonds ont été versés.',
+    // {date} déjà formatée, {compte} le numéro réel (connu seulement après l'action).
+    decaisseLe: (date: string) => `Décaissé le ${date}.`,
+    compteCredit: 'Compte de crédit',
+
+    // --- Décaissement (CR6b, responsable d'agence) ---
+    actionDecaisser: 'Décaisser',
+    decaissementTitre: 'Décaissement',
+    // {montant} déjà formaté. Le PREMIER fait à dire, avant tout le reste.
+    decaissementMontant: (montant: string) =>
+      `${montant} seront décaissés vers le compte de crédit de ce tiers.`,
+    // {compte} = "membre" ou "client" — SELON LE STATUT DU TIERS à cet instant (ancré, jamais
+    // recalculé ensuite, comme le routage épargne/parts). {duree} déjà formatée (ex. "12 échéances").
+    decaissementExplication: (compte: string, duree: string) =>
+      `La créance sera enregistrée sur le compte de crédit ${compte} de ce tiers, et un ` +
+      `échéancier de ${duree} sera généré et figé. Cette action est définitive.`,
+    decaissementCompteMembre: 'du membre',
+    decaissementCompteClient: 'du client',
+    decaissementConfirmer: 'Confirmer le décaissement',
+    decaissementEnCours: 'Décaissement en cours…',
+    decaissementEchec: 'Le décaissement a échoué. Réessayez.',
+
+    // --- Échéancier (CR6b) ---
+    echeancierTitre: 'Échéancier',
+    colEcheance: 'Échéance',
+    colEcheanceDate: 'Date',
+    colCapital: 'Capital',
+    colInterets: 'Intérêts',
+    colTotal: 'Total',
+    colCapitalRestant: 'Capital restant dû',
+    colStatutEcheance: 'Statut',
+    statutsEcheance: {
+      a_echoir: 'À échoir',
+      paye: 'Payée',
+    } as Record<string, string>,
   },
 
   interets: {

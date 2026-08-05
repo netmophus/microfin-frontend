@@ -3,12 +3,12 @@ import { AxiosError } from 'axios'
 import { api } from '@/lib/api'
 
 /**
- * Module Crédit (CR6a) — produits, demandes, décision.
+ * Module Crédit — produits, demandes, décision (CR6a), décaissement + échéancier (CR6b).
  *
  * Montants en ENTIERS de francs CFA (comme partout ailleurs). `formatFcfa` vient de l'Épargne
  * (réutilisé, pas redupliqué — contrairement à Parts, qui avait dupliqué un formateur local).
  *
- * Le décaissement, l'échéancier et le remboursement (CR6b-d) n'ont PAS encore de fonctions ici.
+ * Le remboursement (CR6d, guichet) n'a pas encore de fonctions ici.
  */
 
 export interface ProduitCredit {
@@ -23,6 +23,9 @@ export interface DemandeCredit {
   application_number: string
   tier_number: string
   tier_nom: string
+  // Membre ou client — dit quel compte de crédit reçoit la créance au décaissement (ancré à
+  // cet instant, jamais recalculé ensuite, comme le routage épargne/parts).
+  is_member: boolean
   product_code: string
   product_name: string
   montant_demande: number
@@ -36,6 +39,24 @@ export interface DemandeCreditDetail extends DemandeCredit {
   montant_decide: number | null
   decided_at: string | null
   motif_decision: string | null
+}
+
+export interface DemandeCreditDecaissee extends DemandeCreditDetail {
+  disbursed_at: string | null
+  compte_credit_number: string | null
+  nb_echeances: number
+  premiere_echeance_le: string | null
+  derniere_echeance_le: string | null
+}
+
+export interface EcheanceCredit {
+  numero: number
+  due_date: string
+  capital: number
+  interets: number
+  total: number
+  capital_restant_du: number
+  status: string // 'a_echoir' | 'paye'
 }
 
 export interface CreationDemandeCredit {
@@ -86,6 +107,18 @@ export async function deciderDemandeCredit(
   corps: DecisionCredit,
 ): Promise<DemandeCreditDetail> {
   const { data } = await api.post<DemandeCreditDetail>(`/credit/demandes/${id}/decision`, corps)
+  return data
+}
+
+/** Décaisse une demande APPROUVÉE : pièce comptable + échéancier générés en une transaction. */
+export async function decaisserDemandeCredit(id: string): Promise<DemandeCreditDecaissee> {
+  const { data } = await api.post<DemandeCreditDecaissee>(`/credit/demandes/${id}/decaissement`)
+  return data
+}
+
+/** L'échéancier persisté d'une demande décaissée (vide si pas encore décaissée). */
+export async function lireEcheancierCredit(id: string): Promise<EcheanceCredit[]> {
+  const { data } = await api.get<EcheanceCredit[]>(`/credit/demandes/${id}/echeancier`)
   return data
 }
 
