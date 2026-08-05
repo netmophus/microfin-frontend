@@ -426,3 +426,50 @@ export async function modifierParametresParts(
   const { data } = await api.patch<ParametresParts>('/tiers/parts/parametres', modifications)
   return data
 }
+
+// --- 5.4 Paliers de souffrance (crédit, CR5a) ----------------------------------------------
+
+export interface PalierSouffrance {
+  id: string
+  code: string
+  libelle: string
+  seuil_jours: number
+  taux_provision_bp: number
+  compte_encours: CompteRattachement | null
+  compte_dotation: CompteRattachement | null
+  is_terminal: boolean
+  is_provisional: boolean
+}
+
+export interface EcriturePalier {
+  code: string
+  libelle: string
+  seuil_jours: number
+  taux_provision_bp: number
+  compte_encours: string | null
+  compte_dotation: string | null
+  is_terminal: boolean
+  motif: string
+}
+
+export async function listerPaliersSouffrance(): Promise<PalierSouffrance[]> {
+  const { data } = await api.get<PalierSouffrance[]>('/credit/paliers-souffrance')
+  return data
+}
+
+export async function creerPalierSouffrance(corps: EcriturePalier): Promise<PalierSouffrance> {
+  const { data } = await api.post<PalierSouffrance>('/credit/paliers-souffrance', corps)
+  return data
+}
+
+export async function modifierPalierSouffrance(
+  id: string,
+  corps: EcriturePalier,
+): Promise<PalierSouffrance> {
+  const { data } = await api.patch<PalierSouffrance>(`/credit/paliers-souffrance/${id}`, corps)
+  return data
+}
+
+export async function retirerPalierSouffrance(id: string, motif: string): Promise<void> {
+  await api.post(`/credit/paliers-souffrance/${id}/retirer`, { motif })
+}

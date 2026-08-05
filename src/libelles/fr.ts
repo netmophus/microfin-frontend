@@ -179,6 +179,7 @@ export const LIBELLES = {
       rattachementsEpargne: 'Rattachements épargne',
       rattachementsCaisse: 'Caisse par agence',
       parametresParts: 'Paramètres des parts sociales',
+      paliersSouffrance: 'Paliers de souffrance',
       epargneDepots: 'Épargne / Dépôts',
       credit: 'Crédit',
       recouvrement: 'Recouvrement',
@@ -1368,6 +1369,53 @@ export const LIBELLES = {
     enregistrer: 'Enregistrer',
     enregistrementEnCours: 'Enregistrement…',
     echec: 'La modification a échoué. Réessayez.',
+  },
+
+  // Paliers de souffrance (CR5a) — machine à états impayés/provisionnement, paramétrable.
+  // Contrairement aux 3 écrans précédents (rattachement d'UNE ligne fixe), le NOMBRE de
+  // paliers est lui-même une donnée : ajouter/retirer une ligne ne demande aucune migration.
+  paliersSouffrance: {
+    titre: 'Paliers de souffrance',
+    sousTitre:
+      'Les seuils (en jours de retard), taux de provision et comptes rattachés à chaque palier de la créance saine à irrécouvrable.',
+    avertissement:
+      'Ce changement s’applique aux prochaines reclassifications, jamais aux écritures déjà passées.',
+    provisoire: 'Provisoire',
+    provisoireAide: 'Seuils et taux de démonstration — à valider par l’expert-comptable SFD.',
+    chargement: 'Chargement des paliers…',
+    listeVide: 'Aucun palier configuré.',
+    interdit: 'Vous n’avez pas la permission de consulter ces paliers.',
+    erreur: 'Impossible de charger les paliers. Réessayez dans un instant.',
+
+    colonneLibelle: 'Palier',
+    colonneSeuil: 'Seuil (jours de retard)',
+    colonneTaux: 'Taux de provision',
+    colonneEncours: 'Compte d’encours',
+    colonneDotation: 'Compte de dotation',
+    aucun: '— non rattaché —',
+    terminal: 'Terminal (irrécouvrable)',
+
+    code: 'Code',
+    codePlaceholder: 'Ex. DOUTEUX',
+    libelle: 'Libellé',
+    libellePlaceholder: 'Ex. Créance douteuse',
+    seuilJours: 'Seuil (jours)',
+    tauxProvision: 'Taux de provision (points de base — 10000 = 100 %)',
+    estTerminal: 'Palier terminal (créance considérée comme perdue)',
+
+    ajouter: 'Ajouter un palier',
+    modifier: 'Modifier',
+    retirer: 'Retirer',
+    annuler: 'Annuler',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce changement ?',
+    motifRetraitPlaceholder: 'Pourquoi retirer ce palier ?',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    confirmerRetrait: 'Confirmer le retrait',
+    retraitEnCours: 'Retrait…',
+    echec: 'L’enregistrement a échoué. Réessayez.',
+    echecRetrait: 'Le retrait a échoué. Réessayez.',
   },
 
   tiersKyc: {

@@ -14,6 +14,7 @@ import { PageBalance } from '@/features/comptabilite/PageBalance'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
 import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
 import { PageParametresParts } from '@/features/comptabilite/PageParametresParts'
+import { PagePaliersSouffrance } from '@/features/comptabilite/PagePaliersSouffrance'
 import { PagePlanComptable } from '@/features/comptabilite/PagePlanComptable'
 import { PageRattachementsCaisse } from '@/features/comptabilite/PageRattachementsCaisse'
 import { PageRattachementsEpargne } from '@/features/comptabilite/PageRattachementsEpargne'
@@ -213,6 +214,14 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.plan.read">
                     <PageParametresParts />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/paliers-souffrance"
+                element={
+                  <RoutePermission permission="compta.plan.read">
+                    <PagePaliersSouffrance />
                   </RoutePermission>
                 }
               />

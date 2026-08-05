@@ -139,6 +139,14 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/parametres-parts',
         permission: 'compta.plan.read',
       },
+      // Paliers de souffrance (CR5a) : paramétrage seul, aucune reclassification automatique
+      // encore branchée (CR5c, à venir) — même paire de permissions que les autres Bloc 5.
+      {
+        etat: 'actif',
+        libelle: M.entrees.paliersSouffrance,
+        chemin: '/comptabilite/paliers-souffrance',
+        permission: 'compta.plan.read',
+      },
       // Rapports (R1/R2) : lecture pure, réservés à compta.rapport.read.
       {
         etat: 'actif',
