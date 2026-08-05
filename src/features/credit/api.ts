@@ -59,6 +59,10 @@ export interface EcheanceCredit {
   status: string // 'a_echoir' | 'paye'
 }
 
+// Aperçu PUR (CR6b) : mêmes montants qu'une échéance réelle, PAS de `status` — rien n'est
+// suivi puisque rien n'est écrit en base.
+export type EcheanceApercuCredit = Omit<EcheanceCredit, 'status'>
+
 export interface CreationDemandeCredit {
   product_id: string
   montant_demande: number
@@ -119,6 +123,18 @@ export async function decaisserDemandeCredit(id: string): Promise<DemandeCreditD
 /** L'échéancier persisté d'une demande décaissée (vide si pas encore décaissée). */
 export async function lireEcheancierCredit(id: string): Promise<EcheanceCredit[]> {
   const { data } = await api.get<EcheanceCredit[]>(`/credit/demandes/${id}/echeancier`)
+  return data
+}
+
+/**
+ * Aperçu PUR de l'échéancier d'une demande APPROUVÉE — même moteur que le décaissement réel,
+ * RIEN N'EST ÉCRIT en base. Montants garantis identiques à l'échéancier réel ; dates
+ * indicatives (calculées comme si le décaissement avait lieu aujourd'hui).
+ */
+export async function lireApercuEcheancierCredit(id: string): Promise<EcheanceApercuCredit[]> {
+  const { data } = await api.get<EcheanceApercuCredit[]>(
+    `/credit/demandes/${id}/echeancier-apercu`,
+  )
   return data
 }
 

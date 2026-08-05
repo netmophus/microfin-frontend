@@ -168,3 +168,23 @@
     @apply font-sans;
     }
 }
+
+/* Impression : n'affiche QUE la zone marquée .zone-impression (ex. l'aperçu de l'échéancier
+   remis au client) — la barre latérale, l'en-tête, les boutons disparaissent du papier. Le
+   reste de la page est masqué puis la zone imprimable est repositionnée en haut : la technique
+   standard pour « imprimer seulement ceci », sans fenêtre ni document séparés. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .zone-impression,
+  .zone-impression * {
+    visibility: visible;
+  }
+  .zone-impression {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+}

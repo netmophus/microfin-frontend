@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   decaisserDemandeCredit,
   deciderDemandeCredit,
+  lireApercuEcheancierCredit,
   lireDemandeCredit,
   lireEcheancierCredit,
   type DemandeCreditDetail,
@@ -21,6 +22,8 @@ import { PageDossierCredit } from '@/features/credit/PageDossierCredit'
  * credit.decaissement.create, la confirmation énonce montant/compte/durée/caractère définitif
  * AVANT le bouton (pas de clic aveugle), l'échéancier s'affiche une fois décaissé et reste
  * visible à la revisite (requête indépendante de la mutation), un échec serveur ne casse rien.
+ * Point dur (aperçu) : dès `approuve` (AVANT tout décaissement), l'aperçu de l'échéancier est
+ * visible avec son bandeau montants-définitifs/dates-recalculées, au-dessus du bouton Décaisser.
  */
 
 const etat = vi.hoisted(() => ({ permissions: ['credit.demande.decide'] as string[] }))
@@ -39,6 +42,7 @@ vi.mock('@/features/credit/api', async () => {
     deciderDemandeCredit: vi.fn(),
     decaisserDemandeCredit: vi.fn(),
     lireEcheancierCredit: vi.fn(),
+    lireApercuEcheancierCredit: vi.fn(),
   }
 })
 
@@ -46,6 +50,7 @@ const lireSimule = vi.mocked(lireDemandeCredit)
 const deciderSimule = vi.mocked(deciderDemandeCredit)
 const decaisserSimule = vi.mocked(decaisserDemandeCredit)
 const echeancierSimule = vi.mocked(lireEcheancierCredit)
+const apercuSimule = vi.mocked(lireApercuEcheancierCredit)
 const ID = 'd1'
 
 function unDossier(o: Partial<DemandeCreditDetail> = {}): DemandeCreditDetail {
@@ -85,6 +90,8 @@ function afficher() {
 beforeEach(() => {
   vi.clearAllMocks()
   etat.permissions = ['credit.demande.decide']
+  // Défaut neutre : les tests qui ne portent pas sur l'aperçu n'ont pas à s'en soucier.
+  apercuSimule.mockResolvedValue([])
 })
 
 describe('PageDossierCredit', () => {
@@ -293,5 +300,85 @@ describe('PageDossierCredit', () => {
     expect(screen.getByText('275 000 F')).toBeVisible()
     expect(echeancierSimule).toHaveBeenCalledWith(ID)
     expect(screen.getByText('Décaissée : les fonds ont été versés.')).toBeVisible()
+  })
+
+  // --- Aperçu de l'échéancier (avant tout décaissement) ------------------------------------
+
+  it('aperçu visible dès `approuve`, AVANT tout décaissement, avec son bandeau', async () => {
+    apercuSimule.mockResolvedValue([
+      { numero: 1, due_date: '2026-09-04', capital: 33333, interets: 4000, total: 37333, capital_restant_du: 366667 },
+    ])
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    expect(await screen.findByText('Échéancier — aperçu')).toBeVisible()
+    expect(apercuSimule).toHaveBeenCalledWith(ID)
+    // Rien n'a été décaissé : la mutation de décaissement ne part jamais toute seule.
+    expect(decaisserSimule).not.toHaveBeenCalled()
+    // La table de l'aperçu montre le montant, sans colonne Statut (rien n'est suivi).
+    expect(screen.getByText('37 333 F')).toBeVisible()
+    expect(screen.queryByText('Statut')).toBeNull()
+
+    // La phrase que le responsable doit pouvoir répéter au client, telle quelle.
+    expect(
+      screen.getByText('Aperçu de l’échéancier — à présenter au client avant décaissement.'),
+    ).toBeVisible()
+    const montantGras = screen.getByText('définitifs')
+    expect(montantGras.tagName).toBe('STRONG')
+    const datesGras = screen.getByText('recalculées')
+    expect(datesGras.tagName).toBe('STRONG')
+  })
+
+  it('aperçu : erreur serveur affichée, le reste de l’écran (dont le bouton Décaisser) reste intact', async () => {
+    etat.permissions = ['credit.decaissement.create']
+    apercuSimule.mockRejectedValue(new Error('échec'))
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    expect(
+      await screen.findByText('Impossible de calculer l’aperçu de l’échéancier.'),
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Décaisser' })).toBeVisible()
+  })
+
+  it('aperçu absent tant que la demande n’est pas approuvée', async () => {
+    lireSimule.mockResolvedValue(unDossier({ status: 'en_instruction' }))
+    afficher()
+
+    await screen.findByText('CR-2026-0000001')
+    expect(screen.queryByText('Échéancier — aperçu')).toBeNull()
+    expect(apercuSimule).not.toHaveBeenCalled()
+  })
+
+  // --- Impression de l'aperçu ---------------------------------------------------------------
+
+  it('imprimer : le bouton déclenche l’impression du navigateur', async () => {
+    const printSimule = vi.fn()
+    vi.stubGlobal('print', printSimule)
+    apercuSimule.mockResolvedValue([
+      { numero: 1, due_date: '2026-09-04', capital: 33333, interets: 4000, total: 37333, capital_restant_du: 366667 },
+    ])
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Imprimer l’aperçu' }))
+    expect(printSimule).toHaveBeenCalledOnce()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('impression : la ligne de signature du client et la date figurent dans le document', async () => {
+    apercuSimule.mockResolvedValue([
+      { numero: 1, due_date: '2026-09-04', capital: 33333, interets: 4000, total: 37333, capital_restant_du: 366667 },
+    ])
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    await screen.findByText('Échéancier — aperçu')
+    // Présentes dans le document (masquées à l'écran par `hidden`, révélées par `print:grid` —
+    // jsdom n'évalue pas @media print, donc on vérifie la présence, pas la visibilité écran).
+    expect(screen.getByText('Signature du client')).toBeInTheDocument()
+    expect(screen.getAllByText('Date').length).toBeGreaterThan(0)
+    expect(screen.getByText('Aperçu de l’échéancier de crédit')).toBeInTheDocument()
   })
 })

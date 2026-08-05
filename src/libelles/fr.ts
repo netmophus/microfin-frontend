@@ -912,6 +912,29 @@ export const LIBELLES = {
       a_echoir: 'À échoir',
       paye: 'Payée',
     } as Record<string, string>,
+
+    // --- Aperçu de l'échéancier (CR6b) — avant tout décaissement, pour signature client ---
+    apercuTitre: 'Échéancier — aperçu',
+    apercuChargement: 'Calcul de l’aperçu…',
+    apercuErreur: 'Impossible de calculer l’aperçu de l’échéancier.',
+    // Phrase que le responsable doit pouvoir répéter au client sans hésiter. Composée en
+    // morceaux (pas une seule chaîne) pour mettre "définitifs"/"recalculées" en gras en JSX.
+    apercuBanniereTitre: 'Aperçu de l’échéancier — à présenter au client avant décaissement.',
+    apercuBanniereAvantMontant: 'Les MONTANTS de chaque échéance (capital, intérêts) sont ',
+    apercuBanniereMontantGras: 'définitifs',
+    apercuBanniereEntreMontantDate: '. Les DATES seront ',
+    apercuBanniereDateGras: 'recalculées',
+    apercuBanniereApresDate:
+      ' à la date réelle du décaissement si celui-ci a lieu un autre jour que l’aperçu.',
+
+    // Impression (remise au client avant signature) — visible SEULEMENT sur le papier, jamais
+    // à l'écran (l'identité et le montant sont déjà affichés dans l'en-tête du dossier).
+    apercuImprimer: 'Imprimer l’aperçu',
+    apercuDocumentTitre: 'Aperçu de l’échéancier de crédit',
+    apercuDocTiers: 'Tiers',
+    apercuDocDossier: 'Dossier',
+    apercuSignatureClient: 'Signature du client',
+    apercuSignatureDate: 'Date',
   },
 
   interets: {

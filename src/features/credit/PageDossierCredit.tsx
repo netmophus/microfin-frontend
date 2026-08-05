@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Printer } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
@@ -13,10 +13,13 @@ import { BadgeStatutDossier, BadgeStatutEcheance } from '@/features/credit/badge
 import {
   decaisserDemandeCredit,
   deciderDemandeCredit,
+  lireApercuEcheancierCredit,
   lireDemandeCredit,
   lireEcheancierCredit,
   messageRefusCredit,
   type DemandeCreditDetail,
+  type EcheanceApercuCredit,
+  type EcheanceCredit,
 } from '@/features/credit/api'
 import { formatFcfa } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
@@ -123,7 +126,12 @@ export function PageDossierCredit() {
 
       {d.status === 'en_instruction' && <PanneauDecision dossier={d} onDecide={rafraichir} />}
 
-      {d.status === 'approuve' && <PanneauDecaissement dossier={d} onDecaisse={rafraichir} />}
+      {d.status === 'approuve' && (
+        <>
+          <ApercuEcheancier dossier={d} />
+          <PanneauDecaissement dossier={d} onDecaisse={rafraichir} />
+        </>
+      )}
 
       {d.status === 'decaisse' && <TableauEcheancier applicationId={d.id} />}
     </div>
@@ -314,6 +322,56 @@ function PanneauDecaissement({
   )
 }
 
+/** Table partagée par l'échéancier réel (avec statut) et l'aperçu (sans — rien n'est suivi). */
+function TableEcheances({
+  lignes,
+  avecStatut,
+}: {
+  lignes: (EcheanceCredit | EcheanceApercuCredit)[]
+  avecStatut: boolean
+}) {
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <table className="w-full text-sm">
+        <thead className="border-b bg-muted/50">
+          <tr>
+            <th className="px-3 py-2 text-left font-medium">{C.colEcheance}</th>
+            <th className="px-3 py-2 text-left font-medium">{C.colEcheanceDate}</th>
+            <th className="px-3 py-2 text-right font-medium">{C.colCapital}</th>
+            <th className="px-3 py-2 text-right font-medium">{C.colInterets}</th>
+            <th className="px-3 py-2 text-right font-medium">{C.colTotal}</th>
+            <th className="px-3 py-2 text-right font-medium">{C.colCapitalRestant}</th>
+            {avecStatut && (
+              <th className="px-3 py-2 text-left font-medium">{C.colStatutEcheance}</th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {lignes.map((e) => (
+            <tr key={e.numero} className="border-b last:border-0">
+              <td className="px-3 py-2 tabular-nums">{e.numero}</td>
+              <td className="px-3 py-2">{new Date(e.due_date).toLocaleDateString('fr-FR')}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.capital)}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.interets)}</td>
+              <td className="px-3 py-2 text-right font-semibold tabular-nums">
+                {formatFcfa(e.total)}
+              </td>
+              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                {formatFcfa(e.capital_restant_du)}
+              </td>
+              {avecStatut && 'status' in e && (
+                <td className="px-3 py-2">
+                  <BadgeStatutEcheance statut={e.status} />
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 /** L'échéancier persisté — reste visible à CHAQUE revisite du dossier, pas seulement juste
  * après le décaissement (nouvelle requête, indépendante de la mutation). */
 function TableauEcheancier({ applicationId }: { applicationId: string }) {
@@ -336,39 +394,104 @@ function TableauEcheancier({ applicationId }: { applicationId: string }) {
   return (
     <section className="space-y-2">
       <h2 className="text-sm font-semibold">{C.echeancierTitre}</h2>
-      <div className="overflow-x-auto rounded-md border">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-muted/50">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium">{C.colEcheance}</th>
-              <th className="px-3 py-2 text-left font-medium">{C.colEcheanceDate}</th>
-              <th className="px-3 py-2 text-right font-medium">{C.colCapital}</th>
-              <th className="px-3 py-2 text-right font-medium">{C.colInterets}</th>
-              <th className="px-3 py-2 text-right font-medium">{C.colTotal}</th>
-              <th className="px-3 py-2 text-right font-medium">{C.colCapitalRestant}</th>
-              <th className="px-3 py-2 text-left font-medium">{C.colStatutEcheance}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requete.data.map((e) => (
-              <tr key={e.numero} className="border-b last:border-0">
-                <td className="px-3 py-2 tabular-nums">{e.numero}</td>
-                <td className="px-3 py-2">{new Date(e.due_date).toLocaleDateString('fr-FR')}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.capital)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.interets)}</td>
-                <td className="px-3 py-2 text-right font-semibold tabular-nums">
-                  {formatFcfa(e.total)}
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                  {formatFcfa(e.capital_restant_du)}
-                </td>
-                <td className="px-3 py-2">
-                  <BadgeStatutEcheance statut={e.status} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <TableEcheances lignes={requete.data} avecStatut />
+    </section>
+  )
+}
+
+/**
+ * Aperçu PUR de l'échéancier (CR6b), dès que le dossier est approuvé — À PRÉSENTER AU CLIENT
+ * avant tout décaissement, pour signature. Aucune écriture : c'est un calcul, affiché
+ * au-dessus du bloc de décaissement. Le bandeau distingue explicitement ce qui est garanti
+ * (les montants) de ce qui est indicatif (les dates, recalculées à la date réelle).
+ *
+ * IMPRESSION : le bouton déclenche window.print() sur `.zone-impression` (voir index.css) —
+ * seuls l'identité du tiers, le montant, le produit, le bandeau et le tableau atterrissent sur
+ * le papier ; navigation et boutons disparaissent. L'en-tête imprimable et la ligne de
+ * signature sont `hidden` à l'écran (déjà visibles ailleurs, ou sans objet hors impression) et
+ * `print:block`/`print:grid` sur le papier.
+ */
+function ApercuEcheancier({ dossier }: { dossier: DemandeCreditDetail }) {
+  const requete = useQuery({
+    queryKey: ['credit', 'echeancier-apercu', dossier.id],
+    queryFn: () => lireApercuEcheancierCredit(dossier.id),
+  })
+
+  if (requete.isPending) {
+    return <p className="py-4 text-sm text-muted-foreground">{C.apercuChargement}</p>
+  }
+  if (requete.isError) {
+    return (
+      <Alert variant="destructive" role="alert">
+        <AlertDescription>{C.apercuErreur}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  return (
+    <section className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">{C.apercuTitre}</h2>
+        <Button size="sm" variant="outline" onClick={() => window.print()}>
+          <Printer className="mr-1 size-4" />
+          {C.apercuImprimer}
+        </Button>
+      </div>
+
+      <div className="zone-impression space-y-4">
+        {/* En-tête du document — invisible à l'écran (déjà affiché dans l'en-tête du dossier
+            ci-dessus), imprimé seul en haut du papier. */}
+        <div className="hidden print:block">
+          <h1 className="text-lg font-semibold">{C.apercuDocumentTitre}</h1>
+          <dl className="mt-2 space-y-1 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">{C.apercuDocDossier}</dt>
+              <dd>{dossier.application_number}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">{C.apercuDocTiers}</dt>
+              <dd>
+                {dossier.tier_nom} · {dossier.tier_number}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">{C.produit}</dt>
+              <dd>{dossier.product_name}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">{C.montantDecide}</dt>
+              <dd className="font-semibold">{formatFcfa(dossier.montant_decide ?? 0)}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div
+          role="note"
+          className="rounded-md border border-warning/50 bg-warning-subtle/40 px-3 py-2 text-sm"
+        >
+          <p className="font-medium">{C.apercuBanniereTitre}</p>
+          <p>
+            {C.apercuBanniereAvantMontant}
+            <strong>{C.apercuBanniereMontantGras}</strong>
+            {C.apercuBanniereEntreMontantDate}
+            <strong>{C.apercuBanniereDateGras}</strong>
+            {C.apercuBanniereApresDate}
+          </p>
+        </div>
+
+        <TableEcheances lignes={requete.data} avecStatut={false} />
+
+        {/* Signature — sans objet à l'écran, imprimée seulement. */}
+        <div className="hidden print:grid print:grid-cols-2 print:gap-8 print:pt-10 print:text-sm">
+          <div>
+            <p>{C.apercuSignatureClient}</p>
+            <div className="mt-10 border-t border-foreground" />
+          </div>
+          <div>
+            <p>{C.apercuSignatureDate}</p>
+            <div className="mt-10 border-t border-foreground" />
+          </div>
+        </div>
       </div>
     </section>
   )
