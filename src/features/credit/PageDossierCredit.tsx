@@ -278,7 +278,15 @@ function PanneauDecaissement({
     queryFn: () => listerComptesMembre(dossier.tier_id),
     enabled: confirmation,
   })
-  const comptesActifs = (comptes.data ?? []).filter((c) => c.status === 'actif')
+  // DETTE TEMPORAIRE (voir docs/conformite-comptable.md, chantier « blocage des DAT ») : les
+  // DAT ('terme') sont exclus ici parce qu'AUCUN mécanisme de blocage jusqu'à échéance n'existe
+  // dans le module Épargne — les y créditer n'aurait pas de sens métier (fonds indisponibles au
+  // client). Exclusion PAR TYPE, pas un vrai contrôle de disponibilité (qui n'existe pas
+  // encore) : à remplacer par un prédicat « compte disponible » le jour où le blocage DAT sera
+  // réellement implémenté. Miroir du refus serveur (epargne/operations.py).
+  const comptesActifs = (comptes.data ?? []).filter(
+    (c) => c.status === 'actif' && c.product_type !== 'terme',
+  )
   const compteChoisi = comptesActifs.find((c) => c.id === compteChoisiId)
 
   const mutation = useMutation({

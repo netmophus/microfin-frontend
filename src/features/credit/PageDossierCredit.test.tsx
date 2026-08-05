@@ -317,15 +317,19 @@ describe('PageDossierCredit', () => {
     expect(screen.queryByText('Crédit sur le compte')).toBeNull()
   })
 
-  it('le sélecteur liste les comptes ACTIFS, tous produits confondus, avec numéro/produit/solde', async () => {
+  it('le sélecteur liste les comptes ACTIFS, tous produits confondus HORS DAT, avec numéro/produit/solde', async () => {
     etat.permissions = ['credit.decaissement.create']
     comptesSimules.mockResolvedValue([
       unCompte({ id: 'c1', account_number: 'EP-2026-0000006', product_name: 'Épargne à vue' }),
       unCompte({
-        id: 'c2', account_number: 'DT-2026-0000002', product_name: 'Dépôt à terme',
-        balance: 250000, status: 'actif',
+        id: 'c2', account_number: 'EPR-2026-0000003', product_name: 'Épargne programmée',
+        product_type: 'programmee', balance: 100000,
       }),
-      unCompte({ id: 'c3', product_name: 'Épargne programmée', status: 'cloture' }),
+      unCompte({
+        id: 'c3', account_number: 'DT-2026-0000002', product_name: 'Dépôt à terme',
+        product_type: 'terme', balance: 250000,
+      }),
+      unCompte({ id: 'c4', product_name: 'Compte fermé', status: 'cloture' }),
     ])
     lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
     afficher()
@@ -333,15 +337,32 @@ describe('PageDossierCredit', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Décaisser' }))
     fireEvent.click(await screen.findByText('Crédit sur le compte'))
 
-    // Les deux comptes ACTIFS, EAV et DAT mélangés — pas figé sur un seul type.
+    // EAV et épargne programmée, ACTIFS, mélangés — pas figé sur un seul type.
     expect(
       screen.getByText('EP-2026-0000006 — Épargne à vue — solde actuel 15 000 F'),
     ).toBeVisible()
     expect(
-      screen.getByText('DT-2026-0000002 — Dépôt à terme — solde actuel 250 000 F'),
+      screen.getByText('EPR-2026-0000003 — Épargne programmée — solde actuel 100 000 F'),
     ).toBeVisible()
-    // Le compte fermé n'apparaît pas.
-    expect(screen.queryByText(/Épargne programmée/)).toBeNull()
+    // DETTE TEMPORAIRE : le DAT est exclu (aucun blocage jusqu'à échéance implémenté — voir
+    // conformite-comptable.md). Ni le compte fermé, pour la raison déjà couverte ailleurs.
+    expect(screen.queryByText(/DT-2026-0000002/)).toBeNull()
+    expect(screen.queryByText(/Compte fermé/)).toBeNull()
+  })
+
+  it('un tiers dont le SEUL compte est un DAT : option « crédit sur le compte » absente', async () => {
+    etat.permissions = ['credit.decaissement.create']
+    comptesSimules.mockResolvedValue([
+      unCompte({ id: 'c1', account_number: 'DT-2026-0000009', product_type: 'terme' }),
+    ])
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Décaisser' }))
+    await waitFor(() => expect(comptesSimules).toHaveBeenCalledWith('t1'))
+
+    expect(screen.getByText('Espèces à la caisse')).toBeVisible()
+    expect(screen.queryByText('Crédit sur le compte')).toBeNull()
   })
 
   it('choisir un compte adapte le texte de confirmation et l’appel de décaissement', async () => {
