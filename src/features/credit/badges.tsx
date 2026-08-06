@@ -20,6 +20,7 @@ export function BadgeStatutDossier({ statut }: { statut: string }) {
 
 const TON_STATUT_ECHEANCE: Record<string, BadgeTon> = {
   a_echoir: 'neutral',
+  partiellement_paye: 'warning',
   paye: 'success',
 }
 

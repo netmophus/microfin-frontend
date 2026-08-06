@@ -917,6 +917,9 @@ export const LIBELLES = {
 
     // --- Échéancier (CR6b) ---
     echeancierTitre: 'Échéancier',
+    // Dérivé côté écran (TOUTES les échéances 'paye') — aucun statut dédié en base, même
+    // philosophie que « vérité = Σ mouvements » côté Épargne.
+    soldeTitre: 'Soldé : toutes les échéances sont réglées.',
     colEcheance: 'Échéance',
     colEcheanceDate: 'Date',
     colCapital: 'Capital',
@@ -926,8 +929,11 @@ export const LIBELLES = {
     colStatutEcheance: 'Statut',
     statutsEcheance: {
       a_echoir: 'À échoir',
+      partiellement_paye: 'Partiellement payée',
       paye: 'Payée',
     } as Record<string, string>,
+    // CR5b : sous le total, seulement pour une échéance partiellement payée.
+    soldeRestant: 'Solde restant : {montant}',
 
     // --- Aperçu de l'échéancier (CR6b) — avant tout décaissement, pour signature client ---
     apercuTitre: 'Échéancier — aperçu',
@@ -1059,6 +1065,7 @@ export const LIBELLES = {
     titre: 'Guichet',
     ongletEpargne: 'Épargne',
     ongletParts: 'Parts sociales',
+    ongletCredit: 'Crédit',
 
     intro: 'Saisissez le numéro du livret pour trouver le compte, puis opérez.',
     numeroLabel: 'Numéro de compte',
@@ -1106,6 +1113,43 @@ export const LIBELLES = {
     // {numero}, puis « Confirmez-vous… {membre} »). {parts}, {total}, {nom} injectés.
     confirmerComptant: 'Encaisser {total} et faire adhérer {nom} ({parts} parts) ?',
     confirmerLiberation: 'Encaisser {total} pour libérer {parts} parts de {nom} ?',
+  },
+
+  // Onglet « Crédit » du guichet (CR6d) — encaissement du caissier, une échéance à la fois.
+  // DIVERGENCE assumée avec les deux autres onglets : le montant n'est JAMAIS saisi, seulement
+  // affiché (le serveur exige un montant EXACT, saisir serait risquer un refus évitable).
+  guichetCredit: {
+    intro: 'Cherchez un crédit par numéro de dossier, numéro de tiers ou nom, puis encaissez.',
+    rechercherLabel: 'Numéro de dossier, numéro ou nom du tiers',
+    rechercherPlaceholder: 'CR-2026-0000001, M-2026-0000001 ou nom',
+    chercher: 'Chercher',
+    rechercheEnCours: 'Recherche…',
+    aucunResultat: 'Aucun crédit décaissé ne correspond à cette recherche.',
+    changerRecherche: 'Nouvelle recherche',
+    // Vérification humaine : le nom est proéminent, comme les deux autres onglets du guichet.
+    tiers: 'Tiers',
+    dossier: 'Dossier',
+    // Affiché tel quel dans les résultats — jamais un clic qui échouerait.
+    dejaSolde: 'Déjà soldé',
+    echeanceDue: 'Échéance #{numero} — {montant} due le {date}',
+    montantAregler: 'Montant à régler',
+    echeanceLabel: 'Échéance',
+    capitalLabel: 'Capital',
+    interetsLabel: 'Intérêts',
+    // CR5b : visible seulement si un versement partiel a déjà eu lieu sur cette échéance.
+    dejaVerse: 'Déjà versé : {montant}',
+    continuer: 'Continuer',
+    // Confirmation — le NOM est RÉPÉTÉ (même règle que les deux autres onglets).
+    confirmerRemboursement: 'Encaisser {montant} pour l’échéance #{numero} du crédit {dossier}',
+    confirmerQuestion: 'Confirmez-vous l’opération pour {nom} ?',
+    confirmer: 'Confirmer',
+    annuler: 'Annuler',
+    enCours: 'Traitement…',
+    succes: 'Échéance #{numero} réglée : {montant} encaissés.',
+    succesSolde: 'Ce crédit est maintenant intégralement soldé.',
+    succesRestantes: 'Il reste {n} échéance(s) à régler.',
+    echec: 'L’opération a échoué. Réessayez.',
+    autreOperation: 'Nouvelle opération',
   },
 
   planComptable: {

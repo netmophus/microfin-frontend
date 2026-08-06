@@ -84,13 +84,14 @@ export const MENU: readonly GroupeMenu[] = [
     titre: M.groupes.operations,
     entrees: [
       aVenir(M.entrees.caisseGuichet),
-      // Guichet (dépôt/retrait épargne + comptant/libération parts) : à onglets, visible dès
-      // qu'on opère sur AU MOINS l'un des deux (le caissier a généralement les deux).
+      // Guichet (dépôt/retrait épargne + comptant/libération parts + remboursement crédit) :
+      // à onglets, visible dès qu'on opère sur AU MOINS l'un des trois (le caissier a
+      // généralement les trois).
       {
         etat: 'actif',
         libelle: M.entrees.guichetEpargne,
         chemin: '/guichet',
-        permission: ['epargne.operation.deposit', 'tiers.shares.pay'],
+        permission: ['epargne.operation.deposit', 'tiers.shares.pay', 'credit.remboursement.create'],
       },
       // Versement des intérêts : acte d'INSTITUTION, réservé à la direction.
       {

@@ -3,12 +3,11 @@ import { AxiosError } from 'axios'
 import { api } from '@/lib/api'
 
 /**
- * Module Crédit — produits, demandes, décision (CR6a), décaissement + échéancier (CR6b).
+ * Module Crédit — produits, demandes, décision (CR6a), décaissement + échéancier (CR6b),
+ * guichet de remboursement (CR6d).
  *
  * Montants en ENTIERS de francs CFA (comme partout ailleurs). `formatFcfa` vient de l'Épargne
  * (réutilisé, pas redupliqué — contrairement à Parts, qui avait dupliqué un formateur local).
- *
- * Le remboursement (CR6d, guichet) n'a pas encore de fonctions ici.
  */
 
 export interface ProduitCredit {
@@ -61,12 +60,15 @@ export interface EcheanceCredit {
   interets: number
   total: number
   capital_restant_du: number
-  status: string // 'a_echoir' | 'paye'
+  status: string // 'a_echoir' | 'partiellement_paye' | 'paye'
+  // CR5b : reflète un versement partiel éventuel — `status` seul ne dit pas ce qui reste dû.
+  montant_paye: number
+  solde_du: number
 }
 
-// Aperçu PUR (CR6b) : mêmes montants qu'une échéance réelle, PAS de `status` — rien n'est
-// suivi puisque rien n'est écrit en base.
-export type EcheanceApercuCredit = Omit<EcheanceCredit, 'status'>
+// Aperçu PUR (CR6b) : mêmes montants qu'une échéance réelle, PAS de `status`/`montant_paye`/
+// `solde_du` — rien n'est suivi puisque rien n'est écrit en base.
+export type EcheanceApercuCredit = Omit<EcheanceCredit, 'status' | 'montant_paye' | 'solde_du'>
 
 export interface CreationDemandeCredit {
   product_id: string
@@ -85,6 +87,43 @@ export interface DecaissementCredit {
   mode: 'caisse' | 'epargne'
   // Obligatoire si mode='epargne' (le compte epargne.accounts choisi) ; absent si 'caisse'.
   compte_epargne_id?: string
+}
+
+// CR5b : `solde_du` (pas `total`) est le montant à présenter/encaisser — une échéance déjà
+// partiellement payée (`montant_paye` > 0) ne doit jamais réafficher son montant d'origine
+// comme s'il restait intégralement dû.
+export interface EcheanceDue {
+  numero: number
+  due_date: string
+  capital: number
+  interets: number
+  total: number
+  montant_paye: number
+  solde_du: number
+}
+
+// Un résultat de recherche du guichet (CR6d). prochaine_echeance absente = déjà soldé.
+export interface DossierRemboursable {
+  id: string
+  application_number: string
+  tier_number: string
+  tier_nom: string
+  product_name: string
+  prochaine_echeance: EcheanceDue | null
+}
+
+// CR5b : CE versement — `capital`/`interets`/`montant_total` décrivent ce que CE paiement a
+// couvert, pas nécessairement l'échéance entière si `echeance_soldee` est faux.
+export interface RemboursementRecu {
+  numero: number
+  due_date: string
+  capital: number
+  interets: number
+  montant_total: number
+  paid_at: string
+  solde_du: number
+  echeance_soldee: boolean
+  echeances_restantes: number
 }
 
 export async function listerProduitsCredit(): Promise<ProduitCredit[]> {
@@ -156,6 +195,33 @@ export async function lireApercuEcheancierCredit(id: string): Promise<EcheanceAp
   const { data } = await api.get<EcheanceApercuCredit[]>(
     `/credit/demandes/${id}/echeancier-apercu`,
   )
+  return data
+}
+
+/**
+ * Recherche du guichet (CR6d) : crédits DÉCAISSÉS du périmètre par numéro de dossier, numéro de
+ * tiers ou nom. Un dossier déjà soldé reste dans les résultats (`prochaine_echeance: null`) —
+ * affiché tel quel, jamais un clic qui échouerait.
+ */
+export async function rechercherRemboursements(q: string): Promise<DossierRemboursable[]> {
+  const { data } = await api.get<DossierRemboursable[]>('/credit/recherche-remboursement', {
+    params: { q },
+  })
+  return data
+}
+
+/**
+ * Règle la prochaine échéance non soldée d'un crédit décaissé, pour son SOLDE RESTANT exact
+ * (CR5b — jamais le total d'origine si un versement partiel a déjà eu lieu) — jamais saisi par
+ * le caissier, toujours celui déjà connu via la recherche du guichet.
+ */
+export async function rembourserDemandeCredit(
+  id: string,
+  montant: number,
+): Promise<RemboursementRecu> {
+  const { data } = await api.post<RemboursementRecu>(`/credit/demandes/${id}/remboursement`, {
+    montant,
+  })
   return data
 }
 

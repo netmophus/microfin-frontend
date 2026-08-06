@@ -1,27 +1,37 @@
 import { useState } from 'react'
 
 import { useAPermission } from '@/features/auth/useProfil'
+import { OngletGuichetCredit } from '@/features/credit/OngletGuichetCredit'
 import { OngletGuichetEpargne } from '@/features/epargne/OngletGuichetEpargne'
 import { OngletGuichetParts } from '@/features/tiers/OngletGuichetParts'
 import { LIBELLES } from '@/libelles/fr'
 
 const G = LIBELLES.guichet
 
+type Onglet = 'epargne' | 'parts' | 'credit'
+
 /**
- * Le guichet — poste de travail du caissier, à ONGLETS : Épargne (dépôt/retrait) et Parts
- * sociales (comptant/libération). UN SEUL écran, pas de navigation entre deux endroits pendant
- * qu'un client est devant lui — mais chaque onglet reste un composant INDÉPENDANT en interne
- * (recherche différente : numéro de compte pour l'épargne, identité du tiers pour les parts).
- * L'onglet Épargne est repris tel quel (écran déjà validé au navigateur) ; aucune fusion forcée.
+ * Le guichet — poste de travail du caissier, à ONGLETS : Épargne (dépôt/retrait), Parts
+ * sociales (comptant/libération) et Crédit (remboursement, CR6d). UN SEUL écran, pas de
+ * navigation entre plusieurs endroits pendant qu'un client est devant lui — mais chaque onglet
+ * reste un composant INDÉPENDANT en interne (recherche différente pour chacun).
  *
  * Chaque onglet n'apparaît que pour qui en a l'usage : Épargne -> epargne.operation.deposit,
- * Parts -> tiers.shares.pay. La route elle-même est ouverte dès qu'on a AU MOINS l'un des deux
- * (RoutePermission any-of) ; si un seul est détenu, l'autre onglet est simplement absent.
+ * Parts -> tiers.shares.pay, Crédit -> credit.remboursement.create. La route elle-même est
+ * ouverte dès qu'on a AU MOINS l'un des trois (RoutePermission any-of) ; la barre d'onglets ne
+ * s'affiche que si PLUS D'UN est détenu — sinon le seul onglet disponible s'affiche seul.
  */
 export function PageGuichet() {
   const epargneDispo = useAPermission('epargne.operation.deposit')
   const partsDispo = useAPermission('tiers.shares.pay')
-  const [onglet, setOnglet] = useState<'epargne' | 'parts'>(epargneDispo ? 'epargne' : 'parts')
+  const creditDispo = useAPermission('credit.remboursement.create')
+
+  const disponibles: { cle: Onglet; label: string }[] = [
+    ...(epargneDispo ? [{ cle: 'epargne' as const, label: G.ongletEpargne }] : []),
+    ...(partsDispo ? [{ cle: 'parts' as const, label: G.ongletParts }] : []),
+    ...(creditDispo ? [{ cle: 'credit' as const, label: G.ongletCredit }] : []),
+  ]
+  const [onglet, setOnglet] = useState<Onglet | undefined>(disponibles[0]?.cle)
 
   return (
     <div className="mx-auto max-w-xl space-y-4 p-4">
@@ -29,19 +39,19 @@ export function PageGuichet() {
         <h1 className="text-xl font-semibold">{G.titre}</h1>
       </header>
 
-      {epargneDispo && partsDispo && (
+      {disponibles.length > 1 && (
         <div className="flex border-b" role="tablist">
-          <BoutonOnglet actif={onglet === 'epargne'} onClick={() => setOnglet('epargne')}>
-            {G.ongletEpargne}
-          </BoutonOnglet>
-          <BoutonOnglet actif={onglet === 'parts'} onClick={() => setOnglet('parts')}>
-            {G.ongletParts}
-          </BoutonOnglet>
+          {disponibles.map((o) => (
+            <BoutonOnglet key={o.cle} actif={onglet === o.cle} onClick={() => setOnglet(o.cle)}>
+              {o.label}
+            </BoutonOnglet>
+          ))}
         </div>
       )}
 
       {onglet === 'epargne' && epargneDispo && <OngletGuichetEpargne />}
       {onglet === 'parts' && partsDispo && <OngletGuichetParts />}
+      {onglet === 'credit' && creditDispo && <OngletGuichetCredit />}
     </div>
   )
 }

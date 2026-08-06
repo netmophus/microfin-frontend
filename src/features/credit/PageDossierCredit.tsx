@@ -26,6 +26,10 @@ import { LIBELLES } from '@/libelles/fr'
 
 const C = LIBELLES.credit
 
+function fmt(gabarit: string, valeurs: Record<string, string>): string {
+  return gabarit.replace(/\{(\w+)\}/g, (_, cle) => valeurs[cle] ?? '')
+}
+
 function Ligne({ label, valeur }: { label: string; valeur: string }) {
   return (
     <div className="flex items-center justify-between gap-4 py-2 text-sm">
@@ -447,6 +451,13 @@ function TableEcheances({
               <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.interets)}</td>
               <td className="px-3 py-2 text-right font-semibold tabular-nums">
                 {formatFcfa(e.total)}
+                {/* CR5b : le solde restant, seulement si un versement partiel a déjà eu lieu —
+                    sinon `total` seul suffit déjà à dire ce qui est dû. */}
+                {'status' in e && e.status === 'partiellement_paye' && (
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {fmt(C.soldeRestant, { montant: formatFcfa(e.solde_du) })}
+                  </span>
+                )}
               </td>
               <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                 {formatFcfa(e.capital_restant_du)}
@@ -483,9 +494,20 @@ function TableauEcheancier({ applicationId }: { applicationId: string }) {
     )
   }
 
+  // Dérivé côté écran, comme le vérificateur d'engagements côté serveur : « soldé » = toutes
+  // les échéances 'paye', jamais un statut stocké séparément — les deux ne peuvent pas diverger.
+  const solde = requete.data.length > 0 && requete.data.every((e) => e.status === 'paye')
+
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-semibold">{C.echeancierTitre}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">{C.echeancierTitre}</h2>
+        {solde && (
+          <span className="rounded-full bg-success-subtle px-2 py-0.5 text-xs font-medium text-success">
+            {C.soldeTitre}
+          </span>
+        )}
+      </div>
       <TableEcheances lignes={requete.data} avecStatut />
     </section>
   )

@@ -414,6 +414,8 @@ describe('PageDossierCredit', () => {
         total: 28000,
         capital_restant_du: 275000,
         status: 'a_echoir',
+        montant_paye: 0,
+        solde_du: 28000,
       },
       {
         numero: 2,
@@ -423,6 +425,8 @@ describe('PageDossierCredit', () => {
         total: 27750,
         capital_restant_du: 250000,
         status: 'a_echoir',
+        montant_paye: 0,
+        solde_du: 27750,
       },
     ])
     afficher()
@@ -434,6 +438,66 @@ describe('PageDossierCredit', () => {
     expect(screen.getByText('275 000 F')).toBeVisible()
     expect(echeancierSimule).toHaveBeenCalledWith(ID)
     expect(screen.getByText('Décaissée : les fonds ont été versés.')).toBeVisible()
+    // Pas encore soldé : il reste une échéance 'a_echoir'.
+    expect(screen.queryByText('Soldé : toutes les échéances sont réglées.')).toBeNull()
+  })
+
+  it('toutes les échéances payées : le dossier est visiblement « Soldé »', async () => {
+    lireSimule.mockResolvedValue(unDossier({ status: 'decaisse', montant_decide: 50000 }))
+    echeancierSimule.mockResolvedValue([
+      {
+        numero: 1,
+        due_date: '2026-09-04',
+        capital: 25000,
+        interets: 3000,
+        total: 28000,
+        capital_restant_du: 25000,
+        status: 'paye',
+        montant_paye: 28000,
+        solde_du: 0,
+      },
+      {
+        numero: 2,
+        due_date: '2026-10-04',
+        capital: 25000,
+        interets: 2750,
+        total: 27750,
+        capital_restant_du: 0,
+        status: 'paye',
+        montant_paye: 27750,
+        solde_du: 0,
+      },
+    ])
+    afficher()
+
+    expect(await screen.findByText('Échéancier')).toBeVisible()
+    expect(screen.getByText('Soldé : toutes les échéances sont réglées.')).toBeVisible()
+  })
+
+  it('CR5b : une échéance partiellement payée montre son solde restant et un statut lisible', async () => {
+    lireSimule.mockResolvedValue(unDossier({ status: 'decaisse', montant_decide: 300000 }))
+    echeancierSimule.mockResolvedValue([
+      {
+        numero: 1,
+        due_date: '2026-09-04',
+        capital: 25000,
+        interets: 3000,
+        total: 28000,
+        capital_restant_du: 275000,
+        status: 'partiellement_paye',
+        montant_paye: 10000,
+        solde_du: 18000,
+      },
+    ])
+    afficher()
+
+    expect(await screen.findByText('Échéancier')).toBeVisible()
+    expect(screen.getByText('Partiellement payée')).toBeVisible()
+    expect(screen.getByText('Solde restant : 18 000 F')).toBeVisible()
+    // Jamais le code brut à l'écran.
+    expect(screen.queryByText('partiellement_paye')).toBeNull()
+    // Pas soldé — une échéance n'est pas 'paye'.
+    expect(screen.queryByText('Soldé : toutes les échéances sont réglées.')).toBeNull()
   })
 
   // --- Aperçu de l'échéancier (avant tout décaissement) ------------------------------------
