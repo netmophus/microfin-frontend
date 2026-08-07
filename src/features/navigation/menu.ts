@@ -106,6 +106,14 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/credit',
         permission: 'credit.demande.read',
       },
+      // Reclassification automatique (CR5c) : acte D'INSTITUTION, réservé à la direction —
+      // même patron que le versement d'intérêts ci-dessus.
+      {
+        etat: 'actif',
+        libelle: M.entrees.reclassification,
+        chemin: '/credit/reclassification',
+        permission: 'credit.delinquency.executer',
+      },
       aVenir(M.entrees.recouvrement),
     ],
   },

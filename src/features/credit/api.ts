@@ -225,6 +225,56 @@ export async function rembourserDemandeCredit(
   return data
 }
 
+// CR5c — reclassification automatique (paliers de souffrance). Palier avant/après en CLAIR
+// (code + libellé), pas un UUID nu à résoudre côté écran — le backend l'a déjà fait.
+export interface LigneReclassement {
+  application_number: string
+  tier_avant_code: string | null
+  tier_avant_libelle: string | null
+  tier_apres_code: string | null
+  tier_apres_libelle: string | null
+  jours_retard: number
+  encours_actuel: number
+  provision_avant: number
+  provision_apres: number
+}
+
+// Aperçu (dry-run) : même forme que LigneReclassement, plus le motif de refus s'il y en
+// aurait un — connu SANS rien écrire.
+export interface LigneApercuReclassement extends LigneReclassement {
+  rattachement_manquant: string | null
+}
+
+export interface ApercuReclassement {
+  dossiers_evalues: number
+  a_reclasser: number
+  rattachements_manquants: number
+  lignes: LigneApercuReclassement[]
+}
+
+export interface RapportReclassement {
+  dossiers_evalues: number
+  reclasses: number
+  ignores_rattachement_manquant: string[]
+  lignes: LigneReclassement[]
+}
+
+/** Prévisualisation OBLIGATOIRE avant exécution (dry-run) : calcule sans rien écrire. */
+export async function previsualiserReclassement(): Promise<ApercuReclassement> {
+  const { data } = await api.post<ApercuReclassement>('/credit/delinquency/apercu')
+  return data
+}
+
+/**
+ * Reclasse tous les crédits décaissés dont la situation le justifie — acte D'INSTITUTION
+ * réservé DIRECTION. Chaque dossier est committé séparément côté serveur : un paramétrage
+ * incomplet sur l'un n'empêche pas les autres.
+ */
+export async function executerReclassement(): Promise<RapportReclassement> {
+  const { data } = await api.post<RapportReclassement>('/credit/delinquency/executer')
+  return data
+}
+
 /**
  * Message d'un refus (gate KYC, produit indisponible, décision déjà prise, montant invalide…).
  * Le backend renvoie un `detail` métier lisible qu'on affiche TEL QUEL.

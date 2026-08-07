@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { HandCoins, Search } from 'lucide-react'
 import { useState } from 'react'
 
@@ -14,6 +14,7 @@ import {
   type RemboursementRecu,
 } from '@/features/credit/api'
 import { formatFcfa } from '@/features/epargne/api'
+import { useDebounce } from '@/lib/useDebounce'
 import { LIBELLES } from '@/libelles/fr'
 
 const G = LIBELLES.guichetCredit
@@ -52,39 +53,46 @@ export function OngletGuichetCredit() {
 
 function Recherche({ onSelection }: { onSelection: (d: DossierRemboursable) => void }) {
   const [q, setQ] = useState('')
-  const recherche = useMutation({
-    mutationFn: () => rechercherRemboursements(q.trim()),
+  // Filtrage en temps réel dès la 1ère frappe : le debounce (300 ms) diffère seulement l'APPEL
+  // serveur pour ne pas le spammer à chaque caractère, il n'attend jamais Entrée ni une saisie
+  // complète. `enabled` évite un appel sur champ vide (rien de ciblé à montrer sur 20 dossiers
+  // au hasard).
+  const qDifferee = useDebounce(q)
+  const recherche = useQuery({
+    queryKey: ['credit', 'recherche-remboursement', qDifferee],
+    queryFn: () => rechercherRemboursements(qDifferee.trim()),
+    enabled: qDifferee.trim().length > 0,
   })
 
   return (
-    <form
-      className="space-y-2"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (q.trim()) recherche.mutate()
-      }}
-    >
+    <div className="space-y-2">
       <Label htmlFor="recherche-credit-guichet">{G.rechercherLabel}</Label>
-      <div className="flex gap-2">
+      <div className="relative">
+        <Search
+          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
         <Input
           id="recherche-credit-guichet"
+          type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={G.rechercherPlaceholder}
+          className="pl-8"
         />
-        <Button type="submit" disabled={!q.trim() || recherche.isPending}>
-          <Search className="mr-1 size-4" />
-          {recherche.isPending ? G.rechercheEnCours : G.chercher}
-        </Button>
       </div>
 
-      {recherche.isSuccess && recherche.data.length === 0 && (
+      {recherche.isFetching && (
+        <p className="text-sm text-muted-foreground">{G.rechercheEnCours}</p>
+      )}
+
+      {!recherche.isFetching && recherche.isSuccess && recherche.data.length === 0 && (
         <Alert role="alert">
           <AlertDescription>{G.aucunResultat}</AlertDescription>
         </Alert>
       )}
 
-      {recherche.isSuccess && recherche.data.length > 0 && (
+      {!recherche.isFetching && recherche.isSuccess && recherche.data.length > 0 && (
         <ul className="divide-y rounded-md border bg-background text-sm">
           {recherche.data.map((d) => {
             const echeance = d.prochaine_echeance
@@ -125,7 +133,7 @@ function Recherche({ onSelection }: { onSelection: (d: DossierRemboursable) => v
           })}
         </ul>
       )}
-    </form>
+    </div>
   )
 }
 

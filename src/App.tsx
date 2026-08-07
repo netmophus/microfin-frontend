@@ -20,6 +20,7 @@ import { PageRattachementsCaisse } from '@/features/comptabilite/PageRattachemen
 import { PageRattachementsEpargne } from '@/features/comptabilite/PageRattachementsEpargne'
 import { PageCredit } from '@/features/credit/PageCredit'
 import { PageDossierCredit } from '@/features/credit/PageDossierCredit'
+import { PageReclassification } from '@/features/credit/PageReclassification'
 import { PageGuichet } from '@/features/epargne/PageGuichet'
 import { PageRapprochement } from '@/features/epargne/PageRapprochement'
 import { PageVersementInterets } from '@/features/epargne/PageVersementInterets'
@@ -172,6 +173,14 @@ export function App() {
                 element={
                   <RoutePermission permission="credit.demande.read">
                     <PageCredit />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/credit/reclassification"
+                element={
+                  <RoutePermission permission="credit.delinquency.executer">
+                    <PageReclassification />
                   </RoutePermission>
                 }
               />

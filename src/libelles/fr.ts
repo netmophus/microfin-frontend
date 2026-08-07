@@ -182,6 +182,7 @@ export const LIBELLES = {
       paliersSouffrance: 'Paliers de souffrance',
       epargneDepots: 'Épargne / Dépôts',
       credit: 'Crédit',
+      reclassification: 'Reclassification',
       recouvrement: 'Recouvrement',
       grandLivre: 'Grand livre',
       balance: 'Balance',
@@ -1037,6 +1038,59 @@ export const LIBELLES = {
     champsRequis: 'Renseignez la période et les deux dates.',
   },
 
+  reclassification: {
+    titre: 'Reclassification des crédits en souffrance',
+    intro:
+      'Prévisualisez, puis lancez. Aucun crédit n’est reclassé tant que vous n’avez pas confirmé.',
+    previsualiser: 'Prévisualiser',
+    previsualisationEnCours: 'Calcul en cours…',
+
+    // Prévisualisation : ce qui SERAIT reclassé, rien n'est encore écrit.
+    apercuTitre: 'Prévisualisation — rien n’est encore reclassé',
+    // {n} et {total} injectés.
+    apercuResume: '{n} dossier(s) seraient reclassés, sur {total} dossier(s) décaissés évalués.',
+    apercuAucun:
+      'Aucun dossier ne serait reclassé : tous les crédits décaissés sont dans le bon palier.',
+
+    // Un ou plusieurs dossiers échoueraient à l'exécution (paramétrage incomplet sur un
+    // palier) — on le DIT avant de lancer, pas après coup.
+    avertRattachements:
+      '{n} dossier(s) échoueraient faute de compte rattaché sur un palier — voir le détail ci-dessous. Complétez le paramétrage des paliers avant de lancer, sinon ils seront ignorés.',
+
+    colDossier: 'Dossier',
+    colPalierAvant: 'Palier avant',
+    colPalierApres: 'Palier après',
+    colRetard: 'Retard',
+    colEncours: 'Encours',
+    colProvisionAvant: 'Provision avant',
+    colProvisionApres: 'Provision après',
+    sain: 'Sain',
+    // {n} injecté.
+    jours: '{n} j',
+    // {motif} injecté (message du serveur, déjà en langage métier).
+    rattachementManquant: 'Échouerait : {motif}',
+
+    // Confirmation RENFORCÉE (comme le versement d'intérêts) : pose de vraies écritures.
+    confirmerTitre: 'Confirmer la reclassification ?',
+    // {n} et {total} injectés.
+    confirmerAvert:
+      'Vous allez reclasser {n} dossier(s) sur {total} évalués. Cette opération déplace l’encours et pose des écritures de dotation/reprise de provision sur chaque dossier concerné. Elle ne s’annule pas d’un clic.',
+    confirmer: 'Lancer la reclassification',
+    executionEnCours: 'Reclassification en cours…',
+    annuler: 'Annuler',
+    recommencer: 'Nouvel aperçu',
+
+    // Résultat.
+    succesTitre: 'Reclassification terminée',
+    // {n} et {total} injectés.
+    succesDetail: '{n} dossier(s) reclassé(s), sur {total} évalués.',
+    succesAucun: 'Aucun dossier n’a été reclassé (rien ne le justifiait).',
+    // {n} et {liste} injectés.
+    succesIgnores: '{n} dossier(s) ignoré(s), faute de rattachement : {liste}.',
+
+    echec: 'La reclassification a échoué. Réessayez, puis prévenez votre administrateur.',
+  },
+
   rapprochement: {
     titre: 'Rapprochement épargne ↔ comptabilité',
     intro:
@@ -1122,7 +1176,6 @@ export const LIBELLES = {
     intro: 'Cherchez un crédit par numéro de dossier, numéro de tiers ou nom, puis encaissez.',
     rechercherLabel: 'Numéro de dossier, numéro ou nom du tiers',
     rechercherPlaceholder: 'CR-2026-0000001, M-2026-0000001 ou nom',
-    chercher: 'Chercher',
     rechercheEnCours: 'Recherche…',
     aucunResultat: 'Aucun crédit décaissé ne correspond à cette recherche.',
     changerRecherche: 'Nouvelle recherche',
