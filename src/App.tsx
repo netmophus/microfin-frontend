@@ -10,6 +10,7 @@ import { RouteProtegee } from '@/features/auth/RouteProtegee'
 import { AppLayout } from '@/features/layout/AppLayout'
 import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
+import { PageCaisse } from '@/features/caisse/PageCaisse'
 import { PageBalance } from '@/features/comptabilite/PageBalance'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
 import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
@@ -133,6 +134,14 @@ export function App() {
                 element={
                   <RoutePermission permission="audit.read">
                     <PageJournalAudit />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/caisse"
+                element={
+                  <RoutePermission permission="caisse.session.read">
+                    <PageCaisse />
                   </RoutePermission>
                 }
               />

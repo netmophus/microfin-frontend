@@ -83,7 +83,14 @@ export const MENU: readonly GroupeMenu[] = [
     id: 'operations',
     titre: M.groupes.operations,
     entrees: [
-      aVenir(M.entrees.caisseGuichet),
+      // Session du caissier (CA1/CA4) : ouverture, solde théorique en direct, fermeture —
+      // distincte du guichet (dépôt/retrait/remboursement) juste en dessous.
+      {
+        etat: 'actif',
+        libelle: M.entrees.caisse,
+        chemin: '/caisse',
+        permission: 'caisse.session.read',
+      },
       // Guichet (dépôt/retrait épargne + comptant/libération parts + remboursement crédit) :
       // à onglets, visible dès qu'on opère sur AU MOINS l'un des trois (le caissier a
       // généralement les trois).

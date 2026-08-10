@@ -171,7 +171,9 @@ export const LIBELLES = {
       journalAudit: 'Journal d’audit',
       parametrage: 'Paramétrage',
       tiers: 'Tiers (clients / membres)',
-      caisseGuichet: 'Caisse / Guichet',
+      // Distinct du « Guichet » (dépôt/retrait/remboursement) : ici, la session du caissier
+      // lui-même — ouverture, solde théorique en direct, fermeture (CA1/CA4).
+      caisse: 'Caisse',
       guichetEpargne: 'Guichet',
       versementInterets: 'Versement des intérêts',
       rapprochementEpargne: 'Rapprochement épargne',
@@ -1203,6 +1205,59 @@ export const LIBELLES = {
     succesRestantes: 'Il reste {n} échéance(s) à régler.',
     echec: 'L’opération a échoué. Réessayez.',
     autreOperation: 'Nouvelle opération',
+  },
+
+  caisse: {
+    titre: 'Caisse',
+    intro: 'Ouvrez votre caisse en début de poste, suivez le solde théorique, fermez en fin de poste.',
+    chargement: 'Chargement de la caisse…',
+    erreur: 'Impossible de charger votre session de caisse.',
+    reessayer: 'Réessayer',
+
+    // Aucune session ouverte : le formulaire d'ouverture.
+    ouvertureTitre: 'Aucune session en cours',
+    fondsInitialLabel: 'Fonds initial compté',
+    fondsInitialAide: 'Le montant en espèces compté physiquement avant toute opération.',
+    fondsInitialErreur: 'Indiquez le fonds initial compté, en francs.',
+    ouvrir: 'Ouvrir la caisse',
+    ouvertureEnCours: 'Ouverture…',
+    ouvertureEchec: 'Impossible d’ouvrir la caisse. Réessayez, puis prévenez votre responsable.',
+
+    // Session ouverte : l'état courant.
+    ouverteDepuis: 'Ouverte depuis le {date}',
+    compteLabel: 'Compte de caisse',
+    fondsInitialCourant: 'Fonds initial',
+    soldeTheoriqueLabel: 'Solde théorique',
+    actualiser: 'Actualiser',
+    actualisationEnCours: 'Actualisation…',
+
+    // Fermeture — étape 1 : saisie du montant compté, écart affiché EN DIRECT (calcul local,
+    // pas d'aller-retour serveur, la valeur est déjà connue du solde théorique affiché).
+    fermetureTitre: 'Fermeture de caisse',
+    fermerCaisse: 'Fermer la caisse',
+    montantReelLabel: 'Montant compté à la fermeture',
+    montantReelErreur: 'Indiquez le montant compté avant de fermer la caisse.',
+    ecartLabel: 'Écart',
+    // {montant} injecté.
+    ecartNul: 'Aucun écart.',
+    ecartExcedent: 'Excédent de {montant}.',
+    ecartManquant: 'Manquant de {montant}.',
+
+    // Fermeture — étape 2 : confirmation renforcée, aucun blocage sur la taille de l'écart
+    // (CA1 : la politique de seuil/motif est CA2, pas encore construite).
+    confirmerTitre: 'Confirmer la fermeture ?',
+    // {theorique}, {compte} et {ecart} injectés.
+    confirmerAvert:
+      'Solde théorique : {theorique}. Montant compté : {compte}. {ecart} La fermeture fige ces montants et ne se corrige plus ensuite.',
+    confirmer: 'Confirmer la fermeture',
+    fermetureEnCours: 'Fermeture…',
+    annuler: 'Annuler',
+    fermetureEchec: 'Impossible de fermer la caisse. Réessayez, puis prévenez votre responsable.',
+
+    // Après fermeture : le récapitulatif figé.
+    fermeeTitre: 'Caisse fermée',
+    fermeeLe: 'Fermée le {date}',
+    nouvelleSession: 'Ouvrir une nouvelle session',
   },
 
   planComptable: {
