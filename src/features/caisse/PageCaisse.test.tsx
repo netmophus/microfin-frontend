@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { chargerSessionCourante, fermerSession, ouvrirSession } from '@/features/caisse/api'
@@ -25,7 +26,12 @@ function afficher() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <PageCaisse />
+      <MemoryRouter initialEntries={['/caisse']}>
+        <Routes>
+          <Route path="/caisse" element={<PageCaisse />} />
+          <Route path="/caisse/sessions/:id/lettre" element={<div>Lettre de la session</div>} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -33,7 +39,9 @@ function afficher() {
 const sessionOuverte = {
   id: 'ses-1',
   agency_id: 'ag-1',
+  agency_nom: 'Siège',
   caissier_id: 'cai-1',
+  caissier_nom: 'Caissier Test',
   compte_caisse_number: '101111',
   fonds_initial: 50_000,
   opened_at: '2026-08-07T08:00:00Z',
@@ -139,6 +147,37 @@ describe('PageCaisse', () => {
     await waitFor(() => expect(fermetureSimulee).toHaveBeenCalledWith('ses-1', 9_999_999))
     expect(await screen.findByText('Caisse fermée')).toBeVisible()
     expect(screen.getByText('Ouvrir une nouvelle session')).toBeVisible()
+    // Excédent, pas un manquant : pas de lettre de demande d'explication (hors périmètre).
+    expect(
+      screen.queryByRole('button', { name: /demande d’explication/ }),
+    ).toBeNull()
+  })
+
+  it('fermeture avec manquant : le bouton de la lettre apparaît et mène à la lettre', async () => {
+    sessionSimulee.mockResolvedValueOnce(sessionOuverte).mockResolvedValue(null)
+    fermetureSimulee.mockResolvedValue({
+      ...sessionOuverte,
+      status: 'fermee',
+      closed_at: '2026-08-07T18:00:00Z',
+      solde_theorique_actuel: null,
+      montant_reel_cloture: 50_000,
+      solde_theorique_cloture: 60_000,
+      ecart: -10_000,
+    })
+    afficher()
+    await screen.findByText('60 000 F')
+
+    fireEvent.change(screen.getByLabelText('Montant compté à la fermeture'), {
+      target: { value: '50000' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer la caisse' }))
+    await screen.findByText('Confirmer la fermeture ?')
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la fermeture' }))
+    await screen.findByText('Caisse fermée')
+
+    fireEvent.click(screen.getByRole('button', { name: /demande d’explication/ }))
+
+    expect(await screen.findByText('Lettre de la session')).toBeVisible()
   })
 
   it('annuler la fermeture revient au formulaire sans rien exécuter', async () => {

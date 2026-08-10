@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, Wallet } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -56,6 +57,7 @@ function texteEcart(ecart: number): string {
  */
 export function PageCaisse() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const requete = useQuery({ queryKey: CLE_REQUETE, queryFn: chargerSessionCourante })
 
   const [fondsInitial, setFondsInitial] = useState('')
@@ -157,6 +159,16 @@ export function PageCaisse() {
               <dt className="text-muted-foreground">{C.ecartLabel}</dt>
               <dd className="text-right tabular-nums">{texteEcart(dernierRecap.ecart ?? 0)}</dd>
             </dl>
+            {/* Manquant UNIQUEMENT (ecart < 0) — jamais pour un excédent, hors périmètre. */}
+            {dernierRecap.ecart !== null && dernierRecap.ecart < 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/caisse/sessions/${dernierRecap.id}/lettre`)}
+              >
+                {C.telechargerLettre}
+              </Button>
+            )}
             <Button size="sm" variant="ghost" onClick={() => setDernierRecap(null)}>
               {C.nouvelleSession}
             </Button>

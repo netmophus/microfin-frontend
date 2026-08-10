@@ -11,6 +11,8 @@ import { AppLayout } from '@/features/layout/AppLayout'
 import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
 import { PageCaisse } from '@/features/caisse/PageCaisse'
+import { PageLettreExplication } from '@/features/caisse/PageLettreExplication'
+import { PageSessionsManquantes } from '@/features/caisse/PageSessionsManquantes'
 import { PageBalance } from '@/features/comptabilite/PageBalance'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
 import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
@@ -142,6 +144,24 @@ export function App() {
                 element={
                   <RoutePermission permission="caisse.session.read">
                     <PageCaisse />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/caisse/manquants"
+                element={
+                  // ANY-OF : le caissier retrouve les siennes, le responsable/audit/direction
+                  // celles de son périmètre (caisse.session.read.autres) — même écran.
+                  <RoutePermission permission={['caisse.session.read', 'caisse.session.read.autres']}>
+                    <PageSessionsManquantes />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/caisse/sessions/:id/lettre"
+                element={
+                  <RoutePermission permission={['caisse.session.read', 'caisse.session.read.autres']}>
+                    <PageLettreExplication />
                   </RoutePermission>
                 }
               />

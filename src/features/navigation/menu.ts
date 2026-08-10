@@ -91,6 +91,15 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/caisse',
         permission: 'caisse.session.read',
       },
+      // Manquants (lettre de demande d'explication) : ANY-OF, le caissier retrouve les
+      // SIENNES (caisse.session.read), le responsable/audit/direction celles de leur périmètre
+      // (caisse.session.read.autres) — les deux publics partagent le même écran.
+      {
+        etat: 'actif',
+        libelle: M.entrees.manquantsCaisse,
+        chemin: '/caisse/manquants',
+        permission: ['caisse.session.read', 'caisse.session.read.autres'],
+      },
       // Guichet (dépôt/retrait épargne + comptant/libération parts + remboursement crédit) :
       // à onglets, visible dès qu'on opère sur AU MOINS l'un des trois (le caissier a
       // généralement les trois).

@@ -174,6 +174,7 @@ export const LIBELLES = {
       // Distinct du « Guichet » (dépôt/retrait/remboursement) : ici, la session du caissier
       // lui-même — ouverture, solde théorique en direct, fermeture (CA1/CA4).
       caisse: 'Caisse',
+      manquantsCaisse: 'Manquants de caisse',
       guichetEpargne: 'Guichet',
       versementInterets: 'Versement des intérêts',
       rapprochementEpargne: 'Rapprochement épargne',
@@ -1254,10 +1255,70 @@ export const LIBELLES = {
     annuler: 'Annuler',
     fermetureEchec: 'Impossible de fermer la caisse. Réessayez, puis prévenez votre responsable.',
 
-    // Après fermeture : le récapitulatif figé.
+    // Après fermeture : le récapitulatif figé. Le bouton lettre n'apparaît que si l'écart est
+    // un MANQUANT (< 0) — jamais pour un excédent, hors périmètre (décision explicite).
     fermeeTitre: 'Caisse fermée',
     fermeeLe: 'Fermée le {date}',
     nouvelleSession: 'Ouvrir une nouvelle session',
+    telechargerLettre: 'Télécharger la lettre de demande d’explication',
+  },
+
+  lettreExplication: {
+    titre: 'Lettre de demande d’explication',
+    intro: 'Document imprimable, à remettre au caissier concerné.',
+    imprimer: 'Imprimer',
+    chargement: 'Chargement…',
+    erreur: 'Impossible de charger cette session.',
+    reessayer: 'Réessayer',
+    // Garde-fou : une session sans manquant n'a pas de lettre (jamais fabriquée pour un
+    // excédent ou un écart nul, même en accédant directement par l'URL).
+    nonApplicable:
+      'Cette session n’a pas de manquant : aucune lettre de demande d’explication ne s’applique.',
+    // Provisoires, signalés à l'écran seulement — jamais imprimés tels quels sur le document
+    // lui-même (un document remis à un caissier n'affiche pas ses propres réserves internes).
+    provisoireBanniere:
+      'Nom de l’institution et délai de réponse : valeurs provisoires, à valider avant déploiement.',
+
+    // Le document lui-même (zone imprimable).
+    nomInstitution: 'Nom de l’institution',
+    emiseLe: 'Émise le {date}',
+    objet: 'Objet : demande d’explication — écart de caisse',
+    caissierLabel: 'Caissier concerné',
+    agenceLabel: 'Agence',
+    compteLabel: 'Compte de caisse',
+    ouvertureLabel: 'Ouverture de la session',
+    fermetureLabel: 'Fermeture de la session',
+    calculTitre: 'Calcul de l’écart',
+    fondsInitialLabel: 'Fonds initial',
+    soldeTheoriqueLabel: 'Solde théorique de clôture',
+    montantCompteLabel: 'Montant compté',
+    ecartLabel: 'Écart (manquant)',
+    // {montant} et {date} injectés. Le délai (« 48 heures ») est un PLACEHOLDER volontairement
+    // ajustable — pas une règle validée.
+    texteFormel:
+      'Un manquant de {montant} a été constaté à la fermeture de votre session de caisse du {date}. Nous vous demandons de bien vouloir fournir une explication écrite dans un délai de 48 heures à compter de la remise de la présente lettre.',
+    reponseTitre: 'Réponse du caissier',
+    signatureCaissier: 'Signature du caissier',
+    signatureResponsable: 'Signature et cachet du responsable',
+    dateSignature: 'Date',
+  },
+
+  sessionsManquantes: {
+    titre: 'Manquants de caisse',
+    intro: 'Sessions fermées avec un manquant — retrouvez une lettre de demande d’explication.',
+    chargement: 'Chargement…',
+    erreur: 'Impossible de charger la liste des manquants.',
+    reessayer: 'Réessayer',
+    vide: 'Aucune session avec un manquant.',
+    colCaissier: 'Caissier',
+    colAgence: 'Agence',
+    colFermeeLe: 'Fermée le',
+    colEcart: 'Manquant',
+    voirLaLettre: 'Voir la lettre',
+    // {page} et {total} injectés.
+    pagination: 'Page {page} sur {total}',
+    pageSuivante: 'Page suivante',
+    pagePrecedente: 'Page précédente',
   },
 
   planComptable: {
