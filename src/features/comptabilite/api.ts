@@ -369,11 +369,22 @@ export async function modifierRattachementsProduit(
 
 // --- 5.2 Caisse par agence -----------------------------------------------------------------
 
+// Un poste ACTIF du module Caisse (Bloc A/B) dont le compte diffère de `compte_caisse`
+// ci-dessous — Agency.compte_caisse_id et caisse.postes sont deux colonnes INDÉPENDANTES
+// depuis la migration 0041 : rien ne les synchronise. Signal de dérive, jamais bloquant —
+// modifier ce rattachement reste légitime tant que des guichets non migrés en dépendent.
+export interface PosteDivergent {
+  code: string
+  libelle: string
+  compte_caisse: CompteRattachement | null
+}
+
 export interface AgenceRattachement {
   id: string
   code: string
   name: string
   compte_caisse: CompteRattachement | null
+  postes_divergents: PosteDivergent[]
 }
 
 export async function listerRattachementsAgences(): Promise<AgenceRattachement[]> {

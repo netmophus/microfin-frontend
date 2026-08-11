@@ -43,6 +43,12 @@ export const TAILLE_PAGE = 25
 export interface ParamsListe {
   q?: string
   page?: number
+  taille?: number
+  // Filtres supplémentaires, déjà pris en charge côté serveur (rattaché OU habilité, même
+  // définition que la connexion) — réutilisés par le sélecteur d'assignation des postes de
+  // caisse (Bloc B), pas dupliqués dans un second endpoint.
+  agence?: string
+  role?: string
 }
 
 /** Un refus de permission (403) est un cas MÉTIER distinct d'une panne : l'écran le nomme. */
@@ -65,7 +71,9 @@ export async function listerUtilisateurs(params: ParamsListe): Promise<PageUtili
         // q vide -> omis, pour ne pas envoyer ?q= et déclencher une recherche sur le vide.
         q: params.q?.trim() || undefined,
         page: params.page ?? 1,
-        taille: TAILLE_PAGE,
+        taille: params.taille ?? TAILLE_PAGE,
+        agence: params.agence,
+        role: params.role,
       },
     })
     return reponse.data

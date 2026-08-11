@@ -19,6 +19,10 @@ import { LIBELLES } from '@/libelles/fr'
 
 const P = LIBELLES.rattachementsCaisse
 
+function fmt(gabarit: string, valeurs: Record<string, string>): string {
+  return gabarit.replace(/\{(\w+)\}/g, (_, cle) => valeurs[cle] ?? '')
+}
+
 /**
  * Rattachement du compte de caisse par agence (Bloc 5). Même patron que les rattachements
  * épargne (une ligne à la fois en édition), réduit à un seul sélecteur.
@@ -127,6 +131,19 @@ function LigneLecture({
           </span>
         ) : (
           <span className="text-muted-foreground">{P.aucun}</span>
+        )}
+        {agence.postes_divergents.length > 0 && (
+          <p role="note" className="mt-1 text-xs text-warning">
+            {fmt(P.divergence, {
+              postes: agence.postes_divergents
+                .map((poste) =>
+                  poste.compte_caisse
+                    ? `« ${poste.libelle} » (${poste.compte_caisse.account_number})`
+                    : `« ${poste.libelle} » (non rattaché)`,
+                )
+                .join(', '),
+            })}
+          </p>
         )}
       </td>
       {peutGerer && (

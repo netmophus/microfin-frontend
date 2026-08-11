@@ -120,3 +120,93 @@ export function messageRefusCaisse(erreur: unknown, defaut: string): string {
   }
   return defaut
 }
+
+// --- Postes de caisse (Bloc B) ---------------------------------------------------------------
+// CRUD (création/renommage/(dés)activation/assignation) : caisse.poste.manage, SON agence.
+// Rattachement comptable : compta.plan.manage (existant), institution entière.
+
+export interface PosteCaisse {
+  id: string
+  agency_id: string
+  agency_nom: string
+  code: string
+  libelle: string
+  compte_caisse_number: string | null
+  compte_caisse_name: string | null
+  is_active: boolean
+}
+
+export async function listerPostes(): Promise<PosteCaisse[]> {
+  const { data } = await api.get<PosteCaisse[]>('/caisse/postes')
+  return data
+}
+
+export async function creerPoste(
+  code: string,
+  libelle: string,
+  motif: string,
+): Promise<PosteCaisse> {
+  const { data } = await api.post<PosteCaisse>('/caisse/postes', { code, libelle, motif })
+  return data
+}
+
+export async function renommerPoste(
+  id: string,
+  code: string,
+  libelle: string,
+  motif: string,
+): Promise<PosteCaisse> {
+  const { data } = await api.patch<PosteCaisse>(`/caisse/postes/${id}`, { code, libelle, motif })
+  return data
+}
+
+export async function changerActivationPoste(
+  id: string,
+  isActive: boolean,
+  motif: string,
+): Promise<PosteCaisse> {
+  const { data } = await api.patch<PosteCaisse>(`/caisse/postes/${id}/activation`, {
+    is_active: isActive,
+    motif,
+  })
+  return data
+}
+
+export async function rattacherComptePoste(
+  id: string,
+  compteCaisse: string | null,
+  motif: string,
+): Promise<PosteCaisse> {
+  const { data } = await api.patch<PosteCaisse>(`/caisse/postes/${id}/compte-caisse`, {
+    compte_caisse: compteCaisse,
+    motif,
+  })
+  return data
+}
+
+export interface UtilisateurAssigne {
+  id: string
+  matricule: string
+  username: string
+  nom_complet: string
+}
+
+export async function listerAssignations(posteId: string): Promise<UtilisateurAssigne[]> {
+  const { data } = await api.get<UtilisateurAssigne[]>(`/caisse/postes/${posteId}/assignations`)
+  return data
+}
+
+export async function assignerGuichetier(
+  posteId: string,
+  userId: string,
+): Promise<UtilisateurAssigne[]> {
+  const { data } = await api.post<UtilisateurAssigne[]>(
+    `/caisse/postes/${posteId}/assignations`,
+    { user_id: userId },
+  )
+  return data
+}
+
+export async function revoquerAssignation(posteId: string, userId: string): Promise<void> {
+  await api.delete(`/caisse/postes/${posteId}/assignations/${userId}`)
+}

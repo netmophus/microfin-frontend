@@ -12,6 +12,7 @@ import { PageAccueil } from '@/features/accueil/PageAccueil'
 import { PageJournalAudit } from '@/features/audit/PageJournalAudit'
 import { PageCaisse } from '@/features/caisse/PageCaisse'
 import { PageLettreExplication } from '@/features/caisse/PageLettreExplication'
+import { PagePostes } from '@/features/caisse/PagePostes'
 import { PageSessionsManquantes } from '@/features/caisse/PageSessionsManquantes'
 import { PageBalance } from '@/features/comptabilite/PageBalance'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
@@ -162,6 +163,14 @@ export function App() {
                 element={
                   <RoutePermission permission={['caisse.session.read', 'caisse.session.read.autres']}>
                     <PageLettreExplication />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/caisse/postes"
+                element={
+                  <RoutePermission permission={['caisse.poste.manage', 'compta.plan.manage']}>
+                    <PagePostes />
                   </RoutePermission>
                 }
               />

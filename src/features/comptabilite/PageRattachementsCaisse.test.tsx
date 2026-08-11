@@ -43,6 +43,7 @@ function agence(partiel: Partial<AgenceRattachement> = {}): AgenceRattachement {
     code: 'SIEGE',
     name: 'Siège',
     compte_caisse: { account_number: '5721', name: 'Caisses agences' },
+    postes_divergents: [],
     ...partiel,
   }
 }
@@ -127,5 +128,28 @@ describe('PageRattachementsCaisse', () => {
         'Changement de compte de caisse',
       ),
     )
+  })
+
+  it('signale la divergence avec un poste de caisse (coexistence Bloc A/B)', async () => {
+    listerAgencesSimule.mockResolvedValue([
+      agence({
+        postes_divergents: [
+          { code: '01', libelle: 'Caisse principale', compte_caisse: { account_number: '101111', name: 'Caisse (agence)' } },
+        ],
+      }),
+    ])
+    afficher()
+
+    expect(
+      await screen.findByText(/Diffère du compte de « Caisse principale » \(101111\)/),
+    ).toBeVisible()
+  })
+
+  it('aucune divergence : aucun avertissement affiché', async () => {
+    listerAgencesSimule.mockResolvedValue([agence()])
+    afficher()
+    await screen.findByText('Siège')
+
+    expect(screen.queryByRole('note')).toBeNull()
   })
 })

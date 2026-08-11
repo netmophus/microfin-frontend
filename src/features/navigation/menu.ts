@@ -100,6 +100,15 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/caisse/manquants',
         permission: ['caisse.session.read', 'caisse.session.read.autres'],
       },
+      // Postes de caisse (Bloc B) : ANY-OF, le responsable d'agence gère SES postes
+      // (caisse.poste.manage), le comptable rattache un compte n'importe où
+      // (compta.plan.manage) — même écran, chacun voit ce que sa permission autorise.
+      {
+        etat: 'actif',
+        libelle: M.entrees.postesCaisse,
+        chemin: '/caisse/postes',
+        permission: ['caisse.poste.manage', 'compta.plan.manage'],
+      },
       // Guichet (dépôt/retrait épargne + comptant/libération parts + remboursement crédit) :
       // à onglets, visible dès qu'on opère sur AU MOINS l'un des trois (le caissier a
       // généralement les trois).

@@ -175,6 +175,7 @@ export const LIBELLES = {
       // lui-même — ouverture, solde théorique en direct, fermeture (CA1/CA4).
       caisse: 'Caisse',
       manquantsCaisse: 'Manquants de caisse',
+      postesCaisse: 'Postes de caisse',
       guichetEpargne: 'Guichet',
       versementInterets: 'Versement des intérêts',
       rapprochementEpargne: 'Rapprochement épargne',
@@ -1321,6 +1322,54 @@ export const LIBELLES = {
     pagePrecedente: 'Page précédente',
   },
 
+  postesCaisse: {
+    titre: 'Postes de caisse',
+    sousTitre:
+      'Les guichets physiques d’une agence — chacun avec son propre compte de caisse et ses guichetiers assignés.',
+    chargement: 'Chargement des postes…',
+    interdit: 'Vous n’avez pas la permission de consulter les postes de caisse.',
+    erreur: 'Impossible de charger les postes. Réessayez dans un instant.',
+    listeVide: 'Aucun poste de caisse.',
+
+    colonneAgence: 'Agence',
+    colonnePoste: 'Poste',
+    colonneCompte: 'Compte de caisse',
+    colonneStatut: 'Statut',
+    actif: 'Actif',
+    inactif: 'Inactif',
+    aucun: '— non rattaché —',
+
+    ajouter: 'Ajouter un poste',
+    code: 'Code',
+    codePlaceholder: 'ex. 01',
+    libelle: 'Libellé',
+    libellePlaceholder: 'ex. Guichet principal',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce changement ?',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    annuler: 'Annuler',
+    echec: 'L’enregistrement a échoué. Réessayez.',
+
+    renommer: 'Renommer',
+    rattacherCompte: 'Rattacher un compte',
+
+    activer: 'Activer',
+    desactiver: 'Désactiver',
+    confirmerActivation: 'Confirmer l’activation ?',
+    confirmerDesactivation: 'Confirmer la désactivation ?',
+    echecActivation: 'L’opération a échoué. Réessayez.',
+
+    voirAssignations: 'Guichetiers',
+    assignationsTitre: 'Guichetiers assignés',
+    assignationsAucun: 'Aucun guichetier assigné à ce poste.',
+    choisirUnGuichetier: 'Choisir un guichetier…',
+    assigner: 'Assigner',
+    retirer: 'Retirer',
+    echecAssignation: 'L’opération a échoué. Réessayez.',
+    fermer: 'Fermer',
+  },
+
   planComptable: {
     titre: 'Plan de comptes',
     sousTitre: 'Les comptes du plan RCSFD — consultation et gestion.',
@@ -1543,6 +1592,12 @@ export const LIBELLES = {
     colonneAgence: 'Agence',
     colonneCaisse: 'Compte de caisse',
     aucun: '— non rattaché —',
+
+    // Coexistence Bloc A/B (postes de caisse) : ce rattachement et les postes actifs de
+    // l'agence sont deux réglages indépendants, plus rien ne les synchronise. {postes}
+    // injecté — liste des postes dont le compte diffère de celui affiché ici.
+    divergence:
+      'Diffère du compte de {postes} — ce rattachement n’affecte plus que les guichets non encore basculés vers le module Caisse.',
 
     modifier: 'Modifier',
     annuler: 'Annuler',
