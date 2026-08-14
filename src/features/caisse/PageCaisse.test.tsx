@@ -3,24 +3,38 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { chargerSessionCourante, fermerSession, ouvrirSession } from '@/features/caisse/api'
+import {
+  chargerSessionCourante,
+  fermerSession,
+  lireParametresCaisse,
+  ouvrirSession,
+} from '@/features/caisse/api'
 import { PageCaisse } from '@/features/caisse/PageCaisse'
 
 /**
- * Session de caisse (CA1/CA4). Points durs : aucune session -> formulaire d'ouverture ; une
+ * Session de caisse (CA1/CA4/CA2). Points durs : aucune session -> formulaire d'ouverture ; une
  * session ouverte -> solde théorique EN DIRECT affiché ; la fermeture montre l'écart en toutes
- * lettres AVANT confirmation (jamais découvert après coup) ; ne bloque JAMAIS sur la taille de
- * l'écart (CA2 pas encore construite) ; le bouton Actualiser recharge le solde en direct.
+ * lettres AVANT confirmation (jamais découvert après coup) ; un motif devient EXIGÉ dès que
+ * l'écart en direct dépasse le seuil de tolérance (CA2), mais la fermeture n'est JAMAIS
+ * bloquée — motif fourni, même un écart énorme passe ; le bouton Actualiser recharge le solde
+ * en direct.
  */
 
 vi.mock('@/features/caisse/api', async () => {
   const reel = await vi.importActual<typeof import('@/features/caisse/api')>('@/features/caisse/api')
-  return { ...reel, chargerSessionCourante: vi.fn(), ouvrirSession: vi.fn(), fermerSession: vi.fn() }
+  return {
+    ...reel,
+    chargerSessionCourante: vi.fn(),
+    ouvrirSession: vi.fn(),
+    fermerSession: vi.fn(),
+    lireParametresCaisse: vi.fn(),
+  }
 })
 
 const sessionSimulee = vi.mocked(chargerSessionCourante)
 const ouvertureSimulee = vi.mocked(ouvrirSession)
 const fermetureSimulee = vi.mocked(fermerSession)
+const parametresSimulee = vi.mocked(lireParametresCaisse)
 
 function afficher() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -51,10 +65,16 @@ const sessionOuverte = {
   solde_theorique_cloture: null,
   ecart: null,
   status: 'ouverte' as const,
+  motif_ecart: null,
+  valide_le: null,
+  valide_par_nom: null,
+  a_valider: false,
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // Seuil par défaut (500 F) — même valeur que le défaut posé côté serveur.
+  parametresSimulee.mockResolvedValue({ seuil_tolerance: 500, is_provisional: true })
 })
 
 describe('PageCaisse', () => {
@@ -115,13 +135,52 @@ describe('PageCaisse', () => {
     expect(await screen.findByText('Excédent de 5 000 F.')).toBeVisible()
     expect(fermetureSimulee).not.toHaveBeenCalled()
 
+    // Écart de 5 000 F, au-delà du seuil de 500 F : le motif est EXIGÉ avant de continuer.
     fireEvent.click(screen.getByRole('button', { name: 'Fermer la caisse' }))
+    expect(
+      await screen.findByText(
+        'Cet écart dépasse le seuil de tolérance : indiquez un motif avant de continuer.',
+      ),
+    ).toBeVisible()
+    expect(screen.queryByText('Confirmer la fermeture ?')).toBeNull()
+
+    fireEvent.change(screen.getByLabelText(/Motif de l.écart/), {
+      target: { value: 'Erreur de comptage' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer la caisse' }))
+
     expect(await screen.findByText('Confirmer la fermeture ?')).toBeVisible()
     expect(screen.getByText(/Excédent de 5 000 F/)).toBeVisible()
     expect(fermetureSimulee).not.toHaveBeenCalled() // confirmation affichée, rien exécuté
   })
 
-  it('fermeture confirmée : ferme, même avec un écart énorme (CA1 ne bloque jamais)', async () => {
+  it('fermeture : sous le seuil de tolérance, aucun motif n’est exigé', async () => {
+    sessionSimulee.mockResolvedValue(sessionOuverte)
+    fermetureSimulee.mockResolvedValue({
+      ...sessionOuverte,
+      status: 'fermee',
+      closed_at: '2026-08-07T18:00:00Z',
+      solde_theorique_actuel: null,
+      montant_reel_cloture: 60_100,
+      solde_theorique_cloture: 60_000,
+      ecart: 100,
+      motif_ecart: null,
+    })
+    afficher()
+    await screen.findByText('60 000 F')
+
+    // Écart de 100 F, sous le seuil de 500 F : le formulaire passe sans motif.
+    fireEvent.change(screen.getByLabelText('Montant compté à la fermeture'), {
+      target: { value: '60100' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer la caisse' }))
+    await screen.findByText('Confirmer la fermeture ?')
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la fermeture' }))
+
+    await waitFor(() => expect(fermetureSimulee).toHaveBeenCalledWith('ses-1', 60_100, ''))
+  })
+
+  it('fermeture confirmée : motif fourni, ferme même avec un écart énorme (CA2 ne bloque jamais)', async () => {
     // Une fois fermée, le rechargement (invalidateQueries) doit renvoyer null : la session
     // fermée n'est plus « la session courante » de l'acteur.
     sessionSimulee.mockResolvedValueOnce(sessionOuverte).mockResolvedValue(null)
@@ -133,6 +192,7 @@ describe('PageCaisse', () => {
       montant_reel_cloture: 9_999_999,
       solde_theorique_cloture: 60_000,
       ecart: 9_939_999,
+      motif_ecart: 'Erreur de comptage massive',
     })
     afficher()
     await screen.findByText('60 000 F')
@@ -140,11 +200,21 @@ describe('PageCaisse', () => {
     fireEvent.change(screen.getByLabelText('Montant compté à la fermeture'), {
       target: { value: '9999999' },
     })
+    // Écart énorme, largement au-delà du seuil : le motif est EXIGÉ, jamais un blocage.
+    fireEvent.change(screen.getByLabelText(/Motif de l.écart/), {
+      target: { value: 'Erreur de comptage massive' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Fermer la caisse' }))
     await screen.findByText('Confirmer la fermeture ?')
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer la fermeture' }))
 
-    await waitFor(() => expect(fermetureSimulee).toHaveBeenCalledWith('ses-1', 9_999_999))
+    await waitFor(() =>
+      expect(fermetureSimulee).toHaveBeenCalledWith(
+        'ses-1',
+        9_999_999,
+        'Erreur de comptage massive',
+      ),
+    )
     expect(await screen.findByText('Caisse fermée')).toBeVisible()
     expect(screen.getByText('Ouvrir une nouvelle session')).toBeVisible()
     // Excédent, pas un manquant : pas de lettre de demande d'explication (hors périmètre).
@@ -163,12 +233,17 @@ describe('PageCaisse', () => {
       montant_reel_cloture: 50_000,
       solde_theorique_cloture: 60_000,
       ecart: -10_000,
+      motif_ecart: 'Erreur de caisse',
     })
     afficher()
     await screen.findByText('60 000 F')
 
     fireEvent.change(screen.getByLabelText('Montant compté à la fermeture'), {
       target: { value: '50000' },
+    })
+    // Manquant de 10 000 F, au-delà du seuil : motif exigé.
+    fireEvent.change(screen.getByLabelText(/Motif de l.écart/), {
+      target: { value: 'Erreur de caisse' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Fermer la caisse' }))
     await screen.findByText('Confirmer la fermeture ?')

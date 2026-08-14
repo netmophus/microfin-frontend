@@ -6,8 +6,11 @@ import { api } from '@/lib/api'
  * Module Caisse (CA1/CA4) — session de caisse PAR CAISSIER : ouverture (fonds initial compté),
  * solde théorique en DIRECT (dérivé des écritures validées du caissier depuis l'ouverture,
  * jamais un solde stocké — miroir du rapprochement épargne), fermeture avec écart calculé et
- * figé. Aucun blocage sur la taille de l'écart : la politique de seuil/motif (CA2) n'existe
- * pas encore.
+ * figé.
+ *
+ * CA2 : seuil de tolérance paramétrable (compte plan-comptable), motif OBLIGATOIRE au-delà —
+ * ne bloque JAMAIS la fermeture, juste l'exige. `a_valider` est DÉRIVÉ côté serveur (fermée +
+ * écart au-delà du seuil + non validée), jamais stocké — ne pas le recalculer ici.
  *
  * Montants en ENTIERS de francs CFA (comme partout ailleurs). `formatFcfa` vient de l'Épargne
  * (réutilisé, pas redupliqué).
@@ -31,6 +34,10 @@ export interface SessionCaisse {
   solde_theorique_cloture: number | null
   ecart: number | null
   status: 'ouverte' | 'fermee'
+  motif_ecart: string | null
+  valide_le: string | null
+  valide_par_nom: string | null
+  a_valider: boolean
 }
 
 /**
@@ -63,11 +70,17 @@ export async function ouvrirSession(fondsInitial: number): Promise<SessionCaisse
 
 /**
  * Ferme la session de L'ACTEUR — calcule et FIGE l'écart (montant compté - solde théorique).
- * Ne bloque JAMAIS, quelle que soit la taille de l'écart (CA1 : la tolérance est CA2).
+ * Ne bloque JAMAIS, quelle que soit la taille de l'écart (CA2 : un motif est EXIGÉ au-delà du
+ * seuil de tolérance — 422 si absent, jamais un refus de fermer).
  */
-export async function fermerSession(sessionId: string, montantReel: number): Promise<SessionCaisse> {
+export async function fermerSession(
+  sessionId: string,
+  montantReel: number,
+  motif?: string,
+): Promise<SessionCaisse> {
   const { data } = await api.post<SessionCaisse>(`/caisse/sessions/${sessionId}/fermeture`, {
     montant_reel: montantReel,
+    motif: motif ?? null,
   })
   return data
 }
@@ -119,6 +132,82 @@ export function messageRefusCaisse(erreur: unknown, defaut: string): string {
     if (typeof detail === 'string') return detail
   }
   return defaut
+}
+
+// --- Paramètres (CA2) : seuil de tolérance, singleton PROVISOIRE, comme les parts sociales --
+
+export interface ParametresCaisse {
+  seuil_tolerance: number
+  is_provisional: boolean
+}
+
+export async function lireParametresCaisse(): Promise<ParametresCaisse> {
+  const { data } = await api.get<ParametresCaisse>('/caisse/parametres')
+  return data
+}
+
+export async function modifierParametresCaisse(
+  seuilTolerance: number,
+  motif: string,
+): Promise<ParametresCaisse> {
+  const { data } = await api.put<ParametresCaisse>('/caisse/parametres', {
+    seuil_tolerance: seuilTolerance,
+    motif,
+  })
+  return data
+}
+
+// --- Sessions à valider (CA2) : file d'attente du responsable, statut DÉRIVÉ côté serveur ----
+
+export interface LigneSessionAValider {
+  id: string
+  caissier_id: string
+  caissier_nom: string
+  agency_id: string
+  agency_nom: string
+  compte_caisse_number: string
+  fonds_initial: number
+  opened_at: string
+  closed_at: string
+  montant_reel_cloture: number
+  solde_theorique_cloture: number
+  ecart: number
+  motif_ecart: string | null
+}
+
+export interface PageSessionsAValider {
+  lignes: LigneSessionAValider[]
+  total: number
+  page: number
+  taille: number
+  seuil_tolerance: number
+}
+
+/**
+ * Sessions fermées avec un écart au-delà du seuil de tolérance, pas encore validées : les
+ * SIENNES pour un caissier, plus celles de son périmètre s'il détient caisse.session.read.autres
+ * (contrôlé côté serveur). Une session validée disparaît immédiatement de cette liste — c'est
+ * un calcul dérivé, jamais un statut stocké à rafraîchir manuellement.
+ */
+export async function listerSessionsAValider(
+  page = 1,
+  taille = 25,
+): Promise<PageSessionsAValider> {
+  const { data } = await api.get<PageSessionsAValider>('/caisse/sessions-a-valider', {
+    params: { page, taille },
+  })
+  return data
+}
+
+/**
+ * Validation A POSTERIORI de l'écart par le responsable — une TRACE consultable, jamais un
+ * blocage : ne change rien d'autre que la date/l'auteur de validation.
+ */
+export async function validerEcart(sessionId: string): Promise<SessionCaisse> {
+  const { data } = await api.post<SessionCaisse>(
+    `/caisse/sessions/${sessionId}/validation-ecart`,
+  )
+  return data
 }
 
 // --- Postes de caisse (Bloc B) ---------------------------------------------------------------

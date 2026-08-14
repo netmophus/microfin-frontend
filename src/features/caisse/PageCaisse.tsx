@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import {
   chargerSessionCourante,
   fermerSession,
+  lireParametresCaisse,
   messageRefusCaisse,
   ouvrirSession,
   type SessionCaisse,
@@ -52,24 +53,40 @@ function texteEcart(ecart: number): string {
 
 /**
  * Session de caisse (CA1/CA4) — ouverture, solde théorique EN DIRECT, fermeture. Ne bloque
- * JAMAIS sur la taille de l'écart (CA2, pas encore construite) : l'écart est montré, en toutes
- * lettres, avant confirmation — jamais découvert après coup.
+ * JAMAIS sur la taille de l'écart (CA2) : un motif est simplement EXIGÉ au-delà du seuil de
+ * tolérance — le champ reste visible en permanence, requis dès que l'écart en direct le
+ * dépasse, jamais un second écran. L'écart est montré, en toutes lettres, avant confirmation —
+ * jamais découvert après coup.
  */
 export function PageCaisse() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const requete = useQuery({ queryKey: CLE_REQUETE, queryFn: chargerSessionCourante })
+  // Seuil de tolérance (CA2) : lu une fois, comparé en direct à l'écart saisi pour savoir si le
+  // motif devient obligatoire. 500 F par défaut le temps du premier chargement (même valeur que
+  // le défaut posé par la migration côté serveur — jamais découvert en désaccord).
+  const parametres = useQuery({
+    queryKey: ['caisse', 'parametres'],
+    queryFn: lireParametresCaisse,
+  })
+  const seuilTolerance = parametres.data?.seuil_tolerance ?? 500
 
   const [fondsInitial, setFondsInitial] = useState('')
   const [fondsInitialErreur, setFondsInitialErreur] = useState<string | null>(null)
 
   const [montantReel, setMontantReel] = useState('')
   const [montantReelErreur, setMontantReelErreur] = useState<string | null>(null)
+  const [motif, setMotif] = useState('')
+  const [motifErreur, setMotifErreur] = useState<string | null>(null)
   const [confirmationFermeture, setConfirmationFermeture] = useState(false)
   const [dernierRecap, setDernierRecap] = useState<SessionCaisse | null>(null)
 
   const fondsInitialNum = versEntier(fondsInitial)
   const montantReelNum = versEntier(montantReel)
+  const ecartEnDirect = Number.isNaN(montantReelNum)
+    ? 0
+    : montantReelNum - (requete.data?.solde_theorique_actuel ?? 0)
+  const motifExige = Math.abs(ecartEnDirect) > seuilTolerance
 
   const ouverture = useMutation({
     mutationFn: () => ouvrirSession(fondsInitialNum),
@@ -82,11 +99,12 @@ export function PageCaisse() {
   })
 
   const fermeture = useMutation({
-    mutationFn: (sessionId: string) => fermerSession(sessionId, montantReelNum),
+    mutationFn: (sessionId: string) => fermerSession(sessionId, montantReelNum, motif.trim()),
     onSuccess: (data) => {
       setDernierRecap(data)
       setMontantReel('')
       setMontantReelErreur(null)
+      setMotif('')
       setConfirmationFermeture(false)
       queryClient.invalidateQueries({ queryKey: CLE_REQUETE })
     },
@@ -107,6 +125,13 @@ export function PageCaisse() {
       return
     }
     setMontantReelErreur(null)
+    // Vérification CÔTÉ ÉCRAN, avant l'aller-retour serveur (qui reste l'autorité finale : le
+    // seuil peut avoir changé entre le chargement de la page et cet instant).
+    if (motifExige && motif.trim().length === 0) {
+      setMotifErreur(C.motifEcartErreur)
+      return
+    }
+    setMotifErreur(null)
     setConfirmationFermeture(true)
   }
 
@@ -159,6 +184,11 @@ export function PageCaisse() {
               <dt className="text-muted-foreground">{C.ecartLabel}</dt>
               <dd className="text-right tabular-nums">{texteEcart(dernierRecap.ecart ?? 0)}</dd>
             </dl>
+            {dernierRecap.motif_ecart && (
+              <p className="text-sm text-muted-foreground">
+                {C.motifEcartFacultatif} : {dernierRecap.motif_ecart}
+              </p>
+            )}
             {/* Manquant UNIQUEMENT (ecart < 0) — jamais pour un excédent, hors périmètre. */}
             {dernierRecap.ecart !== null && dernierRecap.ecart < 0 && (
               <Button
@@ -268,6 +298,25 @@ export function PageCaisse() {
                   </p>
                 )}
               </div>
+              {/* CA2 : visible en permanence, jamais un second écran — devient EXIGÉ dès que
+                  l'écart en direct dépasse le seuil de tolérance (la fermeture, elle, n'est
+                  jamais bloquée). */}
+              <div className="space-y-1">
+                <Label htmlFor="motif-ecart">
+                  {motifExige ? C.motifEcartObligatoire : C.motifEcartFacultatif}
+                </Label>
+                <Input
+                  id="motif-ecart"
+                  value={motif}
+                  onChange={(e) => {
+                    setMotif(e.target.value)
+                    if (motifErreur) setMotifErreur(null)
+                  }}
+                  placeholder={C.motifEcartPlaceholder}
+                  aria-invalid={motifErreur !== null}
+                />
+                {motifErreur && <p className="text-xs text-danger">{motifErreur}</p>}
+              </div>
               <Button variant="outline" onClick={demanderFermeture}>
                 {C.fermerCaisse}
               </Button>
@@ -283,6 +332,11 @@ export function PageCaisse() {
                   ecart: texteEcart(montantReelNum - (session.solde_theorique_actuel ?? 0)),
                 })}
               </p>
+              {motif.trim().length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {C.motifEcartFacultatif} : {motif.trim()}
+                </p>
+              )}
               {fermeture.isError && (
                 <Alert variant="destructive" role="alert">
                   <AlertDescription>{messageRefusCaisse(fermeture.error, C.fermetureEchec)}</AlertDescription>

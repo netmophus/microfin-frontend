@@ -183,6 +183,7 @@ export const LIBELLES = {
       rattachementsEpargne: 'Rattachements épargne',
       rattachementsCaisse: 'Caisse par agence',
       parametresParts: 'Paramètres des parts sociales',
+      parametresCaisse: 'Seuil de tolérance de caisse',
       paliersSouffrance: 'Paliers de souffrance',
       epargneDepots: 'Épargne / Dépôts',
       credit: 'Crédit',
@@ -1245,8 +1246,15 @@ export const LIBELLES = {
     ecartExcedent: 'Excédent de {montant}.',
     ecartManquant: 'Manquant de {montant}.',
 
-    // Fermeture — étape 2 : confirmation renforcée, aucun blocage sur la taille de l'écart
-    // (CA1 : la politique de seuil/motif est CA2, pas encore construite).
+    // CA2 : motif de l'écart, visible en permanence — devient EXIGÉ dès que l'écart en direct
+    // dépasse le seuil de tolérance. Ne bloque JAMAIS la fermeture, juste l'exige.
+    motifEcartFacultatif: 'Motif de l’écart (facultatif)',
+    motifEcartObligatoire: 'Motif de l’écart (obligatoire au-delà du seuil de tolérance)',
+    motifEcartPlaceholder: 'Que s’est-il passé ?',
+    motifEcartErreur: 'Cet écart dépasse le seuil de tolérance : indiquez un motif avant de continuer.',
+
+    // Fermeture — étape 2 : confirmation renforcée. Ne bloque JAMAIS sur la taille de l'écart
+    // (CA2 : un motif est exigé au-delà du seuil, jamais un refus de fermer).
     confirmerTitre: 'Confirmer la fermeture ?',
     // {theorique}, {compte} et {ecart} injectés.
     confirmerAvert:
@@ -1629,6 +1637,32 @@ export const LIBELLES = {
     compteLiberees: 'Compte des parts libérées',
     compteNonLiberees: 'Compte des parts non libérées',
     aucun: '— non rattaché —',
+
+    modifier: 'Modifier',
+    annuler: 'Annuler',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce changement ?',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    echec: 'La modification a échoué. Réessayez.',
+  },
+
+  // Caisse CA2 — seuil de tolérance sur l'écart de fermeture. Ne bloque JAMAIS la fermeture :
+  // un motif est exigé au-delà du seuil, jamais un refus. Même patron que parametresParts.
+  parametresCaisse: {
+    titre: 'Seuil de tolérance de caisse',
+    sousTitre:
+      'Au-delà de ce montant, un motif est exigé pour fermer une session — la fermeture n’est jamais bloquée.',
+    avertissement:
+      'Ce changement s’applique aux prochaines fermetures, jamais aux sessions déjà closes.',
+    chargement: 'Chargement du seuil…',
+    interdit: 'Vous n’avez pas la permission de consulter ce paramètre.',
+    erreur: 'Impossible de charger le seuil. Réessayez dans un instant.',
+    nonParametre: 'Le seuil de tolérance n’est pas encore paramétré.',
+    provisoire: 'provisoire',
+    provisoireAide: 'Valeur non encore validée par l’expert-comptable SFD.',
+
+    seuil: 'Seuil de tolérance (francs CFA)',
 
     modifier: 'Modifier',
     annuler: 'Annuler',

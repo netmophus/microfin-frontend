@@ -48,6 +48,10 @@ const sessionManquante = {
   solde_theorique_cloture: 60_000,
   ecart: -10_000,
   status: 'fermee' as const,
+  motif_ecart: null,
+  valide_le: null,
+  valide_par_nom: null,
+  a_valider: false,
 }
 
 beforeEach(() => {

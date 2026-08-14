@@ -17,6 +17,7 @@ import { PageSessionsManquantes } from '@/features/caisse/PageSessionsManquantes
 import { PageBalance } from '@/features/comptabilite/PageBalance'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
 import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
+import { PageParametresCaisse } from '@/features/comptabilite/PageParametresCaisse'
 import { PageParametresParts } from '@/features/comptabilite/PageParametresParts'
 import { PagePaliersSouffrance } from '@/features/comptabilite/PagePaliersSouffrance'
 import { PagePlanComptable } from '@/features/comptabilite/PagePlanComptable'
@@ -267,6 +268,14 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.plan.read">
                     <PageParametresParts />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/parametres-caisse"
+                element={
+                  <RoutePermission permission="compta.plan.read">
+                    <PageParametresCaisse />
                   </RoutePermission>
                 }
               />

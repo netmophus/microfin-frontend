@@ -173,6 +173,14 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/parametres-parts',
         permission: 'compta.plan.read',
       },
+      // Caisse CA2 : seuil de tolérance sur l'écart — même paire de permissions (lecture de
+      // route / gestion en écran) que les autres paramètres du Bloc 5.
+      {
+        etat: 'actif',
+        libelle: M.entrees.parametresCaisse,
+        chemin: '/comptabilite/parametres-caisse',
+        permission: 'compta.plan.read',
+      },
       // Paliers de souffrance (CR5a) : paramétrage seul, aucune reclassification automatique
       // encore branchée (CR5c, à venir) — même paire de permissions que les autres Bloc 5.
       {
