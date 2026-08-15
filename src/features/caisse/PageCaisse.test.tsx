@@ -74,7 +74,12 @@ const sessionOuverte = {
 beforeEach(() => {
   vi.clearAllMocks()
   // Seuil par défaut (500 F) — même valeur que le défaut posé côté serveur.
-  parametresSimulee.mockResolvedValue({ seuil_tolerance: 500, is_provisional: true })
+  parametresSimulee.mockResolvedValue({
+    seuil_tolerance: 500,
+    compte_ecart_manquant: { account_number: '6099', name: 'Diverses charges financières' },
+    compte_ecart_excedent: { account_number: '7099', name: 'Divers produits' },
+    is_provisional: true,
+  })
 })
 
 describe('PageCaisse', () => {

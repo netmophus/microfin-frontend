@@ -1652,9 +1652,9 @@ export const LIBELLES = {
   parametresCaisse: {
     titre: 'Seuil de tolérance de caisse',
     sousTitre:
-      'Au-delà de ce montant, un motif est exigé pour fermer une session — la fermeture n’est jamais bloquée.',
+      'Au-delà de ce montant, un motif est exigé pour fermer une session — la fermeture n’est jamais bloquée. Les comptes ci-dessous reçoivent la régularisation comptable à la validation de l’écart par le responsable.',
     avertissement:
-      'Ce changement s’applique aux prochaines fermetures, jamais aux sessions déjà closes.',
+      'Ce changement s’applique aux prochaines fermetures et validations, jamais aux sessions déjà closes ou validées.',
     chargement: 'Chargement du seuil…',
     interdit: 'Vous n’avez pas la permission de consulter ce paramètre.',
     erreur: 'Impossible de charger le seuil. Réessayez dans un instant.',
@@ -1663,6 +1663,13 @@ export const LIBELLES = {
     provisoireAide: 'Valeur non encore validée par l’expert-comptable SFD.',
 
     seuil: 'Seuil de tolérance (francs CFA)',
+    compteManquant: 'Compte de l’écart — manquant',
+    compteExcedent: 'Compte de l’écart — excédent',
+    aucun: '— non rattaché —',
+    // CA3 : sans les deux comptes rattachés, la VALIDATION d'un écart par le responsable est
+    // refusée (422) — jamais la fermeture, qui reste toujours possible.
+    rattachementIncomplet:
+      'Rattachement incomplet : sans ces deux comptes, la validation d’un écart par le responsable sera refusée.',
 
     modifier: 'Modifier',
     annuler: 'Annuler',

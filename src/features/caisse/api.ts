@@ -134,10 +134,20 @@ export function messageRefusCaisse(erreur: unknown, defaut: string): string {
   return defaut
 }
 
-// --- Paramètres (CA2) : seuil de tolérance, singleton PROVISOIRE, comme les parts sociales --
+// --- Paramètres (CA2 : seuil ; CA3 : rattachement de l'écart) — singleton PROVISOIRE, comme
+// les parts sociales.
+
+export interface CompteRattachementEcart {
+  account_number: string
+  name: string
+}
 
 export interface ParametresCaisse {
   seuil_tolerance: number
+  // CA3 : DEUX comptes distincts (jamais un signe négatif sur un seul). null est un état
+  // LÉGITIME (paramétrage incomplet) — affiché comme tel, jamais deviné.
+  compte_ecart_manquant: CompteRattachementEcart | null
+  compte_ecart_excedent: CompteRattachementEcart | null
   is_provisional: boolean
 }
 
@@ -148,10 +158,14 @@ export async function lireParametresCaisse(): Promise<ParametresCaisse> {
 
 export async function modifierParametresCaisse(
   seuilTolerance: number,
+  compteEcartManquant: string | null,
+  compteEcartExcedent: string | null,
   motif: string,
 ): Promise<ParametresCaisse> {
   const { data } = await api.put<ParametresCaisse>('/caisse/parametres', {
     seuil_tolerance: seuilTolerance,
+    compte_ecart_manquant: compteEcartManquant,
+    compte_ecart_excedent: compteEcartExcedent,
     motif,
   })
   return data
