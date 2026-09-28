@@ -782,6 +782,7 @@ export const LIBELLES = {
     titre: 'Comptes d’épargne',
     chargement: 'Chargement des comptes…',
     erreur: 'Impossible de charger les comptes d’épargne.',
+    interdit: 'Vous n’avez pas la permission de consulter les comptes d’épargne de ce membre.',
     vide: 'Aucun compte d’épargne.',
     ouvrir: 'Ouvrir un compte',
     // Gate KYC visible : on explique POURQUOI le bouton d’ouverture est absent.

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { AxiosError } from 'axios'
 import { ChevronDown, ChevronRight, PiggyBank, Plus } from 'lucide-react'
 import { useState } from 'react'
 
@@ -52,9 +53,13 @@ export function OngletComptesEpargne({
     return <p className="py-4 text-sm text-muted-foreground">{E.chargement}</p>
   }
   if (requete.isError) {
+    // 403 distingué d'une panne : un refus de permission n'est pas un chargement qui a
+    // échoué, et ce message sert aussi à d'autres rôles légitimement privés d'accès.
+    const interdit =
+      requete.error instanceof AxiosError && requete.error.response?.status === 403
     return (
       <Alert variant="destructive" role="alert">
-        <AlertDescription>{E.erreur}</AlertDescription>
+        <AlertDescription>{interdit ? E.interdit : E.erreur}</AlertDescription>
       </Alert>
     )
   }

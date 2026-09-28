@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fermerCompte, lireCompte, listerComptesMembre } from '@/features/epargne/api'
@@ -88,6 +89,27 @@ describe('OngletComptesEpargne', () => {
 
     expect(await screen.findByText(/doit être activé/i)).toBeVisible()
     expect(screen.queryByRole('button', { name: /Ouvrir un compte/ })).toBeNull()
+  })
+
+  it('refus de permission (403) : message d’accès non autorisé, distinct d’une panne', async () => {
+    comptesSimules.mockRejectedValue(
+      new AxiosError('rejet', undefined, undefined, undefined, { status: 403 } as never),
+    )
+    afficher('actif')
+
+    expect(
+      await screen.findByText(
+        'Vous n’avez pas la permission de consulter les comptes d’épargne de ce membre.',
+      ),
+    ).toBeVisible()
+    expect(screen.queryByText('Impossible de charger les comptes d’épargne.')).toBeNull()
+  })
+
+  it('panne réseau : message de chargement générique, PAS le message de permission', async () => {
+    comptesSimules.mockRejectedValue(new Error('réseau'))
+    afficher('actif')
+
+    expect(await screen.findByText('Impossible de charger les comptes d’épargne.')).toBeVisible()
   })
 
   it('déplie un compte et affiche le relevé', async () => {
