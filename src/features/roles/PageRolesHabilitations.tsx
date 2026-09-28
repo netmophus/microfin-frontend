@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
-import { ArrowLeft, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, RotateCcw, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -16,6 +16,7 @@ import {
   listerPermissions,
   listerRolesHabilitations,
   modifierRole,
+  reinitialiserRole,
   remplacerPermissionsRole,
   supprimerRole,
   type EchecEcriture,
@@ -29,9 +30,11 @@ import { LIBELLES } from '@/libelles/fr'
 const R = LIBELLES.rolesHabilitations
 
 /**
- * Écran « Rôles et habilitations ». LOT 1 (lecture, tous les rôles) + LOT 2 (édition, rôles
- * PERSONNALISÉS uniquement — is_system=false). Un rôle système reste affiché en lecture
- * seule, sans aucun contrôle d'édition : leur édition est le lot 4, après le seed du lot 3.
+ * Écran « Rôles et habilitations ». LOT 1 (lecture, tous les rôles) + LOT 2 (création/
+ * suppression, rôles PERSONNALISÉS uniquement) + LOT 4 (édition des métadonnées et des
+ * permissions ÉTENDUE aux rôles SYSTÈME — le verrou gere_manuellement, lot 3, rend ça sûr :
+ * éditer un rôle système le sort de la convergence du seed ; « Réinitialiser au réglage
+ * d'usine » l'y remet). La suppression reste réservée aux rôles personnalisés.
  */
 export function PageRolesHabilitations() {
   const [codeSelectionne, setCodeSelectionne] = useState<string | null>(null)
@@ -149,9 +152,14 @@ function LigneRole({ role, onClick }: { role: RoleApercu; onClick: () => void })
         )}
       </td>
       <td className="px-3 py-2">
-        <Badge ton={role.is_system ? 'neutral' : 'brand'}>
-          {role.is_system ? R.systeme : R.personnalise}
-        </Badge>
+        <span className="flex flex-wrap gap-1">
+          <Badge ton={role.is_system ? 'neutral' : 'brand'}>
+            {role.is_system ? R.systeme : R.personnalise}
+          </Badge>
+          {role.is_system && role.gere_manuellement && (
+            <Badge ton="warning">{R.gereManuellement}</Badge>
+          )}
+        </span>
       </td>
       <td className="px-3 py-2 text-muted-foreground">{R.nbPermissions(role.nb_permissions)}</td>
     </tr>
@@ -304,7 +312,10 @@ function DetailRoleCharge({
   const peutModifier = useAPermission('roles.update')
   const peutGererPermissions = useAPermission('roles.permissions.manage')
   const peutSupprimer = useAPermission('roles.delete')
-  const editable = !role.is_system
+  // Lot 4 : métadonnées et permissions sont éditables sur TOUT rôle (personnalisé ou
+  // système), gaté seulement par la permission. Seule la suppression reste réservée aux
+  // rôles personnalisés.
+  const deletable = !role.is_system
 
   return (
     <>
@@ -316,16 +327,27 @@ function DetailRoleCharge({
             <p className="mt-1 text-sm text-muted-foreground">{role.description}</p>
           )}
         </div>
-        <Badge ton={role.is_system ? 'neutral' : 'brand'}>
-          {role.is_system ? R.systeme : R.personnalise}
-        </Badge>
+        <span className="flex flex-wrap justify-end gap-1">
+          <Badge ton={role.is_system ? 'neutral' : 'brand'}>
+            {role.is_system ? R.systeme : R.personnalise}
+          </Badge>
+          {role.is_system && role.gere_manuellement && (
+            <Badge ton="warning">{R.gereManuellement}</Badge>
+          )}
+        </span>
       </header>
 
-      {editable && peutModifier && <SectionMetadonnees role={role} />}
+      {role.is_system && (
+        <Alert>
+          <AlertDescription>{R.avertissementSysteme}</AlertDescription>
+        </Alert>
+      )}
+
+      {peutModifier && <SectionMetadonnees role={role} />}
 
       <section className="space-y-4">
         <h3 className="text-sm font-semibold">{R.permissionsTitre}</h3>
-        {editable && peutGererPermissions ? (
+        {peutGererPermissions ? (
           <PanneauPermissions role={role} />
         ) : role.permissions.length === 0 ? (
           <p className="text-sm text-muted-foreground">{R.aucunePermission}</p>
@@ -350,7 +372,11 @@ function DetailRoleCharge({
         )}
       </section>
 
-      {editable && peutSupprimer && <SectionSuppression role={role} onSupprime={onSupprime} />}
+      {role.is_system && role.gere_manuellement && peutGererPermissions && (
+        <SectionReinitialisation role={role} />
+      )}
+
+      {deletable && peutSupprimer && <SectionSuppression role={role} onSupprime={onSupprime} />}
     </>
   )
 }
@@ -555,6 +581,78 @@ function PanneauPermissions({ role }: { role: RolePermissionsDetail }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function SectionReinitialisation({ role }: { role: RolePermissionsDetail }) {
+  const queryClient = useQueryClient()
+  const [confirmation, setConfirmation] = useState(false)
+  const [motif, setMotif] = useState('')
+  const [echec, setEchec] = useState<EchecEcriture | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: () => reinitialiserRole(role.code, motif.trim() || undefined),
+    onSuccess: (detail) => {
+      queryClient.setQueryData(['roles', 'permissions', role.code], detail)
+      void queryClient.invalidateQueries({ queryKey: ['roles', 'habilitations'] })
+      setConfirmation(false)
+      setMotif('')
+      setEchec(null)
+    },
+    onError: (erreur: unknown) =>
+      setEchec(erreur instanceof ErreurEcriture ? erreur.echec : { type: 'inattendue' }),
+  })
+
+  if (!confirmation) {
+    return (
+      <Button type="button" variant="outline" size="sm" onClick={() => setConfirmation(true)}>
+        <RotateCcw className="mr-1 size-3.5" />
+        {R.reinitialiserBouton}
+      </Button>
+    )
+  }
+
+  return (
+    <div className="space-y-2 rounded-md border p-4">
+      <p className="text-sm font-medium">{R.reinitialiserConfirmerTitre(role.name)}</p>
+      <p className="text-sm text-muted-foreground">{R.reinitialiserConfirmerTexte}</p>
+
+      {echec && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>{messageEchecEcriture(echec)}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="space-y-1">
+        <Label htmlFor="role-reinitialiser-motif">{R.reinitialiserMotifLabel}</Label>
+        <Input
+          id="role-reinitialiser-motif"
+          value={motif}
+          onChange={(e) => setMotif(e.target.value)}
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate()}
+        >
+          {mutation.isPending ? R.reinitialiserEnCours : R.reinitialiserConfirmer}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setConfirmation(false)}
+          disabled={mutation.isPending}
+        >
+          {R.annuler}
+        </Button>
+      </div>
     </div>
   )
 }

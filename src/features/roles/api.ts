@@ -19,6 +19,7 @@ export interface RoleApercu {
   description: string | null
   is_system: boolean
   nb_permissions: number
+  gere_manuellement: boolean
 }
 
 export async function listerRolesHabilitations(): Promise<RoleApercu[]> {
@@ -42,6 +43,7 @@ export interface RolePermissionsDetail {
   name: string
   description: string | null
   is_system: boolean
+  gere_manuellement: boolean
   permissions: PermissionItem[]
 }
 
@@ -50,7 +52,11 @@ export async function lirePermissionsRole(code: string): Promise<RolePermissions
   return data
 }
 
-// --- LOT 2 : écriture, rôles PERSONNALISÉS uniquement -------------------------------------
+// --- LOT 2/4 : écriture des rôles -----------------------------------------------------
+//
+// PATCH et PUT .../permissions s'appliquent aux rôles personnalisés ET, depuis le lot 4,
+// aux rôles système (ils se verrouillent alors — voir gere_manuellement). Seule la
+// suppression reste réservée aux rôles personnalisés.
 //
 // Les 409/422 portent un message serveur déjà écrit en français, spécifique (« code déjà
 // utilisé », garde-fou anti-blocage) — on l'affiche TEL QUEL plutôt que de le remplacer par
@@ -131,7 +137,8 @@ export async function supprimerRole(code: string): Promise<void> {
   await ecrire(async () => api.delete(`/roles/${code}`))
 }
 
-/** Remplace ATOMIQUEMENT le jeu de permissions d'un rôle personnalisé. Motif obligatoire. */
+/** Remplace ATOMIQUEMENT le jeu de permissions d'un rôle (personnalisé ou système, lot 4).
+ * Motif obligatoire. */
 export async function remplacerPermissionsRole(
   code: string,
   permissionCodes: string[],
@@ -143,6 +150,21 @@ export async function remplacerPermissionsRole(
         await api.put<RolePermissionsDetail>(`/roles/${code}/permissions`, {
           permission_codes: permissionCodes,
           motif,
+        })
+      ).data,
+  )
+}
+
+/** Réinitialise un rôle SYSTÈME verrouillé à son réglage d'usine (lot 4). Motif facultatif. */
+export async function reinitialiserRole(
+  code: string,
+  motif?: string,
+): Promise<RolePermissionsDetail> {
+  return ecrire(
+    async () =>
+      (
+        await api.post<RolePermissionsDetail>(`/roles/${code}/reinitialiser`, {
+          motif: motif || undefined,
         })
       ).data,
   )

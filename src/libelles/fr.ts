@@ -401,8 +401,8 @@ export const LIBELLES = {
       caisse: 'Caisse',
     } as Record<string, string>,
 
-    // Lot 2 — création et édition, rôles PERSONNALISÉS uniquement. Les rôles système restent
-    // en lecture seule (édition système : lot 4).
+    // Lot 2 — création, rôles PERSONNALISÉS uniquement (créer un rôle SYSTÈME n'a pas de
+    // sens, il n'y en a que 11, tous posés par le seed).
     creerBouton: 'Créer un rôle personnalisé',
     creerTitre: 'Nouveau rôle personnalisé',
     champCode: 'Code',
@@ -440,6 +440,20 @@ export const LIBELLES = {
     echecIntrouvable: 'Ce rôle n’existe plus.',
     echecReseau: 'Le serveur ne répond pas. Réessayez dans un instant.',
     echecInattendue: 'Une erreur inattendue est survenue.',
+
+    // Lot 4 — édition des rôles SYSTÈME (métadonnées + permissions ; jamais la suppression,
+    // toujours interdite sur un rôle système) et déverrouillage.
+    avertissementSysteme:
+      'Rôle système : cette modification affecte tous les comptes qui le détiennent.',
+    gereManuellement: 'Géré manuellement',
+    reinitialiserBouton: 'Réinitialiser au réglage d’usine',
+    reinitialiserConfirmerTitre: (nom: string) => `Réinitialiser le rôle « ${nom} » ?`,
+    reinitialiserConfirmerTexte:
+      'Le nom, la description et les permissions de ce rôle seront réécrasés par la définition d’origine. Cette action est immédiate.',
+    reinitialiserMotifLabel: 'Motif (facultatif)',
+    reinitialiserConfirmer: 'Réinitialiser',
+    reinitialiserEnCours: 'Réinitialisation…',
+    reinitialiserReussi: 'Rôle réinitialisé au réglage d’usine.',
   },
 
   accueil: {

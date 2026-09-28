@@ -10,6 +10,7 @@ import {
   listerPermissions,
   listerRolesHabilitations,
   modifierRole,
+  reinitialiserRole,
   remplacerPermissionsRole,
   supprimerRole,
   type PermissionItem,
@@ -20,10 +21,11 @@ import { PageRolesHabilitations } from '@/features/roles/PageRolesHabilitations'
 
 /**
  * Écran « Rôles et habilitations » — LOT 1 (lecture, AUTONOME de GET /roles/roles.read,
- * incident du 28/09/2026) + LOT 2 (édition, rôles PERSONNALISÉS uniquement). Points durs
- * lot 2 : aucun contrôle d'édition sur un rôle SYSTÈME même avec toutes les permissions,
- * l'aperçu « +X / −Y » avant confirmation, le motif obligatoire, et les messages serveur
- * (409/422) affichés tels quels (garde-fou anti-blocage, code déjà utilisé).
+ * incident du 28/09/2026) + LOT 2 (création/suppression, rôles PERSONNALISÉS) + LOT 4
+ * (édition ÉTENDUE aux rôles SYSTÈME + réinitialisation). Points durs lot 4 : un rôle
+ * système sans permission reste lecture seule, AVEC permission devient éditable (mais
+ * jamais supprimable), bannière d'avertissement, badge « Géré manuellement », bouton
+ * Réinitialiser visible seulement si verrouillé + permission.
  */
 
 const etat = vi.hoisted(() => ({ permissions: [] as string[] }))
@@ -45,6 +47,7 @@ vi.mock('@/features/roles/api', async () => {
     modifierRole: vi.fn(),
     supprimerRole: vi.fn(),
     remplacerPermissionsRole: vi.fn(),
+    reinitialiserRole: vi.fn(),
   }
 })
 
@@ -55,6 +58,7 @@ const creerSimule = vi.mocked(creerRole)
 const modifierSimule = vi.mocked(modifierRole)
 const supprimerSimule = vi.mocked(supprimerRole)
 const remplacerPermissionsSimule = vi.mocked(remplacerPermissionsRole)
+const reinitialiserSimule = vi.mocked(reinitialiserRole)
 
 function unRole(o: Partial<RoleApercu> = {}): RoleApercu {
   return {
@@ -63,6 +67,7 @@ function unRole(o: Partial<RoleApercu> = {}): RoleApercu {
     description: 'Opérations de guichet',
     is_system: true,
     nb_permissions: 2,
+    gere_manuellement: false,
     ...o,
   }
 }
@@ -73,6 +78,7 @@ function unDetail(o: Partial<RolePermissionsDetail> = {}): RolePermissionsDetail
     name: 'Caissier',
     description: 'Opérations de guichet',
     is_system: true,
+    gere_manuellement: false,
     permissions: [
       { code: 'epargne.operation.deposit', module: 'epargne', description: 'Enregistrer un dépôt' },
       { code: 'caisse.session.open', module: 'caisse', description: 'Ouvrir une session de caisse' },
@@ -215,6 +221,7 @@ describe('PageRolesHabilitations — lot 2 (édition, rôles personnalisés)', (
       description: null,
       is_system: false,
       nb_permissions: 0,
+      gere_manuellement: true,
     })
     detailSimule.mockResolvedValue(
       unDetail({ code: 'ROLE_TEST', name: 'Rôle de test', is_system: false, permissions: [] }),
@@ -252,8 +259,7 @@ describe('PageRolesHabilitations — lot 2 (édition, rôles personnalisés)', (
     expect(await screen.findByText('Le code « CAISSIER » est déjà utilisé.')).toBeVisible()
   })
 
-  it('rôle SYSTÈME : aucun contrôle d’édition, même avec toutes les permissions lot 2', async () => {
-    etat.permissions = ['roles.update', 'roles.permissions.manage', 'roles.delete']
+  it('lot 4 — rôle SYSTÈME sans permission d’édition : reste en lecture seule', async () => {
     rolesSimules.mockResolvedValue([unRole()])
     detailSimule.mockResolvedValue(unDetail({ is_system: true }))
     afficher()
@@ -264,8 +270,23 @@ describe('PageRolesHabilitations — lot 2 (édition, rôles personnalisés)', (
     expect(screen.queryByText('Nom et description')).toBeNull()
     expect(screen.queryByRole('checkbox')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Supprimer ce rôle' })).toBeNull()
-    // La liste lecture seule d'origine (lot 1) reste affichée.
     expect(screen.getByText('epargne.operation.deposit')).toBeVisible()
+  })
+
+  it('lot 4 — rôle SYSTÈME avec permissions d’édition : éditable, mais jamais supprimable', async () => {
+    etat.permissions = ['roles.update', 'roles.permissions.manage', 'roles.delete']
+    rolesSimules.mockResolvedValue([unRole()])
+    detailSimule.mockResolvedValue(unDetail({ is_system: true }))
+    catalogueSimule.mockResolvedValue([unePermissionCatalogue()])
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Caissier/ }))
+
+    expect(await screen.findByText('Nom et description')).toBeVisible()
+    expect(await screen.findAllByRole('checkbox')).not.toHaveLength(0)
+    expect(screen.getByText('Rôle système : cette modification affecte tous les comptes qui le détiennent.')).toBeVisible()
+    // La suppression, elle, reste interdite — même avec roles.delete.
+    expect(screen.queryByRole('button', { name: 'Supprimer ce rôle' })).toBeNull()
   })
 
   it('rôle personnalisé + roles.update : modifie le nom, bouton désactivé sans changement', async () => {
@@ -278,6 +299,7 @@ describe('PageRolesHabilitations — lot 2 (édition, rôles personnalisés)', (
       description: null,
       is_system: false,
       nb_permissions: 2,
+      gere_manuellement: true,
     })
     afficher()
 
@@ -381,5 +403,72 @@ describe('PageRolesHabilitations — lot 2 (édition, rôles personnalisés)', (
     await waitFor(() => expect(supprimerSimule).toHaveBeenCalledWith('CAISSIER'))
     // Retour à la liste après suppression.
     expect(await screen.findByText('2 permissions')).toBeVisible()
+  })
+
+  it('liste : badge « Géré manuellement » sur un rôle système verrouillé, pas sur les autres', async () => {
+    rolesSimules.mockResolvedValue([
+      unRole({ code: 'CAISSIER', gere_manuellement: true }),
+      unRole({ code: 'COMPTABLE', name: 'Comptable', gere_manuellement: false }),
+      unRole({ code: 'ROLE_PERSO', name: 'Perso', is_system: false, gere_manuellement: true }),
+    ])
+    afficher()
+
+    await screen.findByText('Caissier')
+    // Un seul badge : le rôle système ET verrouillé. Pas le personnalisé (toujours
+    // verrouillé par nature, l'indicateur y serait redondant), pas le système non édité.
+    expect(screen.getAllByText('Géré manuellement')).toHaveLength(1)
+  })
+
+  it('détail : bouton Réinitialiser visible seulement si système + verrouillé + permission', async () => {
+    etat.permissions = ['roles.permissions.manage']
+    rolesSimules.mockResolvedValue([unRole()])
+    detailSimule.mockResolvedValue(unDetail({ is_system: true, gere_manuellement: true }))
+    catalogueSimule.mockResolvedValue([unePermissionCatalogue()])
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Caissier/ }))
+
+    expect(
+      await screen.findByRole('button', { name: 'Réinitialiser au réglage d’usine' }),
+    ).toBeVisible()
+  })
+
+  it('détail : pas de bouton Réinitialiser sur un rôle système non verrouillé', async () => {
+    etat.permissions = ['roles.permissions.manage']
+    rolesSimules.mockResolvedValue([unRole()])
+    detailSimule.mockResolvedValue(unDetail({ is_system: true, gere_manuellement: false }))
+    catalogueSimule.mockResolvedValue([unePermissionCatalogue()])
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Caissier/ }))
+    await screen.findByText('Permissions accordées')
+
+    expect(
+      screen.queryByRole('button', { name: 'Réinitialiser au réglage d’usine' }),
+    ).toBeNull()
+  })
+
+  it('réinitialiser : confirmation puis appel avec le motif facultatif', async () => {
+    etat.permissions = ['roles.permissions.manage']
+    rolesSimules.mockResolvedValue([unRole()])
+    detailSimule.mockResolvedValue(unDetail({ is_system: true, gere_manuellement: true }))
+    catalogueSimule.mockResolvedValue([unePermissionCatalogue()])
+    reinitialiserSimule.mockResolvedValue(unDetail({ is_system: true, gere_manuellement: false }))
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Caissier/ }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Réinitialiser au réglage d’usine' }),
+    )
+    expect(await screen.findByText('Réinitialiser le rôle « Caissier » ?')).toBeVisible()
+
+    fireEvent.change(screen.getByLabelText('Motif (facultatif)'), {
+      target: { value: 'Erreur de saisie' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Réinitialiser' }))
+
+    await waitFor(() =>
+      expect(reinitialiserSimule).toHaveBeenCalledWith('CAISSIER', 'Erreur de saisie'),
+    )
   })
 })
