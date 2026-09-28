@@ -30,6 +30,7 @@ import { PageReclassification } from '@/features/credit/PageReclassification'
 import { PageGuichet } from '@/features/epargne/PageGuichet'
 import { PageRapprochement } from '@/features/epargne/PageRapprochement'
 import { PageVersementInterets } from '@/features/epargne/PageVersementInterets'
+import { PageRolesHabilitations } from '@/features/roles/PageRolesHabilitations'
 import { PageCreationTier } from '@/features/tiers/PageCreationTier'
 import { PageFicheTier } from '@/features/tiers/PageFicheTier'
 import { PageTiers } from '@/features/tiers/PageTiers'
@@ -139,6 +140,14 @@ export function App() {
                 element={
                   <RoutePermission permission="audit.read">
                     <PageJournalAudit />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/roles-habilitations"
+                element={
+                  <RoutePermission permission="roles.permissions.read">
+                    <PageRolesHabilitations />
                   </RoutePermission>
                 }
               />

@@ -359,6 +359,49 @@ export const LIBELLES = {
     erreur: 'L’opération sur les rôles a échoué. Réessayez.',
   },
 
+  // Écran « Rôles et habilitations » (lot 1, lecture seule). Distinct de `roles` ci-dessus,
+  // qui reste la section « Rôles » de la fiche d'UN utilisateur (attribuer/retirer un rôle
+  // existant) — deux écrans, deux vocabulaires, pas de mélange.
+  rolesHabilitations: {
+    titre: 'Rôles et habilitations',
+    sousTitre: 'Ce que chaque rôle est autorisé à faire dans l’application.',
+    chargement: 'Chargement des rôles…',
+    interdit: 'Vous n’avez pas la permission de consulter les rôles et habilitations.',
+    erreur: 'Impossible de charger les rôles. Réessayez dans un instant.',
+    listeVide: 'Aucun rôle.',
+
+    colonneCode: 'Code',
+    colonneNom: 'Nom',
+    colonneSysteme: 'Type',
+    colonneNbPermissions: 'Permissions',
+    systeme: 'Système',
+    personnalise: 'Personnalisé',
+    nbPermissions: (n: number) => `${n} permission${n === 1 ? '' : 's'}`,
+
+    retour: 'Retour à la liste',
+    permissionsTitre: 'Permissions accordées',
+    aucunePermission: 'Ce rôle ne détient aucune permission.',
+    detailChargement: 'Chargement des permissions du rôle…',
+    detailErreur: 'Impossible de charger les permissions de ce rôle.',
+    detailIntrouvable: 'Ce rôle est introuvable.',
+
+    // Regroupement du catalogue par module (colonne `module` en base) — libellés humains,
+    // jamais le code brut à l'écran. Un module non listé ici retombe sur son code tel quel
+    // (garde-fou pour ne jamais planter si un module futur n'est pas encore traduit).
+    modules: {
+      perimetre: 'Périmètre',
+      users: 'Utilisateurs',
+      roles: 'Rôles et habilitations',
+      sessions: 'Sessions',
+      audit: 'Audit',
+      tiers: 'Tiers',
+      compta: 'Comptabilité',
+      epargne: 'Épargne',
+      credit: 'Crédit',
+      caisse: 'Caisse',
+    } as Record<string, string>,
+  },
+
   accueil: {
     bienvenue: (nom: string) => `Bienvenue, ${nom}.`,
     // Compte sans aucun rôle : message CALME et informatif, jamais une erreur rouge. La

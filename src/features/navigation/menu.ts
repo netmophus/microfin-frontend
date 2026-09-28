@@ -56,7 +56,12 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/utilisateurs',
         permission: 'users.read',
       },
-      aVenir(M.entrees.rolesHabilitations),
+      {
+        etat: 'actif',
+        libelle: M.entrees.rolesHabilitations,
+        chemin: '/roles-habilitations',
+        permission: 'roles.permissions.read',
+      },
       {
         etat: 'actif',
         libelle: M.entrees.journalAudit,
