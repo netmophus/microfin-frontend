@@ -367,6 +367,60 @@ export async function modifierRattachementsProduit(
   return data
 }
 
+// --- 5.2 Paramètres d'intérêt épargne (par produit) --------------------------------------
+//
+// `periodicite` n'apparaît pas ici : non exploitée par le moteur de versement (interets.py),
+// donc non exposée à l'écran tant qu'elle n'a aucun effet — voir le commentaire côté backend
+// (app/modules/epargne/schemas.py, ParametresInteretProduit).
+
+export const METHODES_CALCUL_SOLDE = ['min_periode', 'moyen_quotidien', 'fin_periode'] as const
+export type MethodeCalculSolde = (typeof METHODES_CALCUL_SOLDE)[number]
+
+export const REGLES_ARRONDI = ['plus_proche', 'plancher'] as const
+export type RegleArrondi = (typeof REGLES_ARRONDI)[number]
+
+export const BASES_JOURS = [360, 365] as const
+export type BaseJours = (typeof BASES_JOURS)[number]
+
+export interface ParametresInteretProduit {
+  id: string
+  code: string
+  name: string
+  taux_bp: number
+  methode_calcul_solde: MethodeCalculSolde
+  base_jours: BaseJours
+  regle_arrondi: RegleArrondi
+  solde_minimum_remunere: number
+  is_provisional: boolean
+}
+
+export interface ModificationParametresInteretProduit {
+  taux_bp: number
+  methode_calcul_solde: MethodeCalculSolde
+  base_jours: BaseJours
+  regle_arrondi: RegleArrondi
+  solde_minimum_remunere: number
+  motif: string
+}
+
+export async function listerParametresInteretProduits(): Promise<ParametresInteretProduit[]> {
+  const { data } = await api.get<ParametresInteretProduit[]>(
+    '/epargne/produits/parametres-interet',
+  )
+  return data
+}
+
+export async function modifierParametresInteretProduit(
+  id: string,
+  modifications: ModificationParametresInteretProduit,
+): Promise<ParametresInteretProduit> {
+  const { data } = await api.patch<ParametresInteretProduit>(
+    `/epargne/produits/${id}/parametres-interet`,
+    modifications,
+  )
+  return data
+}
+
 // --- 5.2 Caisse par agence -----------------------------------------------------------------
 
 // Un poste ACTIF du module Caisse (Bloc A/B) dont le compte diffère de `compte_caisse`

@@ -21,6 +21,7 @@ import { PageParametresCaisse } from '@/features/comptabilite/PageParametresCais
 import { PageParametresParts } from '@/features/comptabilite/PageParametresParts'
 import { PagePaliersSouffrance } from '@/features/comptabilite/PagePaliersSouffrance'
 import { PagePlanComptable } from '@/features/comptabilite/PagePlanComptable'
+import { PageParametresInteretEpargne } from '@/features/comptabilite/PageParametresInteretEpargne'
 import { PageRattachementsCaisse } from '@/features/comptabilite/PageRattachementsCaisse'
 import { PageRattachementsEpargne } from '@/features/comptabilite/PageRattachementsEpargne'
 import { PageCredit } from '@/features/credit/PageCredit'
@@ -252,6 +253,14 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.plan.read">
                     <PageRattachementsEpargne />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/parametres-interet-epargne"
+                element={
+                  <RoutePermission permission="compta.plan.read">
+                    <PageParametresInteretEpargne />
                   </RoutePermission>
                 }
               />
