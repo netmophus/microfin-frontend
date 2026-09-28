@@ -90,9 +90,11 @@ export interface ResultatOperation {
   entry_number: string | null
 }
 
-export async function rechercherCompte(numero: string): Promise<CompteGuichet> {
-  const { data } = await api.get<CompteGuichet>('/epargne/recherche-compte', {
-    params: { numero },
+/** Recherche partielle (guichet) — numéro OU nom du titulaire, jusqu'à 20 résultats, cloisonnés
+ * à l'agence du caissier côté serveur. */
+export async function rechercherComptes(q: string): Promise<CompteGuichet[]> {
+  const { data } = await api.get<CompteGuichet[]>('/epargne/recherche-comptes', {
+    params: { q },
   })
   return data
 }

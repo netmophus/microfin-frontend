@@ -1,5 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
-import { AxiosError } from 'axios'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { PiggyBank, Search } from 'lucide-react'
 import { useState } from 'react'
 
@@ -11,12 +10,13 @@ import {
   deposerGuichet,
   formatFcfa,
   messageRefus,
-  rechercherCompte,
+  rechercherComptes,
   retirerGuichet,
   type CompteGuichet,
   type ResultatOperation,
 } from '@/features/epargne/api'
 import { BadgeProvisoire, BadgeStatutCompte } from '@/features/epargne/badges'
+import { useDebounce } from '@/lib/useDebounce'
 import { LIBELLES } from '@/libelles/fr'
 
 const G = LIBELLES.guichet
@@ -26,13 +26,12 @@ function fmt(gabarit: string, valeurs: Record<string, string>): string {
 }
 
 /**
- * Onglet « Épargne » du guichet — dépôt / retrait. Un seul point d'entrée rapide : le numéro
- * du livret. Le NOM du titulaire est affiché en gros AVANT toute opération (vérification humaine
- * contre une faute de frappe dans le numéro), et la confirmation le répète. Refus serveur
- * affichés tels quels. Cloisonnement côté serveur (un compte hors agence est introuvable).
- *
- * Extrait de PageGuichet.tsx sans changement de logique lors du passage au guichet à onglets
- * (Épargne / Parts sociales) — écran déjà validé au navigateur, on n'y touche pas.
+ * Onglet « Épargne » du guichet — dépôt / retrait. Recherche assistée par numéro OU nom du
+ * titulaire (même patron que l'onglet Crédit : debounce, liste de résultats, sélection) — un
+ * caissier ne connaît pas le numéro de livret par cœur. Le NOM du titulaire est affiché en gros
+ * AVANT toute opération (vérification humaine contre un mauvais choix dans la liste), et la
+ * confirmation le répète. Refus serveur affichés tels quels. Cloisonnement côté serveur (la
+ * recherche ne rend que les comptes de l'agence du caissier).
  */
 export function OngletGuichetEpargne() {
   const [compte, setCompte] = useState<CompteGuichet | null>(null)
@@ -40,59 +39,99 @@ export function OngletGuichetEpargne() {
   return (
     <div className="mx-auto max-w-xl space-y-5 p-4">
       <p className="text-sm text-muted-foreground">{G.intro}</p>
-      <Recherche onTrouve={setCompte} />
 
-      {compte && <Operations compte={compte} onSolde={(s) => setCompte({ ...compte, balance: s })} />}
+      {!compte ? (
+        <Recherche onSelection={setCompte} />
+      ) : (
+        <Operations
+          compte={compte}
+          onSolde={(s) => setCompte({ ...compte, balance: s })}
+          onChangerRecherche={() => setCompte(null)}
+        />
+      )}
     </div>
   )
 }
 
-function Recherche({ onTrouve }: { onTrouve: (c: CompteGuichet) => void }) {
-  const [numero, setNumero] = useState('')
-  const recherche = useMutation({
-    mutationFn: () => rechercherCompte(numero.trim()),
-    onSuccess: onTrouve,
+function Recherche({ onSelection }: { onSelection: (c: CompteGuichet) => void }) {
+  const [q, setQ] = useState('')
+  // Filtrage en direct dès la 1ère frappe (même patron que l'onglet Crédit) : le debounce
+  // diffère seulement l'APPEL serveur, il n'attend jamais Entrée ni une saisie complète.
+  const qDifferee = useDebounce(q)
+  const recherche = useQuery({
+    queryKey: ['epargne', 'recherche-comptes', qDifferee],
+    queryFn: () => rechercherComptes(qDifferee.trim()),
+    enabled: qDifferee.trim().length > 0,
   })
-  const introuvable =
-    recherche.isError && recherche.error instanceof AxiosError && recherche.error.response?.status === 404
 
   return (
-    <form
-      className="space-y-2"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (numero.trim()) recherche.mutate()
-      }}
-    >
-      <Label htmlFor="numero-compte">{G.numeroLabel}</Label>
-      <div className="flex gap-2">
-        <Input
-          id="numero-compte"
-          value={numero}
-          onChange={(e) => setNumero(e.target.value)}
-          placeholder={G.numeroPlaceholder}
-          className="font-mono"
+    <div className="space-y-2">
+      <Label htmlFor="recherche-epargne-guichet">{G.rechercherLabel}</Label>
+      <div className="relative">
+        <Search
+          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
         />
-        <Button type="submit" disabled={!numero.trim() || recherche.isPending}>
-          <Search className="mr-1 size-4" />
-          {recherche.isPending ? G.rechercheEnCours : G.chercher}
-        </Button>
+        <Input
+          id="recherche-epargne-guichet"
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={G.rechercherPlaceholder}
+          className="pl-8"
+        />
       </div>
-      {introuvable && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>{G.introuvable}</AlertDescription>
+
+      {recherche.isFetching && (
+        <p className="text-sm text-muted-foreground">{G.rechercheEnCours}</p>
+      )}
+
+      {!recherche.isFetching && recherche.isSuccess && recherche.data.length === 0 && (
+        <Alert role="alert">
+          <AlertDescription>{G.aucunResultat}</AlertDescription>
         </Alert>
       )}
-    </form>
+
+      {!recherche.isFetching && recherche.isSuccess && recherche.data.length > 0 && (
+        <ul className="divide-y rounded-md border bg-background text-sm">
+          {recherche.data.map((c) => (
+            <li key={c.id}>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-muted/50"
+                onClick={() => onSelection(c)}
+              >
+                <span>
+                  <span className="font-medium">{c.membre_nom}</span>{' '}
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {c.account_number}
+                  </span>
+                  <br />
+                  <span className="text-xs text-muted-foreground">{c.product_name}</span>
+                </span>
+                <span className="text-right">
+                  <span className="block font-mono text-sm tabular-nums">
+                    {formatFcfa(c.balance)}
+                  </span>
+                  <BadgeStatutCompte statut={c.status} />
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
 function Operations({
   compte,
   onSolde,
+  onChangerRecherche,
 }: {
   compte: CompteGuichet
   onSolde: (nouveauSolde: number) => void
+  onChangerRecherche: () => void
 }) {
   const [sens, setSens] = useState<'depot' | 'retrait' | null>(null)
   const [montant, setMontant] = useState('')
@@ -145,6 +184,10 @@ function Operations({
           <BadgeStatutCompte statut={compte.status} />
         </div>
       </div>
+
+      <Button size="sm" variant="ghost" onClick={onChangerRecherche}>
+        {G.changerRecherche}
+      </Button>
 
       {ferme ? (
         <Alert role="note">

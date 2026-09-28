@@ -1132,12 +1132,12 @@ export const LIBELLES = {
     ongletParts: 'Parts sociales',
     ongletCredit: 'Crédit',
 
-    intro: 'Saisissez le numéro du livret pour trouver le compte, puis opérez.',
-    numeroLabel: 'Numéro de compte',
-    numeroPlaceholder: 'EP-2026-0000001',
-    chercher: 'Chercher',
+    intro: 'Cherchez un compte par numéro ou nom du titulaire, puis opérez.',
+    rechercherLabel: 'Numéro de compte ou nom du titulaire',
+    rechercherPlaceholder: 'EP-2026-0000001 ou nom',
     rechercheEnCours: 'Recherche…',
-    introuvable: 'Aucun compte à ce numéro dans votre agence. Vérifiez le numéro.',
+    aucunResultat: 'Aucun compte ne correspond à cette recherche dans votre agence.',
+    changerRecherche: 'Nouvelle recherche',
     // Vérification humaine : le nom est proéminent, on confirme « c'est bien la personne ».
     membre: 'Titulaire',
     solde: 'Solde',
