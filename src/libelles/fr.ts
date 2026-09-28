@@ -400,6 +400,46 @@ export const LIBELLES = {
       credit: 'Crédit',
       caisse: 'Caisse',
     } as Record<string, string>,
+
+    // Lot 2 — création et édition, rôles PERSONNALISÉS uniquement. Les rôles système restent
+    // en lecture seule (édition système : lot 4).
+    creerBouton: 'Créer un rôle personnalisé',
+    creerTitre: 'Nouveau rôle personnalisé',
+    champCode: 'Code',
+    champCodeAide: 'Majuscules, chiffres et tiret bas uniquement (ex. AGENT_GUICHET).',
+    champNom: 'Nom',
+    champDescription: 'Description',
+    annuler: 'Annuler',
+    creerConfirmer: 'Créer le rôle',
+    creerEnCours: 'Création…',
+
+    modifierTitre: 'Nom et description',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+
+    supprimerBouton: 'Supprimer ce rôle',
+    supprimerConfirmerTitre: (nom: string) => `Supprimer le rôle « ${nom} » ?`,
+    supprimerConfirmerTexte: (nb: number) =>
+      `Ce rôle et ${nb === 0 ? 'aucune permission' : `${nb} permission${nb === 1 ? '' : 's'}`} seront définitivement supprimés.`,
+    supprimerConfirmer: 'Supprimer définitivement',
+    supprimerEnCours: 'Suppression…',
+
+    permissionsEditerTitre: 'Modifier les permissions',
+    catalogueChargement: 'Chargement du catalogue des permissions…',
+    catalogueErreur: 'Impossible de charger le catalogue des permissions.',
+    motifLabel: 'Motif de la modification',
+    motifAide: 'Obligatoire — pourquoi ce changement ?',
+    apercuAjoutees: (n: number) => `+${n} accordée${n === 1 ? '' : 's'}`,
+    apercuRetirees: (n: number) => `−${n} retirée${n === 1 ? '' : 's'}`,
+    apercuAucunChangement: 'Aucun changement.',
+    verifierLesChangements: 'Vérifier les changements',
+    confirmerEtEnregistrer: 'Confirmer et enregistrer',
+    revenirALedition: 'Revenir à l’édition',
+
+    echecInterdit: 'Vous n’avez pas la permission d’effectuer cette action.',
+    echecIntrouvable: 'Ce rôle n’existe plus.',
+    echecReseau: 'Le serveur ne répond pas. Réessayez dans un instant.',
+    echecInattendue: 'Une erreur inattendue est survenue.',
   },
 
   accueil: {
