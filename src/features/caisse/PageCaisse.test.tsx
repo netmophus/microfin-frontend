@@ -7,6 +7,7 @@ import {
   chargerSessionCourante,
   fermerSession,
   lireParametresCaisse,
+  listerMesPostes,
   ouvrirSession,
 } from '@/features/caisse/api'
 import { PageCaisse } from '@/features/caisse/PageCaisse'
@@ -28,6 +29,7 @@ vi.mock('@/features/caisse/api', async () => {
     ouvrirSession: vi.fn(),
     fermerSession: vi.fn(),
     lireParametresCaisse: vi.fn(),
+    listerMesPostes: vi.fn(),
   }
 })
 
@@ -35,6 +37,7 @@ const sessionSimulee = vi.mocked(chargerSessionCourante)
 const ouvertureSimulee = vi.mocked(ouvrirSession)
 const fermetureSimulee = vi.mocked(fermerSession)
 const parametresSimulee = vi.mocked(lireParametresCaisse)
+const mesPostesSimulee = vi.mocked(listerMesPostes)
 
 function afficher() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -80,6 +83,9 @@ beforeEach(() => {
     compte_ecart_excedent: { account_number: '7099', name: 'Divers produits' },
     is_provisional: true,
   })
+  // Un seul poste assigné par défaut — présélectionné, la plupart des tests n'ont rien de plus
+  // à faire ; les tests dédiés au sélecteur redéfinissent ce mock (vide, ou plusieurs postes).
+  mesPostesSimulee.mockResolvedValue([{ id: 'p1', code: '01', libelle: 'Guichet Principal' }])
 })
 
 describe('PageCaisse', () => {
@@ -104,17 +110,61 @@ describe('PageCaisse', () => {
     expect(ouvertureSimulee).not.toHaveBeenCalled()
   })
 
-  it('ouvre la caisse avec le fonds initial saisi', async () => {
+  it('ouvre la caisse avec le fonds initial saisi et le poste présélectionné', async () => {
     sessionSimulee.mockResolvedValueOnce(null).mockResolvedValueOnce(sessionOuverte)
     ouvertureSimulee.mockResolvedValue(sessionOuverte)
     afficher()
     await screen.findByText('Ouvrir la caisse')
+    // Un seul poste assigné (mock par défaut) : présélectionné automatiquement, mais transmis
+    // EXPLICITEMENT dans la requête — jamais une valeur implicite côté serveur.
+    await waitFor(() => expect(screen.getByLabelText('Poste de caisse')).toHaveValue('p1'))
 
     fireEvent.change(screen.getByLabelText('Fonds initial compté'), { target: { value: '50000' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la caisse' }))
 
-    await waitFor(() => expect(ouvertureSimulee).toHaveBeenCalledWith(50_000))
+    await waitFor(() => expect(ouvertureSimulee).toHaveBeenCalledWith(50_000, 'p1'))
     expect(await screen.findByText('60 000 F')).toBeVisible() // solde théorique en direct
+  })
+
+  it('aucun poste assigné : message clair, formulaire non soumissible', async () => {
+    mesPostesSimulee.mockResolvedValue([])
+    sessionSimulee.mockResolvedValue(null)
+    afficher()
+    await screen.findByText('Ouvrir la caisse')
+
+    expect(
+      await screen.findByText(
+        'Aucun poste ne vous est assigné. Demandez à votre responsable de vous assigner à un poste de caisse.',
+      ),
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Ouvrir la caisse' })).toBeDisabled()
+    expect(ouvertureSimulee).not.toHaveBeenCalled()
+  })
+
+  it('plusieurs postes assignés : aucune présélection, la sélection explicite est exigée puis transmise', async () => {
+    mesPostesSimulee.mockResolvedValue([
+      { id: 'p1', code: '01', libelle: 'Guichet Principal' },
+      { id: 'p2', code: '02', libelle: 'Guichet Secondaire' },
+    ])
+    sessionSimulee.mockResolvedValueOnce(null).mockResolvedValueOnce(sessionOuverte)
+    ouvertureSimulee.mockResolvedValue(sessionOuverte)
+    afficher()
+    await screen.findByText('Guichet Principal')
+    // Pas de présélection avec plusieurs postes possibles.
+    expect(screen.getByLabelText('Poste de caisse')).toHaveValue('')
+
+    fireEvent.change(screen.getByLabelText('Fonds initial compté'), { target: { value: '50000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la caisse' }))
+
+    expect(
+      await screen.findByText('Choisissez le poste où vous ouvrez la caisse.'),
+    ).toBeVisible()
+    expect(ouvertureSimulee).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByLabelText('Poste de caisse'), { target: { value: 'p2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la caisse' }))
+
+    await waitFor(() => expect(ouvertureSimulee).toHaveBeenCalledWith(50_000, 'p2'))
   })
 
   it('session ouverte : affiche le solde théorique en direct et le rafraîchit sur demande', async () => {

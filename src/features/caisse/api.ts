@@ -60,10 +60,29 @@ export async function lireSession(sessionId: string): Promise<SessionCaisse> {
   return data
 }
 
-/** Ouvre une session pour L'ACTEUR — `fonds_initial` compté PHYSIQUEMENT à la prise de poste. */
-export async function ouvrirSession(fondsInitial: number): Promise<SessionCaisse> {
+/** Un poste proposé au caissier pour ouvrir une session (Bloc C) — SES postes assignés, actifs,
+ * dans son agence courante. Distinct de `PosteCaisse` (écran de gestion, hors de portée d'un
+ * caissier) : volontairement réduit à ce qu'un choix exige. */
+export interface PosteAssigne {
+  id: string
+  code: string
+  libelle: string
+}
+
+/** Les postes où L'ACTEUR peut ouvrir une session — jamais `listerPostes()` (réservé à la
+ * gestion, 403 pour un caissier). */
+export async function listerMesPostes(): Promise<PosteAssigne[]> {
+  const { data } = await api.get<PosteAssigne[]>('/caisse/sessions/mes-postes')
+  return data
+}
+
+/** Ouvre une session pour L'ACTEUR — `fonds_initial` compté PHYSIQUEMENT à la prise de poste ;
+ * `posteId` TOUJOURS transmis explicitement (Bloc C), même quand un seul poste est proposé — un
+ * pré-remplissage à l'écran n'est jamais une valeur implicite acceptée sans confirmation. */
+export async function ouvrirSession(fondsInitial: number, posteId: string): Promise<SessionCaisse> {
   const { data } = await api.post<SessionCaisse>('/caisse/sessions', {
     fonds_initial: fondsInitial,
+    poste_id: posteId,
   })
   return data
 }
@@ -125,11 +144,34 @@ export async function listerSessionsManquantes(
   return data
 }
 
-/** Message d'un refus (session déjà ouverte, agence sans compte de caisse rattaché…). */
+/** Libellés des champs du corps de requête, pour traduire une erreur de VALIDATION (422 FastAPI
+ * — un champ obligatoire manquant ou mal formé) en langage métier. Une erreur métier (motif du
+ * refus explicite, ex. « session déjà ouverte ») reste prioritaire : elle arrive en chaîne, pas
+ * en liste, et n'a pas besoin de cette traduction. */
+const LIBELLES_CHAMPS_CAISSE: Record<string, string> = {
+  poste_id: 'le poste',
+  fonds_initial: 'le fonds initial',
+  montant_reel: 'le montant compté',
+  motif: 'le motif',
+}
+
+/** Message d'un refus (session déjà ouverte, agence sans compte de caisse rattaché…), ou d'une
+ * erreur de validation (champ obligatoire absent/mal formé) — jamais la liste brute que renvoie
+ * FastAPI. */
 export function messageRefusCaisse(erreur: unknown, defaut: string): string {
   if (erreur instanceof AxiosError) {
     const detail = erreur.response?.data?.detail
     if (typeof detail === 'string') return detail
+    if (Array.isArray(detail) && detail.length > 0) {
+      const champs = detail
+        .map((d: { loc?: unknown[] }) => d.loc?.at(-1))
+        .filter((c): c is string => typeof c === 'string')
+        .map((c) => LIBELLES_CHAMPS_CAISSE[c] ?? c)
+      if (champs.length > 0) {
+        const pluriel = champs.length > 1
+        return `Champ${pluriel ? 's' : ''} obligatoire${pluriel ? 's' : ''} manquant${pluriel ? 's' : ''} ou incorrect${pluriel ? 's' : ''} : ${champs.join(', ')}.`
+      }
+    }
   }
   return defaut
 }

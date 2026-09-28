@@ -1225,6 +1225,13 @@ export const LIBELLES = {
 
     // Aucune session ouverte : le formulaire d'ouverture.
     ouvertureTitre: 'Aucune session en cours',
+    posteLabel: 'Poste de caisse',
+    posteChoisir: 'Choisissez votre poste…',
+    posteRequis: 'Choisissez le poste où vous ouvrez la caisse.',
+    posteChargement: 'Recherche de vos postes assignés…',
+    posteErreur: 'Impossible de charger vos postes assignés.',
+    // Écran MUET interdit (§21) : dire QUOI manque et QUI contacter, pas un formulaire vide.
+    posteAucun: 'Aucun poste ne vous est assigné. Demandez à votre responsable de vous assigner à un poste de caisse.',
     fondsInitialLabel: 'Fonds initial compté',
     fondsInitialAide: 'Le montant en espèces compté physiquement avant toute opération.',
     fondsInitialErreur: 'Indiquez le fonds initial compté, en francs.',

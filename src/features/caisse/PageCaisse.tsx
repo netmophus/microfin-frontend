@@ -11,6 +11,7 @@ import {
   chargerSessionCourante,
   fermerSession,
   lireParametresCaisse,
+  listerMesPostes,
   messageRefusCaisse,
   ouvrirSession,
   type SessionCaisse,
@@ -71,6 +72,20 @@ export function PageCaisse() {
   })
   const seuilTolerance = parametres.data?.seuil_tolerance ?? 500
 
+  // Postes assignés à L'ACTEUR (Bloc C) — jamais déduit côté serveur, même un seul poste doit
+  // être transmis explicitement à l'ouverture (voir ouvrirSession).
+  const mesPostes = useQuery({ queryKey: ['caisse', 'mes-postes'], queryFn: listerMesPostes })
+
+  const [posteId, setPosteId] = useState('')
+  const [posteErreur, setPosteErreur] = useState<string | null>(null)
+
+  // Présélection UNIQUEMENT quand il n'y a qu'un seul poste possible — un confort d'écran, pas
+  // une valeur implicite : dérivée à chaque rendu (pas un effet + setState), et de toute façon
+  // transmise EXPLICITEMENT dans la requête d'ouverture, comme un choix normal.
+  const mesPostesListe = mesPostes.data
+  const posteEffectif =
+    posteId || (mesPostesListe?.length === 1 ? (mesPostesListe[0]?.id ?? '') : '')
+
   const [fondsInitial, setFondsInitial] = useState('')
   const [fondsInitialErreur, setFondsInitialErreur] = useState<string | null>(null)
 
@@ -89,10 +104,12 @@ export function PageCaisse() {
   const motifExige = Math.abs(ecartEnDirect) > seuilTolerance
 
   const ouverture = useMutation({
-    mutationFn: () => ouvrirSession(fondsInitialNum),
+    mutationFn: () => ouvrirSession(fondsInitialNum, posteEffectif),
     onSuccess: () => {
       setFondsInitial('')
       setFondsInitialErreur(null)
+      setPosteId('')
+      setPosteErreur(null)
       setDernierRecap(null)
       queryClient.invalidateQueries({ queryKey: CLE_REQUETE })
     },
@@ -111,11 +128,22 @@ export function PageCaisse() {
   })
 
   const soumettreOuverture = () => {
+    // Les deux champs sont vérifiés — pas de court-circuit au premier problème rencontré : le
+    // caissier voit les DEUX erreurs d'un coup, pas une resoumission à l'aveugle.
+    let bloque = false
+    if (posteEffectif === '') {
+      setPosteErreur(C.posteRequis)
+      bloque = true
+    } else {
+      setPosteErreur(null)
+    }
     if (Number.isNaN(fondsInitialNum)) {
       setFondsInitialErreur(C.fondsInitialErreur)
-      return
+      bloque = true
+    } else {
+      setFondsInitialErreur(null)
     }
-    setFondsInitialErreur(null)
+    if (bloque) return
     ouverture.mutate()
   }
 
@@ -214,6 +242,43 @@ export function PageCaisse() {
           }}
         >
           <p className="text-xs uppercase tracking-wide text-muted-foreground">{C.ouvertureTitre}</p>
+
+          <div className="space-y-1">
+            <Label htmlFor="poste">{C.posteLabel}</Label>
+            {mesPostes.isPending ? (
+              <p className="text-sm text-muted-foreground">{C.posteChargement}</p>
+            ) : mesPostes.isError ? (
+              <Alert variant="destructive" role="alert">
+                <AlertDescription>{C.posteErreur}</AlertDescription>
+              </Alert>
+            ) : mesPostes.data.length === 0 ? (
+              // Écran MUET interdit : dire explicitement qu'il manque une assignation, et à qui
+              // s'adresser — pas un formulaire qui reste là sans rien expliquer.
+              <Alert variant="destructive" role="alert">
+                <AlertDescription>{C.posteAucun}</AlertDescription>
+              </Alert>
+            ) : (
+              <select
+                id="poste"
+                className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                value={posteEffectif}
+                onChange={(e) => {
+                  setPosteId(e.target.value)
+                  if (posteErreur) setPosteErreur(null)
+                }}
+                aria-invalid={posteErreur !== null}
+              >
+                {mesPostes.data.length > 1 && <option value="">{C.posteChoisir}</option>}
+                {mesPostes.data.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.libelle}
+                  </option>
+                ))}
+              </select>
+            )}
+            {posteErreur && <p className="text-xs text-danger">{posteErreur}</p>}
+          </div>
+
           <div className="space-y-1">
             <Label htmlFor="fonds-initial">{C.fondsInitialLabel}</Label>
             <Input
@@ -229,7 +294,10 @@ export function PageCaisse() {
             <p className="text-xs text-muted-foreground">{C.fondsInitialAide}</p>
             {fondsInitialErreur && <p className="text-xs text-danger">{fondsInitialErreur}</p>}
           </div>
-          <Button type="submit" disabled={ouverture.isPending}>
+          <Button
+            type="submit"
+            disabled={ouverture.isPending || mesPostes.isPending || mesPostes.data?.length === 0}
+          >
             {ouverture.isPending ? C.ouvertureEnCours : C.ouvrir}
           </Button>
           {ouverture.isError && (
