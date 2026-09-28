@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { InputMotDePasse } from '@/components/ui/input-mot-de-passe'
 import { Label } from '@/components/ui/label'
 import { ErreurConnexion, seConnecter, type EchecConnexion } from '@/features/auth/api'
 import { schemaConnexion, type ChampsConnexion } from '@/features/auth/schema'
@@ -164,9 +165,8 @@ export function PageConnexion() {
 
             <div className="space-y-2">
               <Label htmlFor="motDePasse">{LIBELLES.connexion.motDePasse}</Label>
-              <Input
+              <InputMotDePasse
                 id="motDePasse"
-                type="password"
                 autoComplete="current-password"
                 aria-invalid={Boolean(errors.motDePasse)}
                 aria-describedby={errors.motDePasse ? 'erreur-mot-de-passe' : undefined}

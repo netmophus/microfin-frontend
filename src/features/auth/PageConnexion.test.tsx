@@ -41,7 +41,7 @@ function afficher() {
 async function remplirEtValider(identifiant = 'admin', motDePasse = 'MotDePasse!123') {
   const utilisateur = userEvent.setup()
   await utilisateur.type(screen.getByLabelText(/identifiant/i), identifiant)
-  await utilisateur.type(screen.getByLabelText(/mot de passe/i), motDePasse)
+  await utilisateur.type(screen.getByLabelText('Mot de passe'), motDePasse)
   await utilisateur.click(screen.getByRole('button', { name: /se connecter/i }))
 }
 

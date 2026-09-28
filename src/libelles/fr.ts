@@ -111,6 +111,11 @@ export const LIBELLES = {
       'Votre mot de passe a été modifié. Veuillez vous reconnecter avec le nouveau.',
   },
 
+  champMotDePasse: {
+    afficher: 'Afficher le mot de passe',
+    masquer: 'Masquer le mot de passe',
+  },
+
   navigation: {
     utilisateurLabel: 'Connecté',
     changerMotDePasse: 'Mot de passe',

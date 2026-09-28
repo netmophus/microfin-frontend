@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { InputMotDePasse } from '@/components/ui/input-mot-de-passe'
 import { Label } from '@/components/ui/label'
 import {
   changerMotDePasse,
@@ -178,9 +178,8 @@ export function PageMotDePasse() {
           <form onSubmit={(e) => void soumettre(e)} noValidate className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="actuel">{LIBELLES.motDePasse.actuel}</Label>
-              <Input
+              <InputMotDePasse
                 id="actuel"
-                type="password"
                 autoComplete="current-password"
                 autoFocus
                 aria-invalid={Boolean(errors.actuel)}
@@ -193,9 +192,8 @@ export function PageMotDePasse() {
 
             <div className="space-y-2">
               <Label htmlFor="nouveau">{LIBELLES.motDePasse.nouveau}</Label>
-              <Input
+              <InputMotDePasse
                 id="nouveau"
-                type="password"
                 autoComplete="new-password"
                 aria-invalid={Boolean(errors.nouveau)}
                 {...register('nouveau')}
@@ -206,9 +204,8 @@ export function PageMotDePasse() {
 
             <div className="space-y-2">
               <Label htmlFor="confirmation">{LIBELLES.motDePasse.confirmation}</Label>
-              <Input
+              <InputMotDePasse
                 id="confirmation"
-                type="password"
                 autoComplete="new-password"
                 aria-invalid={Boolean(errors.confirmation)}
                 {...register('confirmation')}
