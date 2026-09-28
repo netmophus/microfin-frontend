@@ -164,9 +164,9 @@ describe('PageParametresCaisse', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
     await screen.findByRole('button', { name: 'Enregistrer' })
 
-    fireEvent.change(screen.getByLabelText('Compte de l’écart — manquant'), {
-      target: { value: '' },
-    })
+    const champManquant = screen.getByLabelText('Compte de l’écart — manquant')
+    fireEvent.change(champManquant, { target: { value: '' } })
+    fireEvent.blur(champManquant)
     fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
       target: { value: 'Retrait temporaire du rattachement' },
     })

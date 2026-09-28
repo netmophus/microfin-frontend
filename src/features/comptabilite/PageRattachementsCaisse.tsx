@@ -2,18 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { useState } from 'react'
 
+import { SelecteurCompte } from '@/components/comptabilite/selecteur-compte'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
 import {
-  listerComptesSelecteur,
   listerRattachementsAgences,
   messageRefusCompte,
   modifierCompteCaisse,
   type AgenceRattachement,
-  type CompteSelecteur,
 } from '@/features/comptabilite/api'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -35,11 +34,6 @@ export function PageRattachementsCaisse() {
   const agences = useQuery({
     queryKey: ['comptabilite', 'rattachements-caisse'],
     queryFn: listerRattachementsAgences,
-  })
-  const comptes = useQuery({
-    queryKey: ['comptabilite', 'comptes-selecteur'],
-    queryFn: () => listerComptesSelecteur(),
-    enabled: peutGerer,
   })
 
   const rafraichir = () => {
@@ -84,11 +78,10 @@ export function PageRattachementsCaisse() {
             </thead>
             <tbody>
               {agences.data.map((agence) =>
-                enEdition === agence.id && comptes.data ? (
+                enEdition === agence.id ? (
                   <LigneEdition
                     key={agence.id}
                     agence={agence}
-                    comptes={comptes.data}
                     onFini={rafraichir}
                     onAnnuler={() => setEnEdition(null)}
                   />
@@ -159,12 +152,10 @@ function LigneLecture({
 
 function LigneEdition({
   agence,
-  comptes,
   onFini,
   onAnnuler,
 }: {
   agence: AgenceRattachement
-  comptes: CompteSelecteur[]
   onFini: () => void
   onAnnuler: () => void
 }) {
@@ -186,22 +177,18 @@ function LigneEdition({
         <span className="block font-mono text-xs text-muted-foreground">{agence.code}</span>
       </td>
       <td className="px-3 py-3 align-top">
-        <div className="space-y-1">
-          <Label htmlFor={`${idBase}-caisse`}>{P.colonneCaisse}</Label>
-          <select
-            id={`${idBase}-caisse`}
-            className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-            value={compteCaisse ?? ''}
-            onChange={(e) => setCompteCaisse(e.target.value || null)}
-          >
-            <option value="">{P.aucun}</option>
-            {comptes.map((c) => (
-              <option key={c.id} value={c.account_number}>
-                {c.account_number} — {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelecteurCompte
+          id={`${idBase}-caisse`}
+          label={P.colonneCaisse}
+          filtre="saisie"
+          valeur={compteCaisse}
+          onChange={setCompteCaisse}
+          libelleInitial={
+            agence.compte_caisse
+              ? `${agence.compte_caisse.account_number} — ${agence.compte_caisse.name}`
+              : null
+          }
+        />
       </td>
       <td className="px-3 py-3 align-top">
         <div className="space-y-2">

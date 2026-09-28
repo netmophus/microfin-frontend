@@ -4,6 +4,7 @@ import { FileDown, FileUp, Plus, Search } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { SelecteurCompte } from '@/components/comptabilite/selecteur-compte'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -255,7 +256,7 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
   const [numero, setNumero] = useState('')
   const [libelle, setLibelle] = useState('')
   const [libelleCourt, setLibelleCourt] = useState('')
-  const [parent, setParent] = useState('')
+  const [parent, setParent] = useState<string | null>(null)
   const [sens, setSens] = useState<'D' | 'C'>('D')
   const [saisie, setSaisie] = useState(true)
   const [notes, setNotes] = useState('')
@@ -269,7 +270,7 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
         name: libelle.trim(),
         short_name: libelleCourt.trim() || null,
         account_class: classe ?? 0,
-        parent_number: parent.trim() || null,
+        parent_number: parent,
         normal_side: sens,
         is_posting: saisie,
         notes: notes.trim() || null,
@@ -299,6 +300,7 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
             placeholder={P.creationNumeroPlaceholder}
             className="font-mono"
           />
+          <AideNumero numero={numero} />
         </div>
         <div className="space-y-1">
           <Label htmlFor="cc-libelle">{P.creationLibelle}</Label>
@@ -312,16 +314,13 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
             onChange={(e) => setLibelleCourt(e.target.value)}
           />
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="cc-parent">{P.creationParent}</Label>
-          <Input
-            id="cc-parent"
-            value={parent}
-            onChange={(e) => setParent(e.target.value)}
-            placeholder={P.creationParentPlaceholder}
-            className="font-mono"
-          />
-        </div>
+        <SelecteurCompte
+          id="cc-parent"
+          label={P.creationParent}
+          filtre="tous"
+          valeur={parent}
+          onChange={setParent}
+        />
         <div className="space-y-1">
           <Label htmlFor="cc-sens">{P.creationSens}</Label>
           <select
@@ -372,6 +371,49 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
         </Button>
       </div>
     </form>
+  )
+}
+
+/**
+ * Panneau d'aide sous le champ Numéro — PAS une sélection : on saisit ici un numéro qui
+ * n'existe pas encore, insérer une valeur au clic reviendrait à écraser cette intention par un
+ * compte existant. On montre seulement, à titre indicatif, ce qui existe déjà dans la même
+ * famille (même préfixe), pour éviter un doublon ou aider à choisir la bonne branche.
+ */
+function AideNumero({ numero }: { numero: string }) {
+  const prefixe = numero.trim()
+  const rechercheDifferee = useDebounce(prefixe)
+
+  const requete = useQuery({
+    queryKey: ['comptabilite', 'aide-numero', rechercheDifferee],
+    queryFn: () => listerComptes({ q: rechercheDifferee, page: 1 }),
+    enabled: rechercheDifferee.length > 0,
+  })
+
+  if (prefixe.length === 0 || rechercheDifferee !== prefixe) return null
+
+  const lignes = requete.data?.lignes ?? []
+  const dejaPris = lignes.some((c) => c.account_number === prefixe)
+
+  if (requete.isPending) {
+    return <p className="text-xs text-muted-foreground">{P.creationNumeroRecherche}</p>
+  }
+  if (lignes.length === 0) {
+    return <p className="text-xs text-muted-foreground">{P.creationNumeroAucun}</p>
+  }
+
+  return (
+    <div className="rounded-md border bg-muted/20 px-2 py-1.5">
+      {dejaPris && <p className="text-xs text-destructive">{P.creationNumeroDejaPris}</p>}
+      <p className="text-xs font-medium text-muted-foreground">{P.creationNumeroFamille}</p>
+      <ul className="mt-0.5 space-y-0.5">
+        {lignes.slice(0, 8).map((c) => (
+          <li key={c.id} className="font-mono text-xs text-muted-foreground">
+            {c.account_number} — {c.name}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

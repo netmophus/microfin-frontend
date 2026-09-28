@@ -239,7 +239,9 @@ describe('PagePostes', () => {
     await screen.findByText('Caisse principale')
 
     fireEvent.click(screen.getByRole('button', { name: 'Rattacher un compte' }))
-    fireEvent.change(screen.getByLabelText('Compte de caisse'), { target: { value: '101111' } })
+    const champCompte = screen.getByLabelText('Compte de caisse')
+    fireEvent.change(champCompte, { target: { value: '101111' } })
+    fireEvent.blur(champCompte)
     fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
       target: { value: 'rattachement initial' },
     })

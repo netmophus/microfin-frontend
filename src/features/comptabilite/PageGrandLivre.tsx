@@ -2,16 +2,13 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { useState } from 'react'
 
+import { SelecteurCompte } from '@/components/comptabilite/selecteur-compte'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  chargerGrandLivre,
-  listerComptesSelecteurRapport,
-  type LigneGrandLivre,
-} from '@/features/comptabilite/api'
+import { chargerGrandLivre, type LigneGrandLivre } from '@/features/comptabilite/api'
 import { formatFcfa } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -24,19 +21,14 @@ const G = LIBELLES.grandLivre
  * l'en-tête du résultat une fois le compte choisi, même après fermeture du sélecteur.
  */
 export function PageGrandLivre() {
-  const [compteId, setCompteId] = useState('')
+  const [compteId, setCompteId] = useState<string | null>(null)
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
   const [page, setPage] = useState(1)
 
-  const comptesRequete = useQuery({
-    queryKey: ['comptabilite', 'comptes-selecteur-rapport'],
-    queryFn: () => listerComptesSelecteurRapport(),
-  })
-
   const grandLivreRequete = useQuery({
     queryKey: ['comptabilite', 'grand-livre', compteId, dateDebut, dateFin, page],
-    queryFn: () => chargerGrandLivre({ compteId, dateDebut, dateFin, page }),
+    queryFn: () => chargerGrandLivre({ compteId: compteId as string, dateDebut, dateFin, page }),
     enabled: !!compteId,
     placeholderData: keepPreviousData,
   })
@@ -64,25 +56,17 @@ export function PageGrandLivre() {
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-md border bg-muted/20 p-3">
-        <div className="space-y-1">
-          <Label htmlFor="gl-compte">{G.choisirCompte}</Label>
-          <select
-            id="gl-compte"
-            value={compteId}
-            onChange={(e) => {
-              setCompteId(e.target.value)
-              setPage(1)
-            }}
-            className="h-9 w-72 rounded-md border border-input bg-transparent px-3 text-sm"
-          >
-            <option value="">{G.choisirComptePlaceholder}</option>
-            {comptesRequete.data?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.is_active ? `${c.account_number} — ${c.name}` : G.optionDesactive(c.account_number, c.name)}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelecteurCompte
+          id="gl-compte"
+          label={G.choisirCompte}
+          filtre="rapport"
+          valeur={compteId}
+          onChange={(v) => {
+            setCompteId(v)
+            setPage(1)
+          }}
+          className="w-72"
+        />
         <div className="space-y-1">
           <Label htmlFor="gl-debut">{G.filtreDateDebut}</Label>
           <Input

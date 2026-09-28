@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { useState, type ReactNode } from 'react'
 
+import { SelecteurCompte } from '@/components/comptabilite/selecteur-compte'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,10 +11,8 @@ import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
 import {
   lireParametresParts,
-  listerComptesSelecteur,
   messageRefusCompte,
   modifierParametresParts,
-  type CompteSelecteur,
   type ParametresParts,
 } from '@/features/comptabilite/api'
 import { LIBELLES } from '@/libelles/fr'
@@ -34,11 +33,6 @@ export function PageParametresParts() {
     queryKey: ['comptabilite', 'parametres-parts'],
     queryFn: lireParametresParts,
     retry: false,
-  })
-  const comptes = useQuery({
-    queryKey: ['comptabilite', 'comptes-selecteur'],
-    queryFn: () => listerComptesSelecteur(),
-    enabled: peutGerer,
   })
 
   const rafraichir = () => {
@@ -69,10 +63,9 @@ export function PageParametresParts() {
                 : P.erreur}
           </AlertDescription>
         </Alert>
-      ) : enEdition && comptes.data ? (
+      ) : enEdition ? (
         <FormulaireEdition
           config={config.data}
-          comptes={comptes.data}
           onFini={rafraichir}
           onAnnuler={() => setEnEdition(false)}
         />
@@ -146,12 +139,10 @@ function Lecture({
 
 function FormulaireEdition({
   config,
-  comptes,
   onFini,
   onAnnuler,
 }: {
   config: ParametresParts
-  comptes: CompteSelecteur[]
   onFini: () => void
   onAnnuler: () => void
 }) {
@@ -235,38 +226,30 @@ function FormulaireEdition({
             {P.remboursable}
           </label>
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="pp-liberees">{P.compteLiberees}</Label>
-          <select
-            id="pp-liberees"
-            className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-            value={compteLiberees ?? ''}
-            onChange={(e) => setCompteLiberees(e.target.value || null)}
-          >
-            <option value="">{P.aucun}</option>
-            {comptes.map((c) => (
-              <option key={c.id} value={c.account_number}>
-                {c.account_number} — {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="pp-non-liberees">{P.compteNonLiberees}</Label>
-          <select
-            id="pp-non-liberees"
-            className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-            value={compteNonLiberees ?? ''}
-            onChange={(e) => setCompteNonLiberees(e.target.value || null)}
-          >
-            <option value="">{P.aucun}</option>
-            {comptes.map((c) => (
-              <option key={c.id} value={c.account_number}>
-                {c.account_number} — {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelecteurCompte
+          id="pp-liberees"
+          label={P.compteLiberees}
+          filtre="saisie"
+          valeur={compteLiberees}
+          onChange={setCompteLiberees}
+          libelleInitial={
+            config.compte_parts_liberees
+              ? `${config.compte_parts_liberees.account_number} — ${config.compte_parts_liberees.name}`
+              : null
+          }
+        />
+        <SelecteurCompte
+          id="pp-non-liberees"
+          label={P.compteNonLiberees}
+          filtre="saisie"
+          valeur={compteNonLiberees}
+          onChange={setCompteNonLiberees}
+          libelleInitial={
+            config.compte_parts_non_liberees
+              ? `${config.compte_parts_non_liberees.account_number} — ${config.compte_parts_non_liberees.name}`
+              : null
+          }
+        />
       </div>
 
       <div className="space-y-1">

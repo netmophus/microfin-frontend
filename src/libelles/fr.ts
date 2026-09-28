@@ -1384,6 +1384,14 @@ export const LIBELLES = {
     fermer: 'Fermer',
   },
 
+  selecteurCompte: {
+    placeholder: 'Numéro ou libellé…',
+    recherche: 'Recherche…',
+    aucunResultat: 'Aucun compte ne correspond.',
+    effacer: 'Effacer',
+    optionDesactive: (numero: string, libelle: string) => `${numero} — ${libelle} (désactivé)`,
+  },
+
   planComptable: {
     titre: 'Plan de comptes',
     sousTitre: 'Les comptes du plan RCSFD — consultation et gestion.',
@@ -1423,11 +1431,14 @@ export const LIBELLES = {
     // Création — formulaire inline (comme l'ouverture d'un compte d'épargne).
     creationNumero: 'Numéro de compte',
     creationNumeroPlaceholder: 'Ex. 6033',
+    creationNumeroRecherche: 'Recherche dans la famille…',
+    creationNumeroAucun: 'Aucun compte existant dans cette famille.',
+    creationNumeroFamille: 'Déjà dans cette famille :',
+    creationNumeroDejaPris: 'Ce numéro est déjà utilisé par un compte existant.',
     creationLibelle: 'Libellé',
     creationLibelleCourt: 'Libellé court (facultatif)',
     creationClasse: 'Classe',
     creationParent: 'Compte parent (facultatif)',
-    creationParentPlaceholder: 'Ex. 60 — laisser vide si aucun',
     creationSens: 'Sens normal',
     creationNature: 'Nature',
     creationNatureSaisie: 'Compte de saisie (reçoit des écritures)',
@@ -1504,8 +1515,6 @@ export const LIBELLES = {
     sousTitre: 'Le détail des mouvements d’un compte, avec le solde cumulé.',
 
     choisirCompte: 'Compte',
-    choisirComptePlaceholder: 'Choisissez un compte…',
-    optionDesactive: (numero: string, nom: string) => `${numero} — ${nom} (désactivé)`,
     aucunCompteChoisi: 'Choisissez un compte pour voir son grand livre.',
     compteDesactive: 'Désactivé',
     compteDesactiveAide:

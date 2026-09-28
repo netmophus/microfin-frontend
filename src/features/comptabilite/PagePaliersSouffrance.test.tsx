@@ -136,7 +136,9 @@ describe('PagePaliersSouffrance', () => {
       screen.getByLabelText('Taux de provision (points de base — 10000 = 100 %)'),
       { target: { value: '2500' } },
     )
-    fireEvent.change(screen.getByLabelText('Compte d’encours'), { target: { value: '2921' } })
+    const champEncours = screen.getByLabelText('Compte d’encours')
+    fireEvent.change(champEncours, { target: { value: '2921' } })
+    fireEvent.blur(champEncours)
     fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
       target: { value: 'Ajout de palier, test' },
     })

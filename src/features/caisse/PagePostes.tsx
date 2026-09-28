@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { useState } from 'react'
 
+import { SelecteurCompte } from '@/components/comptabilite/selecteur-compte'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,7 +22,6 @@ import {
   type PosteCaisse,
   type UtilisateurAssigne,
 } from '@/features/caisse/api'
-import { listerComptesSelecteur, type CompteSelecteur } from '@/features/comptabilite/api'
 import { listerUtilisateurs } from '@/features/utilisateurs/api'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -46,11 +46,6 @@ export function PagePostes() {
   const peutRattacherCompte = useAPermission('compta.plan.manage')
 
   const postes = useQuery({ queryKey: ['caisse', 'postes'], queryFn: listerPostes })
-  const comptes = useQuery({
-    queryKey: ['comptabilite', 'comptes-selecteur'],
-    queryFn: () => listerComptesSelecteur(),
-    enabled: peutRattacherCompte,
-  })
 
   const rafraichir = () => {
     setEdition(null)
@@ -114,7 +109,6 @@ export function PagePostes() {
                       onDeplier={() => setDeplie(deplie === poste.id ? null : poste.id)}
                       peutGererPoste={peutGererPoste}
                       peutRattacherCompte={peutRattacherCompte}
-                      comptes={comptes.data}
                       onFini={rafraichir}
                     />
                   ))}
@@ -136,7 +130,6 @@ function LignePoste({
   onDeplier,
   peutGererPoste,
   peutRattacherCompte,
-  comptes,
   onFini,
 }: {
   poste: PosteCaisse
@@ -146,21 +139,13 @@ function LignePoste({
   onDeplier: () => void
   peutGererPoste: boolean
   peutRattacherCompte: boolean
-  comptes: CompteSelecteur[] | undefined
   onFini: () => void
 }) {
   if (edition?.id === poste.id && edition.type === 'nom') {
     return <LigneNom poste={poste} onFini={onFini} onAnnuler={() => setEdition(null)} />
   }
   if (edition?.id === poste.id && edition.type === 'compte') {
-    return (
-      <LigneRattachement
-        poste={poste}
-        comptes={comptes ?? []}
-        onFini={onFini}
-        onAnnuler={() => setEdition(null)}
-      />
-    )
+    return <LigneRattachement poste={poste} onFini={onFini} onAnnuler={() => setEdition(null)} />
   }
   if (edition?.id === poste.id && edition.type === 'activation') {
     return <LigneActivation poste={poste} onFini={onFini} onAnnuler={() => setEdition(null)} />
@@ -318,12 +303,10 @@ function LigneNom({
 
 function LigneRattachement({
   poste,
-  comptes,
   onFini,
   onAnnuler,
 }: {
   poste: PosteCaisse
-  comptes: CompteSelecteur[]
   onFini: () => void
   onAnnuler: () => void
 }) {
@@ -345,22 +328,18 @@ function LigneRattachement({
           {poste.agency_nom} — <span className="font-medium">{poste.libelle}</span> ({poste.code})
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label htmlFor={`${idBase}-compte`}>{P.colonneCompte}</Label>
-            <select
-              id={`${idBase}-compte`}
-              className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-              value={compteCaisse ?? ''}
-              onChange={(e) => setCompteCaisse(e.target.value || null)}
-            >
-              <option value="">{P.aucun}</option>
-              {comptes.map((c) => (
-                <option key={c.id} value={c.account_number}>
-                  {c.account_number} — {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelecteurCompte
+            id={`${idBase}-compte`}
+            label={P.colonneCompte}
+            filtre="saisie"
+            valeur={compteCaisse}
+            onChange={setCompteCaisse}
+            libelleInitial={
+              poste.compte_caisse_number
+                ? `${poste.compte_caisse_number} — ${poste.compte_caisse_name}`
+                : null
+            }
+          />
           <div className="space-y-1">
             <Label htmlFor={`${idBase}-motif`}>{P.motif}</Label>
             <Input

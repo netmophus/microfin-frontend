@@ -81,20 +81,22 @@ describe('PageGrandLivre', () => {
 
   it('le sélecteur signale un compte désactivé dans son option', async () => {
     afficher()
-    await screen.findByText('1011 — Billets et monnaies')
+    const champ = await screen.findByLabelText('Compte')
+    fireEvent.focus(champ)
+    fireEvent.keyDown(champ, { key: 'ArrowDown' })
 
+    expect(await screen.findByText('1011 — Billets et monnaies')).toBeInTheDocument()
     expect(screen.getByText('6T900 — Compte de test désactivé (désactivé)')).toBeInTheDocument()
   })
 
   it('une fois un compte désactivé choisi, le résultat le signale AUSSI (pas juste le menu)', async () => {
     chargerGrandLivreSimule.mockResolvedValue(grandLivre())
     afficher()
-    const select = await screen.findByLabelText('Compte')
-    // Attendre que l'OPTION existe avant de la choisir : sinon jsdom ignore silencieusement
-    // une valeur qui ne correspond à aucune <option> encore montée (course avec la requête).
-    await screen.findByText('6T900 — Compte de test désactivé (désactivé)')
-
-    fireEvent.change(select, { target: { value: 'c2' } })
+    const champ = await screen.findByLabelText('Compte')
+    fireEvent.focus(champ)
+    fireEvent.keyDown(champ, { key: 'ArrowDown' })
+    const option = await screen.findByText('6T900 — Compte de test désactivé (désactivé)')
+    fireEvent.click(option)
 
     // Le badge apparaît dans l'EN-TÊTE DU RÉSULTAT, indépendamment du menu déroulant refermé.
     expect(await screen.findByText('Désactivé')).toBeVisible()
@@ -118,9 +120,11 @@ describe('PageGrandLivre', () => {
       }),
     )
     afficher()
-    const select = await screen.findByLabelText('Compte')
-    await screen.findByText('6T900 — Compte de test désactivé (désactivé)')
-    fireEvent.change(select, { target: { value: 'c2' } })
+    const champ = await screen.findByLabelText('Compte')
+    fireEvent.focus(champ)
+    fireEvent.keyDown(champ, { key: 'ArrowDown' })
+    const option = await screen.findByText('6T900 — Compte de test désactivé (désactivé)')
+    fireEvent.click(option)
 
     // Le débit (1000) et le solde cumulé (1500) sont DISTINCTS — pas de confusion possible.
     expect(await screen.findByText('1 000 F')).toBeVisible()

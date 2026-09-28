@@ -107,7 +107,21 @@ describe('PageRattachementsEpargne', () => {
     expect(screen.queryByRole('button', { name: 'Modifier' })).toBeNull()
   })
 
-  it('édition : enregistrer bloqué sans motif, propose seulement les comptes du sélecteur', async () => {
+  it('édition : ne propose que les comptes rendus par le sélecteur serveur', async () => {
+    listerProduitsSimule.mockResolvedValue([produit()])
+    afficher()
+    await screen.findByText('Épargne à vue')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    const champClient = await screen.findByLabelText('Compte épargne (client)')
+    fireEvent.focus(champClient)
+    fireEvent.keyDown(champClient, { key: 'ArrowDown' })
+
+    expect(await screen.findByText('3111 — Épargne à vue membres')).toBeInTheDocument()
+    expect(screen.getByText('3112 — Épargne à vue clients')).toBeInTheDocument()
+  })
+
+  it('édition : enregistrer bloqué sans motif, saisie libre conservée', async () => {
     listerProduitsSimule.mockResolvedValue([produit()])
     modifierSimule.mockResolvedValue(
       produit({ compte_epargne_client: { account_number: '3112', name: 'Épargne à vue clients' } }),
@@ -116,14 +130,14 @@ describe('PageRattachementsEpargne', () => {
     await screen.findByText('Épargne à vue')
 
     fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
-    const selectClient = await screen.findByLabelText('Compte épargne (client)')
-    const options = Array.from(selectClient.querySelectorAll('option')).map((o) => o.textContent)
-    expect(options).toEqual(['— non rattaché —', '3111 — Épargne à vue membres', '3112 — Épargne à vue clients'])
+    const champClient = await screen.findByLabelText('Compte épargne (client)')
 
     const enregistrer = screen.getByRole('button', { name: 'Enregistrer' })
     expect(enregistrer).toBeDisabled()
 
-    fireEvent.change(selectClient, { target: { value: '3112' } })
+    // Saisie libre : le numéro est transmis même sans le choisir dans la liste déroulante.
+    fireEvent.change(champClient, { target: { value: '3112' } })
+    fireEvent.blur(champClient)
     fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
       target: { value: 'Ouverture du rattachement client' },
     })

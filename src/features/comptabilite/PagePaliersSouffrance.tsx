@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { useState } from 'react'
 
+import { SelecteurCompte } from '@/components/comptabilite/selecteur-compte'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,12 +11,10 @@ import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
 import {
   creerPalierSouffrance,
-  listerComptesSelecteur,
   listerPaliersSouffrance,
   messageRefusCompte,
   modifierPalierSouffrance,
   retirerPalierSouffrance,
-  type CompteSelecteur,
   type EcriturePalier,
   type PalierSouffrance,
 } from '@/features/comptabilite/api'
@@ -39,11 +38,6 @@ export function PagePaliersSouffrance() {
   const paliers = useQuery({
     queryKey: ['comptabilite', 'paliers-souffrance'],
     queryFn: listerPaliersSouffrance,
-  })
-  const comptes = useQuery({
-    queryKey: ['comptabilite', 'comptes-selecteur'],
-    queryFn: () => listerComptesSelecteur(),
-    enabled: peutGerer,
   })
 
   const rafraichir = () => {
@@ -101,12 +95,8 @@ export function PagePaliersSouffrance() {
                   </tr>
                 </thead>
                 <tbody>
-                  {enEdition === 'nouveau' && comptes.data && (
-                    <LigneEdition
-                      comptes={comptes.data}
-                      onFini={rafraichir}
-                      onAnnuler={() => setEnEdition(null)}
-                    />
+                  {enEdition === 'nouveau' && (
+                    <LigneEdition onFini={rafraichir} onAnnuler={() => setEnEdition(null)} />
                   )}
                   {paliers.data.map((palier) =>
                     enSuppression === palier.id ? (
@@ -116,11 +106,10 @@ export function PagePaliersSouffrance() {
                         onFini={rafraichir}
                         onAnnuler={() => setEnSuppression(null)}
                       />
-                    ) : enEdition === palier.id && comptes.data ? (
+                    ) : enEdition === palier.id ? (
                       <LigneEdition
                         key={palier.id}
                         palier={palier}
-                        comptes={comptes.data}
                         onFini={rafraichir}
                         onAnnuler={() => setEnEdition(null)}
                       />
@@ -204,47 +193,12 @@ function LigneLecture({
   )
 }
 
-function SelectCompte({
-  id,
-  label,
-  comptes,
-  valeur,
-  onChange,
-}: {
-  id: string
-  label: string
-  comptes: CompteSelecteur[]
-  valeur: string | null
-  onChange: (valeur: string | null) => void
-}) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id}>{label}</Label>
-      <select
-        id={id}
-        className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-        value={valeur ?? ''}
-        onChange={(e) => onChange(e.target.value || null)}
-      >
-        <option value="">{P.aucun}</option>
-        {comptes.map((c) => (
-          <option key={c.id} value={c.account_number}>
-            {c.account_number} — {c.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  )
-}
-
 function LigneEdition({
   palier,
-  comptes,
   onFini,
   onAnnuler,
 }: {
   palier?: PalierSouffrance
-  comptes: CompteSelecteur[]
   onFini: () => void
   onAnnuler: () => void
 }) {
@@ -339,19 +293,29 @@ function LigneEdition({
               {P.estTerminal}
             </label>
           </div>
-          <SelectCompte
+          <SelecteurCompte
             id={`${idBase}-encours`}
             label={P.colonneEncours}
-            comptes={comptes}
+            filtre="saisie"
             valeur={compteEncours}
             onChange={setCompteEncours}
+            libelleInitial={
+              palier?.compte_encours
+                ? `${palier.compte_encours.account_number} — ${palier.compte_encours.name}`
+                : null
+            }
           />
-          <SelectCompte
+          <SelecteurCompte
             id={`${idBase}-dotation`}
             label={P.colonneDotation}
-            comptes={comptes}
+            filtre="saisie"
             valeur={compteDotation}
             onChange={setCompteDotation}
+            libelleInitial={
+              palier?.compte_dotation
+                ? `${palier.compte_dotation.account_number} — ${palier.compte_dotation.name}`
+                : null
+            }
           />
           <div className="space-y-1 sm:col-span-3">
             <Label htmlFor={`${idBase}-motif`}>{P.motif}</Label>

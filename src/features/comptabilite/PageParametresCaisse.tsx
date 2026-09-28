@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { useState, type ReactNode } from 'react'
 
+import { SelecteurCompte } from '@/components/comptabilite/selecteur-compte'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,11 +14,7 @@ import {
   modifierParametresCaisse,
   type ParametresCaisse,
 } from '@/features/caisse/api'
-import {
-  listerComptesSelecteur,
-  messageRefusCompte,
-  type CompteSelecteur,
-} from '@/features/comptabilite/api'
+import { messageRefusCompte } from '@/features/comptabilite/api'
 import { formatFcfa } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -40,11 +37,6 @@ export function PageParametresCaisse() {
     queryKey: ['comptabilite', 'parametres-caisse'],
     queryFn: lireParametresCaisse,
     retry: false,
-  })
-  const comptes = useQuery({
-    queryKey: ['comptabilite', 'comptes-selecteur'],
-    queryFn: () => listerComptesSelecteur(),
-    enabled: peutGerer,
   })
 
   const rafraichir = () => {
@@ -75,10 +67,9 @@ export function PageParametresCaisse() {
                 : P.erreur}
           </AlertDescription>
         </Alert>
-      ) : enEdition && comptes.data ? (
+      ) : enEdition ? (
         <FormulaireEdition
           config={config.data}
-          comptes={comptes.data}
           onFini={rafraichir}
           onAnnuler={() => setEnEdition(false)}
         />
@@ -147,12 +138,10 @@ function Lecture({
 
 function FormulaireEdition({
   config,
-  comptes,
   onFini,
   onAnnuler,
 }: {
   config: ParametresCaisse
-  comptes: CompteSelecteur[]
   onFini: () => void
   onAnnuler: () => void
 }) {
@@ -194,38 +183,30 @@ function FormulaireEdition({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor="pc-manquant">{P.compteManquant}</Label>
-          <select
-            id="pc-manquant"
-            className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-            value={compteManquant ?? ''}
-            onChange={(e) => setCompteManquant(e.target.value || null)}
-          >
-            <option value="">{P.aucun}</option>
-            {comptes.map((c) => (
-              <option key={c.id} value={c.account_number}>
-                {c.account_number} — {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="pc-excedent">{P.compteExcedent}</Label>
-          <select
-            id="pc-excedent"
-            className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-            value={compteExcedent ?? ''}
-            onChange={(e) => setCompteExcedent(e.target.value || null)}
-          >
-            <option value="">{P.aucun}</option>
-            {comptes.map((c) => (
-              <option key={c.id} value={c.account_number}>
-                {c.account_number} — {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelecteurCompte
+          id="pc-manquant"
+          label={P.compteManquant}
+          filtre="saisie"
+          valeur={compteManquant}
+          onChange={setCompteManquant}
+          libelleInitial={
+            config.compte_ecart_manquant
+              ? `${config.compte_ecart_manquant.account_number} — ${config.compte_ecart_manquant.name}`
+              : null
+          }
+        />
+        <SelecteurCompte
+          id="pc-excedent"
+          label={P.compteExcedent}
+          filtre="saisie"
+          valeur={compteExcedent}
+          onChange={setCompteExcedent}
+          libelleInitial={
+            config.compte_ecart_excedent
+              ? `${config.compte_ecart_excedent.account_number} — ${config.compte_ecart_excedent.name}`
+              : null
+          }
+        />
       </div>
 
       <div className="space-y-1">

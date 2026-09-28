@@ -2,17 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { useState } from 'react'
 
+import { SelecteurCompte } from '@/components/comptabilite/selecteur-compte'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
 import {
-  listerComptesSelecteur,
   listerRattachementsProduits,
   messageRefusCompte,
   modifierRattachementsProduit,
-  type CompteSelecteur,
   type RattachementsProduit,
 } from '@/features/comptabilite/api'
 import { LIBELLES } from '@/libelles/fr'
@@ -33,11 +32,6 @@ export function PageRattachementsEpargne() {
   const produits = useQuery({
     queryKey: ['comptabilite', 'rattachements-epargne'],
     queryFn: listerRattachementsProduits,
-  })
-  const comptes = useQuery({
-    queryKey: ['comptabilite', 'comptes-selecteur'],
-    queryFn: () => listerComptesSelecteur(),
-    enabled: peutGerer,
   })
 
   const rafraichir = () => {
@@ -84,11 +78,10 @@ export function PageRattachementsEpargne() {
             </thead>
             <tbody>
               {produits.data.map((produit) =>
-                enEdition === produit.id && comptes.data ? (
+                enEdition === produit.id ? (
                   <LigneEdition
                     key={produit.id}
                     produit={produit}
-                    comptes={comptes.data}
                     onFini={rafraichir}
                     onAnnuler={() => setEnEdition(null)}
                   />
@@ -116,6 +109,10 @@ function TexteCompte({ compte }: { compte: { account_number: string; name: strin
       {compte.account_number} — {compte.name}
     </span>
   )
+}
+
+function libelleCompte(compte: { account_number: string; name: string } | null): string | null {
+  return compte ? `${compte.account_number} — ${compte.name}` : null
 }
 
 function LigneLecture({
@@ -153,47 +150,12 @@ function LigneLecture({
   )
 }
 
-function SelectCompte({
-  id,
-  label,
-  comptes,
-  valeur,
-  onChange,
-}: {
-  id: string
-  label: string
-  comptes: CompteSelecteur[]
-  valeur: string | null
-  onChange: (valeur: string | null) => void
-}) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={id}>{label}</Label>
-      <select
-        id={id}
-        className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-        value={valeur ?? ''}
-        onChange={(e) => onChange(e.target.value || null)}
-      >
-        <option value="">{P.aucun}</option>
-        {comptes.map((c) => (
-          <option key={c.id} value={c.account_number}>
-            {c.account_number} — {c.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  )
-}
-
 function LigneEdition({
   produit,
-  comptes,
   onFini,
   onAnnuler,
 }: {
   produit: RattachementsProduit
-  comptes: CompteSelecteur[]
   onFini: () => void
   onAnnuler: () => void
 }) {
@@ -227,30 +189,33 @@ function LigneEdition({
         <span className="block font-mono text-xs text-muted-foreground">{produit.code}</span>
       </td>
       <td className="px-3 py-3 align-top">
-        <SelectCompte
+        <SelecteurCompte
           id={`${idBase}-epargne`}
           label={P.colonneEpargne}
-          comptes={comptes}
+          filtre="saisie"
           valeur={compteEpargne}
           onChange={setCompteEpargne}
+          libelleInitial={libelleCompte(produit.compte_epargne)}
         />
       </td>
       <td className="px-3 py-3 align-top">
-        <SelectCompte
+        <SelecteurCompte
           id={`${idBase}-client`}
           label={P.colonneEpargneClient}
-          comptes={comptes}
+          filtre="saisie"
           valeur={compteEpargneClient}
           onChange={setCompteEpargneClient}
+          libelleInitial={libelleCompte(produit.compte_epargne_client)}
         />
       </td>
       <td className="px-3 py-3 align-top">
-        <SelectCompte
+        <SelecteurCompte
           id={`${idBase}-interet`}
           label={P.colonneInteret}
-          comptes={comptes}
+          filtre="saisie"
           valeur={compteInteret}
           onChange={setCompteInteret}
+          libelleInitial={libelleCompte(produit.compte_charge_interet)}
         />
       </td>
       <td className="px-3 py-3 align-top">

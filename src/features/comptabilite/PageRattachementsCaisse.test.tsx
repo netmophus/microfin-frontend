@@ -110,8 +110,9 @@ describe('PageRattachementsCaisse', () => {
     await screen.findByText('Siège')
 
     fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
-    const select = await screen.findByLabelText('Compte de caisse')
-    fireEvent.change(select, { target: { value: '5722' } })
+    const champ = await screen.findByLabelText('Compte de caisse')
+    fireEvent.change(champ, { target: { value: '5722' } })
+    fireEvent.blur(champ)
 
     const enregistrer = screen.getByRole('button', { name: 'Enregistrer' })
     expect(enregistrer).toBeDisabled()
