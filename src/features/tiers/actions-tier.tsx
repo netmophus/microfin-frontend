@@ -191,8 +191,11 @@ export function ActionsTier({ tier, onChangement }: { tier: FicheTier; onChangem
         {possibles.map((nom) => (
           <Button
             key={nom}
-            size="sm"
-            variant={META[nom].danger ? 'destructive' : 'outline'}
+            // « Activer » est l'action PRIMAIRE d'un dossier prospect (au style des autres
+            // boutons primaires de l'app) ; le reste garde le style secondaire/outline habituel
+            // de ce bloc, danger excepté.
+            size={nom === 'activate' ? 'default' : 'sm'}
+            variant={nom === 'activate' ? 'default' : META[nom].danger ? 'destructive' : 'outline'}
             onClick={() => choisir(nom)}
           >
             {META[nom].bouton}
@@ -320,7 +323,7 @@ function PanneauConfirmation({
         </Alert>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         {/* Le bouton n'existe PAS tant qu'un engagement bloque (ni tant qu'on vérifie). */}
         {!bloque && !engagementsEnCours && (
           <Button
