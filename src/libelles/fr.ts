@@ -1774,6 +1774,14 @@ export const LIBELLES = {
     enregistrer: 'Enregistrer',
     enregistrementEnCours: 'Enregistrement…',
     echec: 'La modification a échoué. Réessayez.',
+
+    // Niveaux coffre/principale (chantier coffre-fort/caisses, sous-chantier 1, Bloc 2).
+    niveauCoffre: 'Coffre',
+    niveauPrincipale: 'Principale',
+    niveauNonParametre: 'Non paramétré',
+    niveauSecondaireNote:
+      'Le niveau secondaire (guichet) se paramètre par poste, sur l’écran Postes de caisse.',
+    niveauSecondaireLien: 'Postes de caisse',
   },
 
   parametresParts: {

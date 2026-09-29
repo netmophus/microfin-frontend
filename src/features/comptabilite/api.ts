@@ -458,6 +458,46 @@ export async function modifierCompteCaisse(
   return data
 }
 
+// --- 5.2bis Caisse — niveaux coffre/principale par agence (chantier coffre-fort/caisses,
+// sous-chantier 1, Bloc 2) -------------------------------------------------------------------
+//
+// Le niveau SECONDAIRE n'est PAS ici : il se rattache par poste (écran « Postes de caisse »,
+// compte_caisse ci-dessus reste distinct). Un niveau non paramétré (`compte_caisse: null`)
+// est un état légitime, jamais une erreur — voir app/modules/caisse/niveaux.py.
+
+export type NiveauCaisseCode = 'coffre' | 'principale'
+
+export interface NiveauCaisseItem {
+  niveau: NiveauCaisseCode
+  compte_caisse: CompteRattachement | null
+}
+
+export interface AgenceNiveauxCaisse {
+  agency_id: string
+  agency_nom: string
+  niveaux: NiveauCaisseItem[]
+}
+
+export async function listerNiveauxCaisse(): Promise<AgenceNiveauxCaisse[]> {
+  const { data } = await api.get<AgenceNiveauxCaisse[]>('/caisse/niveaux')
+  return data
+}
+
+/** Compte hors rubrique 1011 : le serveur refuse (422, CompteHorsCaisseError) — le message
+ * (`messageRefusCompte`) porte déjà le détail, affiché tel quel. */
+export async function rattacherNiveauCaisse(
+  agencyId: string,
+  niveau: NiveauCaisseCode,
+  compteCaisse: string | null,
+  motif: string,
+): Promise<AgenceNiveauxCaisse> {
+  const { data } = await api.patch<AgenceNiveauxCaisse>(
+    `/caisse/agences/${agencyId}/niveaux/${niveau}`,
+    { compte_caisse: compteCaisse, motif },
+  )
+  return data
+}
+
 // --- 5.3 Paramètres des parts sociales -----------------------------------------------------
 
 export interface ParametresParts {
