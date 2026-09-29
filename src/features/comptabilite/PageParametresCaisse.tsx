@@ -121,10 +121,24 @@ function Lecture({
         />
         <Ligne label={P.compteManquant} valeur={<TexteCompte compte={config.compte_ecart_manquant} />} />
         <Ligne label={P.compteExcedent} valeur={<TexteCompte compte={config.compte_ecart_excedent} />} />
+        <Ligne label={P.compteTransit} valeur={<TexteCompte compte={config.compte_transit} />} />
+        <Ligne
+          label={P.compteEcartTransfertManquant}
+          valeur={<TexteCompte compte={config.compte_ecart_transfert_manquant} />}
+        />
+        <Ligne
+          label={P.compteEcartTransfertExcedent}
+          valeur={<TexteCompte compte={config.compte_ecart_transfert_excedent} />}
+        />
       </dl>
       {(config.compte_ecart_manquant === null || config.compte_ecart_excedent === null) && (
         <Alert variant="destructive" role="alert">
           <AlertDescription>{P.rattachementIncomplet}</AlertDescription>
+        </Alert>
+      )}
+      {config.compte_transit === null && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>{P.rattachementTransfertsIncomplet}</AlertDescription>
         </Alert>
       )}
       {peutGerer && (
@@ -152,6 +166,15 @@ function FormulaireEdition({
   const [compteExcedent, setCompteExcedent] = useState(
     config.compte_ecart_excedent?.account_number ?? null,
   )
+  const [compteTransit, setCompteTransit] = useState(
+    config.compte_transit?.account_number ?? null,
+  )
+  const [compteEcartTransfertManquant, setCompteEcartTransfertManquant] = useState(
+    config.compte_ecart_transfert_manquant?.account_number ?? null,
+  )
+  const [compteEcartTransfertExcedent, setCompteEcartTransfertExcedent] = useState(
+    config.compte_ecart_transfert_excedent?.account_number ?? null,
+  )
   const [motif, setMotif] = useState('')
 
   const seuilValide = /^\d+$/.test(seuil.trim())
@@ -160,7 +183,15 @@ function FormulaireEdition({
 
   const mutation = useMutation({
     mutationFn: () =>
-      modifierParametresCaisse(Number(seuil), compteManquant, compteExcedent, motif.trim()),
+      modifierParametresCaisse(
+        Number(seuil),
+        compteManquant,
+        compteExcedent,
+        compteTransit,
+        compteEcartTransfertManquant,
+        compteEcartTransfertExcedent,
+        motif.trim(),
+      ),
     onSuccess: onFini,
   })
 
@@ -204,6 +235,52 @@ function FormulaireEdition({
           libelleInitial={
             config.compte_ecart_excedent
               ? `${config.compte_ecart_excedent.account_number} — ${config.compte_ecart_excedent.name}`
+              : null
+          }
+        />
+      </div>
+
+      {/* Sous-chantier 2 (transferts), Lot 2b : pont comptable des transferts — même garde-fou
+          (compte de saisie actif) que les 2 champs ci-dessus, délibérément SANS contrainte de
+          rubrique 1011 (voir aide sous le champ). */}
+      <div className="space-y-1">
+        <SelecteurCompte
+          id="pc-transit"
+          label={P.compteTransit}
+          filtre="saisie"
+          valeur={compteTransit}
+          onChange={setCompteTransit}
+          libelleInitial={
+            config.compte_transit
+              ? `${config.compte_transit.account_number} — ${config.compte_transit.name}`
+              : null
+          }
+        />
+        <p className="text-xs text-muted-foreground">{P.compteTransitAide}</p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <SelecteurCompte
+          id="pc-ecart-transfert-manquant"
+          label={P.compteEcartTransfertManquant}
+          filtre="saisie"
+          valeur={compteEcartTransfertManquant}
+          onChange={setCompteEcartTransfertManquant}
+          libelleInitial={
+            config.compte_ecart_transfert_manquant
+              ? `${config.compte_ecart_transfert_manquant.account_number} — ${config.compte_ecart_transfert_manquant.name}`
+              : null
+          }
+        />
+        <SelecteurCompte
+          id="pc-ecart-transfert-excedent"
+          label={P.compteEcartTransfertExcedent}
+          filtre="saisie"
+          valeur={compteEcartTransfertExcedent}
+          onChange={setCompteEcartTransfertExcedent}
+          libelleInitial={
+            config.compte_ecart_transfert_excedent
+              ? `${config.compte_ecart_transfert_excedent.account_number} — ${config.compte_ecart_transfert_excedent.name}`
               : null
           }
         />

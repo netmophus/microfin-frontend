@@ -51,6 +51,9 @@ function config(partiel: Partial<ParametresCaisse> = {}): ParametresCaisse {
     seuil_tolerance: 500,
     compte_ecart_manquant: { account_number: '6099', name: 'Diverses charges financières' },
     compte_ecart_excedent: { account_number: '7099', name: 'Divers produits' },
+    compte_transit: null,
+    compte_ecart_transfert_manquant: null,
+    compte_ecart_transfert_excedent: null,
     is_provisional: true,
     ...partiel,
   }
@@ -59,6 +62,7 @@ function config(partiel: Partial<ParametresCaisse> = {}): ParametresCaisse {
 const comptesSelecteur: CompteSelecteur[] = [
   { id: 'c1', account_number: '6099', name: 'Diverses charges financières' },
   { id: 'c2', account_number: '7099', name: 'Divers produits' },
+  { id: 'c3', account_number: '1141', name: 'Banques et correspondants' },
 ]
 
 function afficher() {
@@ -150,6 +154,9 @@ describe('PageParametresCaisse', () => {
         1000,
         '6099',
         '7099',
+        null,
+        null,
+        null,
         'Révision institutionnelle',
       ),
     )
@@ -177,7 +184,78 @@ describe('PageParametresCaisse', () => {
         500,
         null,
         '7099',
+        null,
+        null,
+        null,
         'Retrait temporaire du rattachement',
+      ),
+    )
+  })
+
+  it('affiche les 3 comptes de transfert, « non rattaché » tant que non paramétrés', async () => {
+    lireSimule.mockResolvedValue(config())
+    afficher()
+
+    expect(await screen.findByText('Compte de liaison des transferts')).toBeVisible()
+    // Les 3 champs transfert sont non rattachés dans `config()` par défaut.
+    expect(screen.getAllByText('— non rattaché —').length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('compte de liaison non paramétré : avertit qu’aucun transfert ne pourra être initié', async () => {
+    lireSimule.mockResolvedValue(config())
+    afficher()
+
+    expect(
+      await screen.findByText(/aucun transfert de caisse ne pourra être initié/),
+    ).toBeVisible()
+  })
+
+  it('compte de liaison paramétré : aucun avertissement transferts', async () => {
+    lireSimule.mockResolvedValue(
+      config({ compte_transit: { account_number: '1141', name: 'Banques et correspondants' } }),
+    )
+    afficher()
+    await screen.findByText('500 F')
+
+    expect(
+      screen.queryByText(/aucun transfert de caisse ne pourra être initié/),
+    ).toBeNull()
+  })
+
+  it('édition : saisit les 3 comptes de transfert et les envoie au serveur', async () => {
+    lireSimule.mockResolvedValue(config())
+    modifierSimule.mockResolvedValue(
+      config({ compte_transit: { account_number: '1141', name: 'Banques et correspondants' } }),
+    )
+    afficher()
+    await screen.findByText('500 F')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    await screen.findByRole('button', { name: 'Enregistrer' })
+
+    const champTransit = screen.getByLabelText('Compte de liaison des transferts')
+    fireEvent.change(champTransit, { target: { value: '1141' } })
+    fireEvent.blur(champTransit)
+    const champEcartManquant = screen.getByLabelText('Écart de transfert — manquant')
+    fireEvent.change(champEcartManquant, { target: { value: '6099' } })
+    fireEvent.blur(champEcartManquant)
+    const champEcartExcedent = screen.getByLabelText('Écart de transfert — excédent')
+    fireEvent.change(champEcartExcedent, { target: { value: '7099' } })
+    fireEvent.blur(champEcartExcedent)
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Paramétrage des transferts' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(modifierSimule).toHaveBeenCalledWith(
+        500,
+        '6099',
+        '7099',
+        '1141',
+        '6099',
+        '7099',
+        'Paramétrage des transferts',
       ),
     )
   })

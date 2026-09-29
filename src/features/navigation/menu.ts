@@ -114,6 +114,15 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/caisse/postes',
         permission: ['caisse.poste.manage', 'compta.plan.manage'],
       },
+      // Transferts coffre/principale/secondaire (chantier coffre-fort/caisses, sous-chantier
+      // 2) : ANY-OF, initier ET réceptionner partagent le même écran (chacun voit les boutons
+      // que sa permission autorise).
+      {
+        etat: 'actif',
+        libelle: M.entrees.transfertsCaisse,
+        chemin: '/caisse/transferts',
+        permission: ['caisse.transfert.initier', 'caisse.transfert.valider'],
+      },
       // Guichet (dépôt/retrait épargne + comptant/libération parts + remboursement crédit) :
       // à onglets, visible dès qu'on opère sur AU MOINS l'un des trois (le caissier a
       // généralement les trois).

@@ -153,6 +153,10 @@ const LIBELLES_CHAMPS_CAISSE: Record<string, string> = {
   fonds_initial: 'le fonds initial',
   montant_reel: 'le montant compté',
   motif: 'le motif',
+  niveau_source: 'le niveau source',
+  niveau_destination: 'le niveau destination',
+  montant_envoye: 'le montant envoyé',
+  montant_compte: 'le montant compté',
 }
 
 /** Message d'un refus (session déjà ouverte, agence sans compte de caisse rattaché…), ou d'une
@@ -190,6 +194,12 @@ export interface ParametresCaisse {
   // LÉGITIME (paramétrage incomplet) — affiché comme tel, jamais deviné.
   compte_ecart_manquant: CompteRattachementEcart | null
   compte_ecart_excedent: CompteRattachementEcart | null
+  // Sous-chantier 2 (transferts), Lot 2b : pont comptable des transferts — compte de liaison
+  // + écarts DÉDIÉS, distincts des deux ci-dessus. null tant que non paramétré (état légitime :
+  // sans le compte de liaison, un transfert ne peut simplement pas être initié).
+  compte_transit: CompteRattachementEcart | null
+  compte_ecart_transfert_manquant: CompteRattachementEcart | null
+  compte_ecart_transfert_excedent: CompteRattachementEcart | null
   is_provisional: boolean
 }
 
@@ -202,12 +212,18 @@ export async function modifierParametresCaisse(
   seuilTolerance: number,
   compteEcartManquant: string | null,
   compteEcartExcedent: string | null,
+  compteTransit: string | null,
+  compteEcartTransfertManquant: string | null,
+  compteEcartTransfertExcedent: string | null,
   motif: string,
 ): Promise<ParametresCaisse> {
   const { data } = await api.put<ParametresCaisse>('/caisse/parametres', {
     seuil_tolerance: seuilTolerance,
     compte_ecart_manquant: compteEcartManquant,
     compte_ecart_excedent: compteEcartExcedent,
+    compte_transit: compteTransit,
+    compte_ecart_transfert_manquant: compteEcartTransfertManquant,
+    compte_ecart_transfert_excedent: compteEcartTransfertExcedent,
     motif,
   })
   return data
@@ -354,4 +370,105 @@ export async function assignerGuichetier(
 
 export async function revoquerAssignation(posteId: string, userId: string): Promise<void> {
   await api.delete(`/caisse/postes/${posteId}/assignations/${userId}`)
+}
+
+// --- Transferts entre niveaux de caisse (chantier coffre-fort/caisses, sous-chantier 2) -----
+// Mouvement de fonds coffre <-> principale <-> secondaire (jamais coffre <-> secondaire direct)
+// — mécanique ENVOI/RÉCEPTION : la source envoie (« en transit »), la destination réceptionne
+// en confirmant le montant RÉELLEMENT compté. L'écart (compté != envoyé) n'est jamais un champ
+// séparé côté serveur ; il se calcule ici, à l'écran, à partir des deux montants.
+
+export type NiveauTransfert = 'coffre' | 'principale' | 'secondaire'
+
+export interface Transfert {
+  id: string
+  agency_id: string
+  agency_nom: string
+  niveau_source: NiveauTransfert
+  niveau_destination: NiveauTransfert
+  compte_source_number: string
+  compte_destination_number: string
+  montant_envoye: number
+  montant_compte: number | null
+  statut: 'en_transit' | 'receptionne'
+  envoye_par_nom: string
+  envoye_le: string
+  receptionne_par_nom: string | null
+  receptionne_le: string | null
+  motif: string
+}
+
+export interface PageTransferts {
+  lignes: Transfert[]
+  total: number
+  page: number
+  taille: number
+}
+
+/** Couples ADJACENTS depuis chaque niveau — MIROIR de l'adjacence serveur
+ * (`caisse/transferts.py::ADJACENCES`), pour ne proposer que des choix valides à l'écran. Un
+ * confort d'affichage, jamais un contrôle : le serveur reste seul juge, et refuse proprement
+ * (message clair) si ce miroir venait à diverger. */
+export const NIVEAUX_ADJACENTS: Record<NiveauTransfert, NiveauTransfert[]> = {
+  coffre: ['principale'],
+  principale: ['coffre', 'secondaire'],
+  secondaire: ['principale'],
+}
+
+export type StatutTransfert = 'en_transit' | 'receptionne' | 'tous'
+
+/** En transit par défaut (la file d'attente à réceptionner) — c'est ce que cet écran rend
+ * visible en permanence. `statut='tous'` lève le filtre : un transfert réceptionné reste
+ * consultable (besoin d'audit, Lot 2c), en lecture seule. `niveau` filtre sur la source OU la
+ * destination. */
+export async function listerTransferts(
+  params: {
+    statut?: StatutTransfert
+    niveau?: NiveauTransfert
+    page?: number
+    taille?: number
+  } = {},
+): Promise<PageTransferts> {
+  const { data } = await api.get<PageTransferts>('/caisse/transferts', {
+    params: {
+      statut: params.statut ?? 'en_transit',
+      niveau: params.niveau,
+      page: params.page ?? 1,
+      taille: params.taille ?? 25,
+    },
+  })
+  return data
+}
+
+/** Initie un transfert pour l'agence COURANTE de l'acteur. `posteId` requis seulement si un des
+ * deux niveaux vaut « secondaire ». */
+export async function initierTransfert(
+  niveauSource: NiveauTransfert,
+  niveauDestination: NiveauTransfert,
+  posteId: string | null,
+  montantEnvoye: number,
+  motif: string,
+): Promise<Transfert> {
+  const { data } = await api.post<Transfert>('/caisse/transferts', {
+    niveau_source: niveauSource,
+    niveau_destination: niveauDestination,
+    poste_id: posteId,
+    montant_envoye: montantEnvoye,
+    motif,
+  })
+  return data
+}
+
+/** Réceptionne un transfert « en transit » — `montantCompte` est ce qui a été RÉELLEMENT compté
+ * à l'arrivée, jamais présumé égal au montant envoyé. Double regard (receveur != envoyeur) et
+ * contrôle du poste (côté secondaire) refusés proprement par le serveur — message affiché tel
+ * quel, voir `messageRefusCaisse`. */
+export async function receptionnerTransfert(
+  transfertId: string,
+  montantCompte: number,
+): Promise<Transfert> {
+  const { data } = await api.post<Transfert>(`/caisse/transferts/${transfertId}/reception`, {
+    montant_compte: montantCompte,
+  })
+  return data
 }

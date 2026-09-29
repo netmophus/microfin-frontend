@@ -14,6 +14,7 @@ import { PageCaisse } from '@/features/caisse/PageCaisse'
 import { PageLettreExplication } from '@/features/caisse/PageLettreExplication'
 import { PagePostes } from '@/features/caisse/PagePostes'
 import { PageSessionsManquantes } from '@/features/caisse/PageSessionsManquantes'
+import { PageTransfertsCaisse } from '@/features/caisse/PageTransfertsCaisse'
 import { PageBalance } from '@/features/comptabilite/PageBalance'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
 import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
@@ -182,6 +183,16 @@ export function App() {
                 element={
                   <RoutePermission permission={['caisse.poste.manage', 'compta.plan.manage']}>
                     <PagePostes />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/caisse/transferts"
+                element={
+                  <RoutePermission
+                    permission={['caisse.transfert.initier', 'caisse.transfert.valider']}
+                  >
+                    <PageTransfertsCaisse />
                   </RoutePermission>
                 }
               />

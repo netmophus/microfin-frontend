@@ -181,6 +181,7 @@ export const LIBELLES = {
       caisse: 'Caisse',
       manquantsCaisse: 'Manquants de caisse',
       postesCaisse: 'Postes de caisse',
+      transfertsCaisse: 'Transferts de caisse',
       guichetEpargne: 'Guichet',
       versementInterets: 'Versement des intérêts',
       rapprochementEpargne: 'Rapprochement épargne',
@@ -1489,6 +1490,68 @@ export const LIBELLES = {
     fermer: 'Fermer',
   },
 
+  transfertsCaisse: {
+    titre: 'Transferts de caisse',
+    sousTitre:
+      'Mouvements de fonds entre coffre, principale et secondaire — envoi puis réception du montant réellement compté.',
+    chargement: 'Chargement des transferts…',
+    interdit: 'Vous n’avez pas la permission de consulter les transferts.',
+    erreur: 'Impossible de charger les transferts. Réessayez dans un instant.',
+    // Lot 2c : le message dépend du filtre de statut choisi — jamais « en transit » affiché à
+    // tort quand l'agent a délibérément choisi de voir les réceptionnés ou tout l'historique.
+    listeVideEnTransit: 'Aucun transfert en transit.',
+    listeVideReceptionne: 'Aucun transfert réceptionné.',
+    listeVideTous: 'Aucun transfert.',
+
+    niveauCoffre: 'Coffre',
+    niveauPrincipale: 'Principale',
+    niveauSecondaire: 'Secondaire',
+
+    filtreNiveau: 'Niveau',
+    filtreTous: 'Tous',
+    // Lot 2c : historique — un transfert réceptionné reste consultable (besoin d'audit), en
+    // lecture seule (jamais de ré-action possible sur une opération déjà close).
+    filtreStatut: 'Statut',
+    filtreStatutEnTransit: 'En transit',
+    filtreStatutReceptionne: 'Réceptionnés',
+
+    colonneMouvement: 'Mouvement',
+    colonneMontantEnvoye: 'Montant envoyé',
+    colonneMontantCompte: 'Montant compté',
+    colonneEcart: 'Écart',
+    colonneMotif: 'Motif',
+
+    initier: 'Initier un transfert',
+    niveauSourceLabel: 'Niveau source',
+    niveauDestinationLabel: 'Niveau destination',
+    posteLabel: 'Poste',
+    choisirUnPoste: 'Choisir un poste…',
+    aucunPosteAssigne: 'Aucun poste ne vous est assigné.',
+    montantEnvoyeLabel: 'Montant envoyé (F CFA)',
+    montantErreur: 'Indiquez le montant envoyé avant de valider.',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce transfert ?',
+    envoyer: 'Envoyer',
+    envoiEnCours: 'Envoi…',
+    annuler: 'Annuler',
+    echecInitiation: 'L’envoi a échoué. Réessayez.',
+
+    receptionner: 'Réceptionner',
+    montantCompteLabel: 'Montant réellement compté (F CFA)',
+    montantCompteErreur: 'Indiquez le montant compté avant de confirmer la réception.',
+    confirmerReception: 'Confirmer la réception',
+    receptionEnCours: 'Réception…',
+    echecReception: 'La réception a échoué. Réessayez.',
+    // {montant} injecté — même convention que l'écart de fermeture de caisse (PageCaisse.tsx).
+    ecartNul: 'Aucun écart : le montant compté correspond au montant envoyé.',
+    ecartExcedent: 'Écart : excédent de {montant}.',
+    ecartManquant: 'Écart : manquant de {montant}.',
+
+    envoyePar: 'Envoyé par',
+    receptionnePar: 'Réceptionné par',
+    receptionneLe: 'Réceptionné le',
+  },
+
   selecteurCompte: {
     placeholder: 'Numéro ou libellé…',
     recherche: 'Recherche…',
@@ -1838,6 +1901,18 @@ export const LIBELLES = {
     // refusée (422) — jamais la fermeture, qui reste toujours possible.
     rattachementIncomplet:
       'Rattachement incomplet : sans ces deux comptes, la validation d’un écart par le responsable sera refusée.',
+
+    // Sous-chantier 2 (transferts), Lot 2b : pont comptable des transferts — compte de
+    // liaison + écarts DÉDIÉS, distincts des deux comptes d'écart de caisse ci-dessus (l'IMF
+    // peut choisir les mêmes si elle le souhaite). Sans le compte de liaison, aucun transfert
+    // ne peut être initié (refus propre, pas un 500).
+    compteTransit: 'Compte de liaison des transferts',
+    compteTransitAide:
+      'Un compte de liaison (virements internes), jamais un compte de caisse : l’argent en transit n’est pas « en caisse ».',
+    compteEcartTransfertManquant: 'Écart de transfert — manquant',
+    compteEcartTransfertExcedent: 'Écart de transfert — excédent',
+    rattachementTransfertsIncomplet:
+      'Rattachement incomplet : sans le compte de liaison, aucun transfert de caisse ne pourra être initié.',
 
     modifier: 'Modifier',
     annuler: 'Annuler',
