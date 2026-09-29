@@ -39,6 +39,13 @@ function libelleNiveau(niveau: NiveauCaisseCode): string {
  * coffre-fort/caisses, sous-chantier 1 Bloc 2 : `caisse.niveaux_caisse`). Même patron pour les
  * trois (une ligne à la fois en édition). Le niveau SECONDAIRE n'est délibérément PAS ici : il
  * se rattache par poste, voir la note sous le tableau.
+ *
+ * Écran PUREMENT COMPTABLE (compta.plan.manage) : quel compte est rattaché à chaque niveau. La
+ * responsabilité NOMINATIVE de la principale (qui est LE caissier principal) vit ailleurs — sur
+ * « Postes de caisse » (caisse.principale.manage, RESPONSABLE_AGENCE), pas ici. Décision actée
+ * après un premier essai sur cet écran : gardé compta.plan.manage, la désignation exigeait
+ * caisse.principale.manage — le responsable (qui a le droit) ne voyait pas l'écran, le comptable
+ * (qui voit l'écran) n'avait pas le droit. Voir PagePostes.tsx.
  */
 export function PageRattachementsCaisse() {
   const client = useQueryClient()

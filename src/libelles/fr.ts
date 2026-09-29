@@ -1488,6 +1488,22 @@ export const LIBELLES = {
     retirer: 'Retirer',
     echecAssignation: 'L’opération a échoué. Réessayez.',
     fermer: 'Fermer',
+
+    // Caissier principal (sous-chantier 3, Lot C — déplacé depuis « Caisse par agence ») :
+    // responsabilité NOMINATIVE de la caisse principale, gardée par caisse.principale.manage —
+    // le RESPONSABLE_AGENCE qui gère déjà les postes et les guichetiers sur CET écran, jamais
+    // le comptable. Distincte du compte comptable rattaché (compta.plan.manage, sur « Caisse
+    // par agence »).
+    caissierPrincipalTitre: 'Caissier principal',
+    caissierPrincipalSousTitre:
+      'La personne responsable de la caisse principale de votre agence — distincte du compte comptable rattaché.',
+    caissierPrincipalNonDesigne: 'Aucun caissier principal désigné',
+    caissierPrincipalModifier: 'Modifier',
+    caissierPrincipalLabel: 'Caissier',
+    choisirUnCaissier: 'Choisir un caissier…',
+    aucunCaissierEligible: 'Aucun caissier dans cette agence.',
+    echecCaissierPrincipal: 'La désignation a échoué. Réessayez.',
+    echecRetraitCaissierPrincipal: 'Le retrait a échoué. Réessayez.',
   },
 
   transfertsCaisse: {

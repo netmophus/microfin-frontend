@@ -8,16 +8,19 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useAPermission } from '@/features/auth/useProfil'
+import { useAPermission, useProfil } from '@/features/auth/useProfil'
 import {
   assignerGuichetier,
   changerActivationPoste,
   creerPoste,
+  designerCaissierPrincipal,
   listerAssignations,
   listerPostes,
+  lireCaissierPrincipal,
   messageRefusCaisse,
   rattacherComptePoste,
   renommerPoste,
+  retirerCaissierPrincipal,
   revoquerAssignation,
   type PosteCaisse,
   type UtilisateurAssigne,
@@ -58,6 +61,8 @@ export function PagePostes() {
         <h1 className="text-xl font-semibold tracking-tight">{P.titre}</h1>
         <p className="text-sm text-muted-foreground">{P.sousTitre}</p>
       </div>
+
+      <SectionCaissierPrincipal />
 
       {postes.isPending ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{P.chargement}</p>
@@ -527,6 +532,194 @@ function LigneAssignations({ poste }: { poste: PosteCaisse }) {
           </AlertDescription>
         </Alert>
       )}
+    </div>
+  )
+}
+
+// --- Caissier principal (sous-chantier 3, Lots A-C) --------------------------------------------
+// Responsabilité NOMINATIVE de la caisse PRINCIPALE de l'agence — sur CET écran (pas « Caisse
+// par agence », purement comptable) : même acteur (RESPONSABLE_AGENCE), même nature de décision
+// (qui manipule quelle caisse) que la gestion des postes et l'assignation des guichetiers
+// ci-dessus. Gardé caisse.principale.manage — JAMAIS d'appel serveur pour qui ne détient pas
+// cette permission : le GET est lui-même gardé côté backend (lecture ET écriture réservées au
+// même acteur), un fetch inconditionnel produirait un 403 mal habillé (constaté, corrigé).
+// L'agence ciblée est celle du PROFIL de l'acteur (`agence_courante`, claim du jeton) — un
+// RESPONSABLE_AGENCE ne gère jamais que la sienne (égalité stricte, voir transferts.py).
+
+function SectionCaissierPrincipal() {
+  const peutGererPrincipal = useAPermission('caisse.principale.manage')
+  const profil = useProfil()
+  const agence = profil.data?.agence_courante
+
+  if (!peutGererPrincipal) return null
+  if (!agence) return null // pas d'agence courante (cas limite) : rien à afficher
+
+  return (
+    <div className="rounded-md border p-4">
+      <p className="text-sm font-medium">{P.caissierPrincipalTitre}</p>
+      <p className="mb-3 text-xs text-muted-foreground">{P.caissierPrincipalSousTitre}</p>
+      <CaissierPrincipalContenu agenceId={agence.id} />
+    </div>
+  )
+}
+
+function CaissierPrincipalContenu({ agenceId }: { agenceId: string }) {
+  const client = useQueryClient()
+  const [enEdition, setEnEdition] = useState(false)
+
+  const requete = useQuery({
+    queryKey: ['caisse', 'caissier-principal', agenceId],
+    queryFn: () => lireCaissierPrincipal(agenceId),
+  })
+
+  const rafraichir = () => {
+    setEnEdition(false)
+    void client.invalidateQueries({ queryKey: ['caisse', 'caissier-principal', agenceId] })
+  }
+
+  if (requete.isPending) {
+    return <p className="text-sm text-muted-foreground">{P.chargement}</p>
+  }
+  if (requete.isError) {
+    return (
+      <Alert variant="destructive" role="alert">
+        <AlertDescription>{P.erreur}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (enEdition) {
+    return (
+      <CaissierPrincipalEdition
+        agenceId={agenceId}
+        caissierActuel={requete.data.caissier_principal}
+        onFini={rafraichir}
+        onAnnuler={() => setEnEdition(false)}
+      />
+    )
+  }
+
+  const caissier = requete.data.caissier_principal
+
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm">
+        {caissier ? (
+          <>
+            {caissier.nom_complet}{' '}
+            <span className="font-mono text-xs text-muted-foreground">{caissier.matricule}</span>
+          </>
+        ) : (
+          <span className="text-muted-foreground">{P.caissierPrincipalNonDesigne}</span>
+        )}
+      </span>
+      <Button size="sm" variant="outline" onClick={() => setEnEdition(true)}>
+        {P.caissierPrincipalModifier}
+      </Button>
+    </div>
+  )
+}
+
+function CaissierPrincipalEdition({
+  agenceId,
+  caissierActuel,
+  onFini,
+  onAnnuler,
+}: {
+  agenceId: string
+  caissierActuel: UtilisateurAssigne | null
+  onFini: () => void
+  onAnnuler: () => void
+}) {
+  const [userId, setUserId] = useState(caissierActuel?.id ?? '')
+  const [motif, setMotif] = useState('')
+
+  const caissiers = useQuery({
+    queryKey: ['utilisateurs', 'selecteur', agenceId, 'CAISSIER'],
+    queryFn: () => listerUtilisateurs({ agence: agenceId, role: 'CAISSIER', taille: 100 }),
+  })
+
+  const motifValide = motif.trim().length >= 3
+
+  const designation = useMutation({
+    mutationFn: () => designerCaissierPrincipal(agenceId, userId, motif.trim()),
+    onSuccess: onFini,
+  })
+  const retrait = useMutation({
+    mutationFn: () => retirerCaissierPrincipal(agenceId),
+    onSuccess: onFini,
+  })
+
+  return (
+    <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label htmlFor="cp-caissier">{P.caissierPrincipalLabel}</Label>
+          <select
+            id="cp-caissier"
+            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+          >
+            <option value="">{P.choisirUnCaissier}</option>
+            {(caissiers.data?.lignes ?? []).map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.first_name} {u.last_name} — {u.matricule}
+              </option>
+            ))}
+          </select>
+          {caissiers.data?.lignes.length === 0 && (
+            <p className="text-xs text-muted-foreground">{P.aucunCaissierEligible}</p>
+          )}
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="cp-motif">{P.motif}</Label>
+          <Input
+            id="cp-motif"
+            value={motif}
+            onChange={(e) => setMotif(e.target.value)}
+            placeholder={P.motifPlaceholder}
+          />
+        </div>
+      </div>
+
+      {designation.isError && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {messageRefusCaisse(designation.error, P.echecCaissierPrincipal)}
+          </AlertDescription>
+        </Alert>
+      )}
+      {retrait.isError && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {messageRefusCaisse(retrait.error, P.echecRetraitCaissierPrincipal)}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          disabled={!userId || !motifValide || designation.isPending}
+          onClick={() => designation.mutate()}
+        >
+          {designation.isPending ? P.enregistrementEnCours : P.enregistrer}
+        </Button>
+        {caissierActuel && (
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={retrait.isPending}
+            onClick={() => retrait.mutate()}
+          >
+            {retrait.isPending ? P.enregistrementEnCours : P.retirer}
+          </Button>
+        )}
+        <Button size="sm" variant="ghost" onClick={onAnnuler} disabled={designation.isPending}>
+          {P.annuler}
+        </Button>
+      </div>
     </div>
   )
 }

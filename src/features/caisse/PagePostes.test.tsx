@@ -7,11 +7,15 @@ import {
   assignerGuichetier,
   changerActivationPoste,
   creerPoste,
+  designerCaissierPrincipal,
   listerAssignations,
   listerPostes,
+  lireCaissierPrincipal,
   rattacherComptePoste,
   renommerPoste,
+  retirerCaissierPrincipal,
   revoquerAssignation,
+  type CaissierPrincipalAgence,
   type PosteCaisse,
   type UtilisateurAssigne,
 } from '@/features/caisse/api'
@@ -23,13 +27,20 @@ import { listerUtilisateurs, type PageUtilisateurs } from '@/features/utilisateu
  * Postes de caisse (Bloc B). Points durs : deux permissions distinctes gouvernent des actions
  * différentes sur la MÊME ligne (caisse.poste.manage pour le CRUD/l'assignation,
  * compta.plan.manage pour le rattachement comptable) ; motif obligatoire partout ; assignation
- * limitée aux guichetiers de l'agence du poste.
+ * limitée aux guichetiers de l'agence du poste. Sous-chantier 3 (Lot C, déplacé depuis « Caisse
+ * par agence ») : le caissier principal de l'agence, gardé caisse.principale.manage — JAMAIS
+ * d'appel serveur pour qui ne détient pas cette permission (403 mal habillé constaté et corrigé
+ * sur l'écran comptable, voir SectionCaissierPrincipal).
  */
 
-const etat = vi.hoisted(() => ({ permissions: ['caisse.poste.manage'] as string[] }))
+const etat = vi.hoisted(() => ({
+  permissions: ['caisse.poste.manage'] as string[],
+  agenceCourante: null as { id: string; code: string; name: string } | null,
+}))
 
 vi.mock('@/features/auth/useProfil', () => ({
   useAPermission: (p: string) => etat.permissions.includes(p),
+  useProfil: () => ({ data: { agence_courante: etat.agenceCourante } }),
 }))
 
 vi.mock('@/features/caisse/api', async () => {
@@ -46,6 +57,9 @@ vi.mock('@/features/caisse/api', async () => {
     listerAssignations: vi.fn(),
     assignerGuichetier: vi.fn(),
     revoquerAssignation: vi.fn(),
+    lireCaissierPrincipal: vi.fn(),
+    designerCaissierPrincipal: vi.fn(),
+    retirerCaissierPrincipal: vi.fn(),
   }
 })
 
@@ -73,6 +87,9 @@ const assignerSimule = vi.mocked(assignerGuichetier)
 const revoquerSimule = vi.mocked(revoquerAssignation)
 const comptesSimules = vi.mocked(listerComptesSelecteur)
 const utilisateursSimules = vi.mocked(listerUtilisateurs)
+const lireCaissierPrincipalSimule = vi.mocked(lireCaissierPrincipal)
+const designerCaissierPrincipalSimule = vi.mocked(designerCaissierPrincipal)
+const retirerCaissierPrincipalSimule = vi.mocked(retirerCaissierPrincipal)
 
 function poste(o: Partial<PosteCaisse> = {}): PosteCaisse {
   return {
@@ -95,6 +112,17 @@ const comptesSelecteur: CompteSelecteur[] = [
 
 const pageUtilisateursVide: PageUtilisateurs = { lignes: [], total: 0, page: 1, taille: 100 }
 
+function caissierPrincipalAgence(
+  partiel: Partial<CaissierPrincipalAgence> = {},
+): CaissierPrincipalAgence {
+  return {
+    agency_id: 'ag1',
+    agency_nom: 'Siège',
+    caissier_principal: null,
+    ...partiel,
+  }
+}
+
 function afficher() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -107,6 +135,7 @@ function afficher() {
 beforeEach(() => {
   vi.clearAllMocks()
   etat.permissions = ['caisse.poste.manage']
+  etat.agenceCourante = null
   comptesSimules.mockResolvedValue(comptesSelecteur)
   assignesSimules.mockResolvedValue([])
   utilisateursSimules.mockResolvedValue(pageUtilisateursVide)
@@ -282,5 +311,179 @@ describe('PagePostes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Retirer' }))
 
     await waitFor(() => expect(revoquerSimule).toHaveBeenCalledWith('p1', 'u1'))
+  })
+})
+
+describe('SectionCaissierPrincipal', () => {
+  const agenceSiege = { id: 'ag1', code: 'SIEGE', name: 'Siège' }
+
+  beforeEach(() => {
+    listerSimule.mockResolvedValue([])
+  })
+
+  it('absente sans caisse.principale.manage (aucun appel serveur)', async () => {
+    etat.permissions = ['caisse.poste.manage']
+    etat.agenceCourante = agenceSiege
+    afficher()
+    await screen.findByText('Aucun poste de caisse.')
+
+    expect(screen.queryByText('Caissier principal')).toBeNull()
+    expect(lireCaissierPrincipalSimule).not.toHaveBeenCalled()
+  })
+
+  it('absente sans agence courante (cas limite)', async () => {
+    etat.permissions = ['caisse.poste.manage', 'caisse.principale.manage']
+    etat.agenceCourante = null
+    afficher()
+    await screen.findByText('Aucun poste de caisse.')
+
+    expect(screen.queryByText('Caissier principal')).toBeNull()
+    expect(lireCaissierPrincipalSimule).not.toHaveBeenCalled()
+  })
+
+  it('affiche « Aucun caissier principal désigné »', async () => {
+    etat.permissions = ['caisse.poste.manage', 'caisse.principale.manage']
+    etat.agenceCourante = agenceSiege
+    lireCaissierPrincipalSimule.mockResolvedValue(caissierPrincipalAgence())
+    afficher()
+
+    expect(await screen.findByText('Aucun caissier principal désigné')).toBeVisible()
+    expect(lireCaissierPrincipalSimule).toHaveBeenCalledWith('ag1')
+  })
+
+  it('affiche le caissier désigné', async () => {
+    etat.permissions = ['caisse.poste.manage', 'caisse.principale.manage']
+    etat.agenceCourante = agenceSiege
+    lireCaissierPrincipalSimule.mockResolvedValue(
+      caissierPrincipalAgence({
+        caissier_principal: {
+          id: 'u1',
+          matricule: 'CAI-001',
+          username: 'jdupont',
+          nom_complet: 'Jean Dupont',
+        },
+      }),
+    )
+    afficher()
+
+    expect(await screen.findByText(/Jean Dupont/)).toBeVisible()
+    expect(screen.getByText('CAI-001')).toBeVisible()
+  })
+
+  it('désigne avec succès', async () => {
+    etat.permissions = ['caisse.poste.manage', 'caisse.principale.manage']
+    etat.agenceCourante = agenceSiege
+    lireCaissierPrincipalSimule.mockResolvedValue(caissierPrincipalAgence())
+    utilisateursSimules.mockResolvedValue({
+      lignes: [
+        {
+          id: 'u1',
+          matricule: 'CAI-001',
+          username: 'jdupont',
+          email: 'j@example.com',
+          last_name: 'Dupont',
+          first_name: 'Jean',
+          agence: null,
+          is_active: true,
+          is_locked: false,
+        },
+      ],
+      total: 1,
+      page: 1,
+      taille: 100,
+    })
+    designerCaissierPrincipalSimule.mockResolvedValue(
+      caissierPrincipalAgence({
+        caissier_principal: {
+          id: 'u1',
+          matricule: 'CAI-001',
+          username: 'jdupont',
+          nom_complet: 'Jean Dupont',
+        },
+      }),
+    )
+    afficher()
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }))
+
+    await screen.findByText('Jean Dupont — CAI-001')
+    fireEvent.change(screen.getByLabelText('Caissier'), { target: { value: 'u1' } })
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Désignation initiale' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(designerCaissierPrincipalSimule).toHaveBeenCalledWith(
+        'ag1',
+        'u1',
+        'Désignation initiale',
+      ),
+    )
+  })
+
+  it('retire la désignation sans motif', async () => {
+    etat.permissions = ['caisse.poste.manage', 'caisse.principale.manage']
+    etat.agenceCourante = agenceSiege
+    lireCaissierPrincipalSimule.mockResolvedValue(
+      caissierPrincipalAgence({
+        caissier_principal: {
+          id: 'u1',
+          matricule: 'CAI-001',
+          username: 'jdupont',
+          nom_complet: 'Jean Dupont',
+        },
+      }),
+    )
+    retirerCaissierPrincipalSimule.mockResolvedValue(undefined)
+    afficher()
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Retirer' }))
+
+    await waitFor(() => expect(retirerCaissierPrincipalSimule).toHaveBeenCalledWith('ag1'))
+  })
+
+  it('refus non-éligible affiché tel quel', async () => {
+    etat.permissions = ['caisse.poste.manage', 'caisse.principale.manage']
+    etat.agenceCourante = agenceSiege
+    lireCaissierPrincipalSimule.mockResolvedValue(caissierPrincipalAgence())
+    utilisateursSimules.mockResolvedValue({
+      lignes: [
+        {
+          id: 'u1',
+          matricule: 'CAI-001',
+          username: 'jdupont',
+          email: 'j@example.com',
+          last_name: 'Dupont',
+          first_name: 'Jean',
+          agence: null,
+          is_active: true,
+          is_locked: false,
+        },
+      ],
+      total: 1,
+      page: 1,
+      taille: 100,
+    })
+    designerCaissierPrincipalSimule.mockRejectedValue(
+      new AxiosError('refus', undefined, undefined, undefined, {
+        status: 422,
+        data: {
+          detail:
+            'cet utilisateur ne détient pas le rôle Caissier : seul un caissier peut être désigné caissier principal.',
+        },
+      } as never),
+    )
+    afficher()
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }))
+
+    await screen.findByText('Jean Dupont — CAI-001')
+    fireEvent.change(screen.getByLabelText('Caissier'), { target: { value: 'u1' } })
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Tentative avec un comptable' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    expect(await screen.findByText(/rôle Caissier/)).toBeVisible()
   })
 })

@@ -472,3 +472,44 @@ export async function receptionnerTransfert(
   })
   return data
 }
+
+// --- Caissier principal (chantier coffre-fort/caisses, sous-chantier 3) ---------------------
+// LE caissier titulaire de la caisse PRINCIPALE d'une agence — responsabilité NOMINATIVE,
+// distincte du rattachement comptable (compta.plan.manage, écran « Caisse par agence »). Vit
+// sur « Postes de caisse » (caisse.principale.manage, RESPONSABLE_AGENCE) : même acteur, même
+// écran que la gestion des postes et l'assignation des guichetiers — pas sur l'écran comptable,
+// où le responsable n'a pas accès et le comptable n'a pas le droit (essai précédent corrigé).
+// `caissier_principal: null` est un état LÉGITIME (aucune désignation encore faite).
+
+export interface CaissierPrincipalAgence {
+  agency_id: string
+  agency_nom: string
+  caissier_principal: UtilisateurAssigne | null
+}
+
+export async function lireCaissierPrincipal(agencyId: string): Promise<CaissierPrincipalAgence> {
+  const { data } = await api.get<CaissierPrincipalAgence>(
+    `/caisse/agences/${agencyId}/caissier-principal`,
+  )
+  return data
+}
+
+/** Désigne (ou remplace) LE caissier principal — MOTIF obligatoire. Refus si l'utilisateur
+ * n'est pas habilité à l'agence ou ne détient pas le rôle Caissier (422, message serveur
+ * affiché tel quel via `messageRefusCaisse`). */
+export async function designerCaissierPrincipal(
+  agencyId: string,
+  userId: string,
+  motif: string,
+): Promise<CaissierPrincipalAgence> {
+  const { data } = await api.put<CaissierPrincipalAgence>(
+    `/caisse/agences/${agencyId}/caissier-principal`,
+    { user_id: userId, motif },
+  )
+  return data
+}
+
+/** Retire la désignation — pas de motif (retour à un état « non désigné », sûr par défaut). */
+export async function retirerCaissierPrincipal(agencyId: string): Promise<void> {
+  await api.delete(`/caisse/agences/${agencyId}/caissier-principal`)
+}
