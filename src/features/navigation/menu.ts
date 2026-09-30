@@ -167,6 +167,15 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/plan',
         permission: 'compta.plan.read',
       },
+      // Produits d'épargne (chantier gestion des produits) : créer/valider/activer un produit
+      // précède logiquement son rattachement comptable ci-dessous — placé juste avant. Lecture
+      // ouverte à epargne.product.read, actions gérées par l'écran (epargne.product.manage).
+      {
+        etat: 'actif',
+        libelle: M.entrees.produitsEpargne,
+        chemin: '/epargne/produits',
+        permission: 'epargne.product.read',
+      },
       // Rattachements (Bloc 5) : consultation ouverte à compta.plan.read, édition gérée par
       // l'écran lui-même (bouton « Modifier » masqué sans compta.plan.manage).
       {

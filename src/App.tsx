@@ -29,6 +29,7 @@ import { PageCredit } from '@/features/credit/PageCredit'
 import { PageDossierCredit } from '@/features/credit/PageDossierCredit'
 import { PageReclassification } from '@/features/credit/PageReclassification'
 import { PageGuichet } from '@/features/epargne/PageGuichet'
+import { PageProduitsEpargne } from '@/features/epargne/PageProduitsEpargne'
 import { PageRapprochement } from '@/features/epargne/PageRapprochement'
 import { PageVersementInterets } from '@/features/epargne/PageVersementInterets'
 import { PageRolesHabilitations } from '@/features/roles/PageRolesHabilitations'
@@ -265,6 +266,14 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.plan.read">
                     <PageFicheCompte />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/epargne/produits"
+                element={
+                  <RoutePermission permission="epargne.product.read">
+                    <PageProduitsEpargne />
                   </RoutePermission>
                 }
               />

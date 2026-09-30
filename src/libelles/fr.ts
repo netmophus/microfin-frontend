@@ -186,6 +186,7 @@ export const LIBELLES = {
       versementInterets: 'Versement des intérêts',
       rapprochementEpargne: 'Rapprochement épargne',
       planComptable: 'Plan de comptes',
+      produitsEpargne: 'Produits d’épargne',
       rattachementsEpargne: 'Rattachements épargne',
       parametresInteretEpargne: 'Taux d’intérêt épargne',
       rattachementsCaisse: 'Caisse par agence',
@@ -1824,6 +1825,83 @@ export const LIBELLES = {
     enregistrer: 'Enregistrer',
     enregistrementEnCours: 'Enregistrement…',
     echec: 'La modification a échoué. Réessayez.',
+  },
+
+  produitsEpargne: {
+    titre: 'Produits d’épargne',
+    sousTitre:
+      'Le référentiel des produits (à vue, terme, épargne programmée) — création, paramètres métier, validation et activation.',
+    chargement: 'Chargement des produits…',
+    listeVide: 'Aucun produit d’épargne.',
+    interdit: 'Vous n’avez pas la permission de consulter les produits d’épargne.',
+    erreur: 'Impossible de charger les produits. Réessayez dans un instant.',
+
+    colonneCode: 'Code',
+    colonneNom: 'Nom',
+    colonneType: 'Type',
+    colonneTaux: 'Taux annuel',
+    colonneStatut: 'Statut',
+
+    typeAVue: 'À vue',
+    typeTerme: 'À terme',
+    typeProgrammee: 'Programmée',
+
+    statutProvisoire: 'Provisoire',
+    statutActif: 'Actif',
+    statutInactif: 'Inactif',
+    // Répété sur la ligne d'un produit encore provisoire : le rattachement comptable se fait
+    // sur un écran distinct (comptable, compta.plan.manage), jamais dupliqué ici.
+    enAttenteRattachement: 'En attente de rattachement comptable',
+    lienRattachement: 'Rattacher les comptes',
+
+    ajouter: 'Ajouter un produit',
+    modifier: 'Modifier',
+    valider: 'Valider',
+    validationEnCours: 'Validation…',
+    activer: 'Activer',
+    desactiver: 'Désactiver',
+    confirmerActivation: 'Remettre ce produit au catalogue ?',
+    confirmerDesactivation: 'Retirer ce produit du catalogue ?',
+    annuler: 'Annuler',
+
+    code: 'Code',
+    codePlaceholder: 'Ex. EAV',
+    nom: 'Nom',
+    type: 'Type',
+    devise: 'Devise',
+    taux: 'Taux annuel (%)',
+    tauxAide: 'Saisi en pourcentage, ex. 3,5 — enregistré en points de base.',
+    periodicite: 'Périodicité',
+    periodiciteMensuelle: 'Mensuelle',
+    periodiciteTrimestrielle: 'Trimestrielle',
+    periodiciteAnnuelle: 'Annuelle',
+    methode: 'Méthode de calcul du solde',
+    methodeMinPeriode: 'Solde minimum de la période',
+    methodeMoyenQuotidien: 'Solde moyen quotidien',
+    methodeFinPeriode: 'Solde de fin de période',
+    baseJours: 'Base jours',
+    arrondi: 'Règle d’arrondi',
+    arrondiPlusProche: 'Au plus proche',
+    arrondiPlancher: 'Au franc inférieur',
+    soldeMinimum: 'Solde minimum rémunéré (francs CFA)',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce changement ?',
+
+    creationAvertissement:
+      'Le produit sera créé PROVISOIRE : il faudra le valider une fois ses comptes rattachés par le comptable.',
+    // Réglementaire SFD : jamais de découvert sur un produit d'épargne — mention informative,
+    // aucun champ de saisie (le serveur rejette toute tentative, voir gestion_produits.py).
+    decouvertNonAutorise: 'Découvert : non autorisé (réglementation SFD).',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    echecCreation: 'La création a échoué. Réessayez.',
+    echecModification: 'La modification a échoué. Réessayez.',
+    echecValidation: 'La validation a échoué. Réessayez.',
+    echecActivation: 'Le changement de statut a échoué. Réessayez.',
+
+    // Encart affiché après une validation réussie MAIS avec avertissement (compte client non
+    // rattaché) — jamais noyé dans une ligne, une validation réussie n'est pas une erreur.
+    validationAvertissementTitre: 'Produit validé — à vérifier',
   },
 
   rattachementsCaisse: {

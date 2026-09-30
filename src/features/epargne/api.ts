@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios'
 
+import type { BaseJours, MethodeCalculSolde, RegleArrondi } from '@/features/comptabilite/api'
 import { api } from '@/lib/api'
 
 /**
@@ -209,4 +210,102 @@ export function messageRefus(erreur: unknown, defaut: string): string {
     if (typeof detail === 'string') return detail
   }
   return defaut
+}
+
+// --- Gestion du référentiel produit (création, modification, validation, activation) ------
+// Distinct des rattachements comptables / taux d'intérêt (comptabilite/api.ts, permission
+// compta.plan.*) : ici, le CYCLE DE VIE du produit lui-même — epargne.product.manage
+// (ADMIN_FONCTIONNEL). Réutilise les enums déjà exportés par comptabilite/api.ts (méthode de
+// calcul, base jours, arrondi) plutôt que de les dupliquer.
+
+export const TYPES_PRODUIT = ['a_vue', 'terme', 'programmee'] as const
+export type TypeProduit = (typeof TYPES_PRODUIT)[number]
+
+export const PERIODICITES = ['mensuelle', 'trimestrielle', 'annuelle'] as const
+export type Periodicite = (typeof PERIODICITES)[number]
+
+export interface ProduitEpargneDetail {
+  id: string
+  code: string
+  name: string
+  type: TypeProduit
+  currency: string
+  is_active: boolean
+  is_provisional: boolean
+  taux_bp: number
+  periodicite: Periodicite
+  methode_calcul_solde: MethodeCalculSolde
+  base_jours: BaseJours
+  regle_arrondi: RegleArrondi
+  solde_minimum_remunere: number
+}
+
+export interface CreationProduitEpargne {
+  code: string
+  name: string
+  type: TypeProduit
+  currency: string
+  taux_bp: number
+  periodicite: Periodicite
+  methode_calcul_solde: MethodeCalculSolde
+  base_jours: BaseJours
+  regle_arrondi: RegleArrondi
+  solde_minimum_remunere: number
+}
+
+export interface ModificationProduitEpargne {
+  name: string
+  type: TypeProduit
+  taux_bp: number
+  periodicite: Periodicite
+  methode_calcul_solde: MethodeCalculSolde
+  base_jours: BaseJours
+  regle_arrondi: RegleArrondi
+  solde_minimum_remunere: number
+  motif: string
+}
+
+export interface ValidationProduitResultat extends ProduitEpargneDetail {
+  avertissements: string[]
+}
+
+/** TOUS les produits (actifs, inactifs, provisoires) — écran de gestion. Distinct de
+ * `listerProduits` ci-dessus (actifs seulement, schéma léger, choix à l'ouverture). */
+export async function listerProduitsGestion(): Promise<ProduitEpargneDetail[]> {
+  const { data } = await api.get<ProduitEpargneDetail[]>('/epargne/produits/referentiel')
+  return data
+}
+
+export async function creerProduit(
+  produit: CreationProduitEpargne,
+): Promise<ProduitEpargneDetail> {
+  const { data } = await api.post<ProduitEpargneDetail>('/epargne/produits', produit)
+  return data
+}
+
+export async function modifierProduit(
+  id: string,
+  modifications: ModificationProduitEpargne,
+): Promise<ProduitEpargneDetail> {
+  const { data } = await api.patch<ProduitEpargneDetail>(`/epargne/produits/${id}`, modifications)
+  return data
+}
+
+/** Lève le provisoire. Peut réussir avec un avertissement non bloquant (compte client non
+ * rattaché) — voir `ValidationProduitResultat.avertissements`. */
+export async function validerProduit(id: string): Promise<ValidationProduitResultat> {
+  const { data } = await api.post<ValidationProduitResultat>(`/epargne/produits/${id}/valider`)
+  return data
+}
+
+export async function changerActivationProduit(
+  id: string,
+  isActive: boolean,
+  motif: string,
+): Promise<ProduitEpargneDetail> {
+  const { data } = await api.patch<ProduitEpargneDetail>(`/epargne/produits/${id}/activation`, {
+    is_active: isActive,
+    motif,
+  })
+  return data
 }
