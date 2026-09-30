@@ -1911,7 +1911,6 @@ export const LIBELLES = {
     periodiciteTrimestrielle: 'Trimestrielle',
     periodiciteAnnuelle: 'Annuelle',
     methode: 'Méthode d’amortissement',
-    baseJours: 'Base jours',
     arrondi: 'Règle d’arrondi',
     arrondiPlusProche: 'Au plus proche',
     arrondiPlancher: 'Au franc inférieur',
@@ -1919,6 +1918,10 @@ export const LIBELLES = {
     tauxUsureMaxAide: 'Laissez vide pour aucun plafond. Saisi en pourcentage, enregistré en points de base.',
     motif: 'Motif (obligatoire)',
     motifPlaceholder: 'Pourquoi ce changement ?',
+
+    // Réglementaire UEMOA : calcul périodique, base 360 implicite — non saisissable (gelé côté
+    // serveur, voir gestion_produits.py), mention informative seulement.
+    baseCalculInfo: 'Base de calcul : 360 jours (année commerciale).',
 
     creationAvertissement:
       'Le produit sera créé PROVISOIRE : il faudra le valider une fois ses comptes rattachés.',

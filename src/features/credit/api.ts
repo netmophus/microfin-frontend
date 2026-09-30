@@ -314,13 +314,16 @@ export interface ProduitCreditDetail {
   taux_usure_max_bp: number | null
 }
 
+// `base_jours` ABSENT de ces deux schémas d'entrée, à dessein : GELÉ côté backend (calcul
+// périodique, pas jour-par-jour — voir echeancier.py), reste dans ProduitCreditDetail
+// (lecture seule) mais n'est plus saisissable.
+
 export interface CreationProduitCredit {
   code: string
   name: string
   taux_bp: number
   periodicite: PeriodiciteCredit
   methode_amortissement: MethodeAmortissement
-  base_jours: BaseJours
   regle_arrondi: RegleArrondi
   taux_usure_max_bp: number | null
 }
@@ -330,7 +333,6 @@ export interface ModificationProduitCredit {
   taux_bp: number
   periodicite: PeriodiciteCredit
   methode_amortissement: MethodeAmortissement
-  base_jours: BaseJours
   regle_arrondi: RegleArrondi
   taux_usure_max_bp: number | null
   motif: string

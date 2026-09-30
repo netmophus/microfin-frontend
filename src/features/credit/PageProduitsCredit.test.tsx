@@ -151,6 +151,10 @@ describe('PageProduitsCredit', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter un produit' }))
     expect(screen.queryByLabelText('Devise')).toBeNull()
+    // base_jours GELÉ (norme UEMOA, calcul périodique) : aucun champ de saisie, mention
+    // informative seulement.
+    expect(screen.queryByLabelText('Base jours')).toBeNull()
+    expect(screen.getByText('Base de calcul : 360 jours (année commerciale).')).toBeVisible()
 
     fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'NEW' } })
     fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Nouveau produit' } })
@@ -161,6 +165,9 @@ describe('PageProduitsCredit', () => {
       expect(creerSimule).toHaveBeenCalledWith(
         expect.objectContaining({ code: 'NEW', taux_bp: 1000, taux_usure_max_bp: null }),
       ),
+    )
+    expect(creerSimule).not.toHaveBeenCalledWith(
+      expect.objectContaining({ base_jours: expect.anything() }),
     )
   })
 

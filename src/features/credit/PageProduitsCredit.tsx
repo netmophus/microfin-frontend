@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
-import { BASES_JOURS, REGLES_ARRONDI, type BaseJours, type RegleArrondi } from '@/features/comptabilite/api'
+import { REGLES_ARRONDI, type RegleArrondi } from '@/features/comptabilite/api'
 import {
   changerActivationProduitCredit,
   creerProduitCredit,
@@ -345,7 +345,6 @@ function LigneEdition({
   const [taux, setTaux] = useState(bpVersPourcent(produit.taux_bp))
   const [periodicite, setPeriodicite] = useState<PeriodiciteCredit>(produit.periodicite)
   const [methode, setMethode] = useState<MethodeAmortissement>(produit.methode_amortissement)
-  const [baseJours, setBaseJours] = useState<BaseJours>(produit.base_jours)
   const [arrondi, setArrondi] = useState<RegleArrondi>(produit.regle_arrondi)
   const [tauxUsure, setTauxUsure] = useState(
     produit.taux_usure_max_bp === null ? '' : bpVersPourcent(produit.taux_usure_max_bp),
@@ -363,7 +362,6 @@ function LigneEdition({
         taux_bp: tauxBp as number,
         periodicite,
         methode_amortissement: methode,
-        base_jours: baseJours,
         regle_arrondi: arrondi,
         taux_usure_max_bp: tauxUsureBp,
         motif: motif.trim(),
@@ -427,21 +425,6 @@ function LigneEdition({
               {METHODES_AMORTISSEMENT.map((m) => (
                 <option key={m} value={m}>
                   {LIBELLE_METHODE[m]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor={`${idBase}-base-jours`}>{P.baseJours}</Label>
-            <select
-              id={`${idBase}-base-jours`}
-              className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-              value={baseJours}
-              onChange={(e) => setBaseJours(Number(e.target.value) as BaseJours)}
-            >
-              {BASES_JOURS.map((b) => (
-                <option key={b} value={b}>
-                  {b}
                 </option>
               ))}
             </select>
@@ -576,7 +559,6 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
   const [taux, setTaux] = useState('0')
   const [periodicite, setPeriodicite] = useState<PeriodiciteCredit>('mensuelle')
   const [methode, setMethode] = useState<MethodeAmortissement>('echeance_constante')
-  const [baseJours, setBaseJours] = useState<BaseJours>(360)
   const [arrondi, setArrondi] = useState<RegleArrondi>('plus_proche')
   const [tauxUsure, setTauxUsure] = useState('')
 
@@ -592,7 +574,6 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
         taux_bp: tauxBp as number,
         periodicite,
         methode_amortissement: methode,
-        base_jours: baseJours,
         regle_arrondi: arrondi,
         taux_usure_max_bp: tauxUsureBp,
       }),
@@ -670,21 +651,6 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
           </select>
         </div>
         <div className="space-y-1">
-          <Label htmlFor={`${idBase}-base-jours`}>{P.baseJours}</Label>
-          <select
-            id={`${idBase}-base-jours`}
-            className="h-9 w-full rounded-md border bg-background px-2 text-xs"
-            value={baseJours}
-            onChange={(e) => setBaseJours(Number(e.target.value) as BaseJours)}
-          >
-            {BASES_JOURS.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
           <Label htmlFor={`${idBase}-arrondi`}>{P.arrondi}</Label>
           <select
             id={`${idBase}-arrondi`}
@@ -714,6 +680,8 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
           </p>
         </div>
       </div>
+
+      <p className="text-xs text-muted-foreground">{P.baseCalculInfo}</p>
 
       {mutation.isError && (
         <Alert variant="destructive" role="alert">
