@@ -187,6 +187,7 @@ export const LIBELLES = {
       rapprochementEpargne: 'Rapprochement épargne',
       planComptable: 'Plan de comptes',
       produitsEpargne: 'Produits d’épargne',
+      produitsCredit: 'Produits de crédit',
       rattachementsEpargne: 'Rattachements épargne',
       rattachementsCaisse: 'Caisse par agence',
       parametresParts: 'Paramètres des parts sociales',
@@ -1861,6 +1862,87 @@ export const LIBELLES = {
     // Encart affiché après une validation réussie MAIS avec avertissement (compte client non
     // rattaché) — jamais noyé dans une ligne, une validation réussie n'est pas une erreur.
     validationAvertissementTitre: 'Produit validé — à vérifier',
+  },
+
+  produitsCredit: {
+    titre: 'Produits de crédit',
+    sousTitre:
+      'Le référentiel des produits de crédit — création, paramètres, validation, activation et rattachements comptables.',
+    ongletProduit: 'Produit',
+    ongletRattachements: 'Rattachements comptables',
+
+    chargement: 'Chargement des produits…',
+    listeVide: 'Aucun produit de crédit.',
+    interdit: 'Vous n’avez pas la permission de consulter les produits de crédit.',
+    erreur: 'Impossible de charger les produits. Réessayez dans un instant.',
+
+    colonneCode: 'Code',
+    colonneNom: 'Nom',
+    colonneTaux: 'Taux annuel',
+    colonneMethode: 'Méthode d’amortissement',
+    colonneStatut: 'Statut',
+
+    methodeCapitalConstant: 'Capital constant',
+    methodeEcheanceConstante: 'Échéance constante',
+
+    statutProvisoire: 'Provisoire',
+    statutActif: 'Actif',
+    statutInactif: 'Inactif',
+    enAttenteRattachement: 'En attente de rattachement comptable',
+    lienRattachement: 'Rattacher les comptes',
+
+    ajouter: 'Ajouter un produit',
+    modifier: 'Modifier',
+    valider: 'Valider',
+    validationEnCours: 'Validation…',
+    activer: 'Activer',
+    desactiver: 'Désactiver',
+    confirmerActivation: 'Remettre ce produit au catalogue ?',
+    confirmerDesactivation: 'Retirer ce produit du catalogue ?',
+    annuler: 'Annuler',
+
+    code: 'Code',
+    codePlaceholder: 'Ex. CCT',
+    nom: 'Nom',
+    taux: 'Taux annuel (%)',
+    tauxAide: 'Saisi en pourcentage, ex. 12 — enregistré en points de base.',
+    periodicite: 'Périodicité',
+    periodiciteMensuelle: 'Mensuelle',
+    periodiciteTrimestrielle: 'Trimestrielle',
+    periodiciteAnnuelle: 'Annuelle',
+    methode: 'Méthode d’amortissement',
+    baseJours: 'Base jours',
+    arrondi: 'Règle d’arrondi',
+    arrondiPlusProche: 'Au plus proche',
+    arrondiPlancher: 'Au franc inférieur',
+    tauxUsureMax: 'Plafond de taux (usure, optionnel)',
+    tauxUsureMaxAide: 'Laissez vide pour aucun plafond. Saisi en pourcentage, enregistré en points de base.',
+    motif: 'Motif (obligatoire)',
+    motifPlaceholder: 'Pourquoi ce changement ?',
+
+    creationAvertissement:
+      'Le produit sera créé PROVISOIRE : il faudra le valider une fois ses comptes rattachés.',
+    enregistrer: 'Enregistrer',
+    enregistrementEnCours: 'Enregistrement…',
+    echecCreation: 'La création a échoué. Réessayez.',
+    echecModification: 'La modification a échoué. Réessayez.',
+    echecValidation: 'La validation a échoué. Réessayez.',
+    echecActivation: 'Le changement de statut a échoué. Réessayez.',
+
+    validationAvertissementTitre: 'Produit validé — à vérifier',
+
+    // Onglet Rattachements comptables (compta.plan.manage) ------------------------------------
+    rattachementsAvertissement:
+      'Un produit à taux non nul ne pourra être validé qu’avec son compte de produits d’intérêts rattaché.',
+    choisirProduit: 'Choisir un produit',
+    colonneCompteMembre: 'Compte crédit (membre)',
+    colonneCompteClient: 'Compte crédit (client)',
+    colonneCompteInterets: 'Compte produits d’intérêts',
+    aucun: '— non rattaché —',
+    chargementRattachements: 'Chargement des rattachements…',
+    interditRattachements: 'Vous n’avez pas la permission de consulter ces rattachements.',
+    erreurRattachements: 'Impossible de charger les rattachements. Réessayez dans un instant.',
+    echecRattachements: 'La modification a échoué. Réessayez.',
   },
 
   rattachementsCaisse: {

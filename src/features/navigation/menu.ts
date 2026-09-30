@@ -176,6 +176,17 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/epargne/produits',
         permission: 'epargne.product.read',
       },
+      // Produits de crédit : symétrique de l'épargne, mais un SEUL écran à onglets (Produit +
+      // Rattachements comptables) — le crédit n'avait pas encore les 2 blocs séparés que
+      // l'épargne avait. Lecture ouverte à credit.product.read, chaque onglet gère lui-même
+      // sa visibilité (compta.plan.read) et ses actions (credit.product.manage /
+      // compta.plan.manage).
+      {
+        etat: 'actif',
+        libelle: M.entrees.produitsCredit,
+        chemin: '/credit/produits',
+        permission: 'credit.product.read',
+      },
       // Rattachements (Bloc 5) : consultation ouverte à compta.plan.read, édition gérée par
       // l'écran lui-même (bouton « Modifier » masqué sans compta.plan.manage).
       {

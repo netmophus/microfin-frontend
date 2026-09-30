@@ -26,6 +26,7 @@ import { PageRattachementsCaisse } from '@/features/comptabilite/PageRattachemen
 import { PageRattachementsEpargne } from '@/features/comptabilite/PageRattachementsEpargne'
 import { PageCredit } from '@/features/credit/PageCredit'
 import { PageDossierCredit } from '@/features/credit/PageDossierCredit'
+import { PageProduitsCredit } from '@/features/credit/PageProduitsCredit'
 import { PageReclassification } from '@/features/credit/PageReclassification'
 import { PageGuichet } from '@/features/epargne/PageGuichet'
 import { PageProduitsEpargne } from '@/features/epargne/PageProduitsEpargne'
@@ -273,6 +274,14 @@ export function App() {
                 element={
                   <RoutePermission permission="epargne.product.read">
                     <PageProduitsEpargne />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/credit/produits"
+                element={
+                  <RoutePermission permission="credit.product.read">
+                    <PageProduitsCredit />
                   </RoutePermission>
                 }
               />

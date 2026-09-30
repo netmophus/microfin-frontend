@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios'
 
+import type { BaseJours, CompteRattachement, RegleArrondi } from '@/features/comptabilite/api'
 import { api } from '@/lib/api'
 
 /**
@@ -285,4 +286,134 @@ export function messageRefusCredit(erreur: unknown, defaut: string): string {
     if (typeof detail === 'string') return detail
   }
   return defaut
+}
+
+// --- Gestion du référentiel produit (lot 3a) + rattachements comptables (lot 3b) ----------
+// Miroir de epargne/api.ts, adapté crédit : pas de `currency` (XOF implicite),
+// `methode_amortissement` remplace `methode_calcul_solde`, `taux_usure_max_bp` en plus
+// (plafond paramétrable, NULL = pas de plafond). Réutilise BaseJours/RegleArrondi (déjà
+// exportés par comptabilite/api.ts) et CompteRattachement — pas de duplication.
+
+export const METHODES_AMORTISSEMENT = ['capital_constant', 'echeance_constante'] as const
+export type MethodeAmortissement = (typeof METHODES_AMORTISSEMENT)[number]
+
+export const PERIODICITES_CREDIT = ['mensuelle', 'trimestrielle', 'annuelle'] as const
+export type PeriodiciteCredit = (typeof PERIODICITES_CREDIT)[number]
+
+export interface ProduitCreditDetail {
+  id: string
+  code: string
+  name: string
+  is_active: boolean
+  is_provisional: boolean
+  taux_bp: number
+  periodicite: PeriodiciteCredit
+  methode_amortissement: MethodeAmortissement
+  base_jours: BaseJours
+  regle_arrondi: RegleArrondi
+  taux_usure_max_bp: number | null
+}
+
+export interface CreationProduitCredit {
+  code: string
+  name: string
+  taux_bp: number
+  periodicite: PeriodiciteCredit
+  methode_amortissement: MethodeAmortissement
+  base_jours: BaseJours
+  regle_arrondi: RegleArrondi
+  taux_usure_max_bp: number | null
+}
+
+export interface ModificationProduitCredit {
+  name: string
+  taux_bp: number
+  periodicite: PeriodiciteCredit
+  methode_amortissement: MethodeAmortissement
+  base_jours: BaseJours
+  regle_arrondi: RegleArrondi
+  taux_usure_max_bp: number | null
+  motif: string
+}
+
+export interface ValidationProduitCreditResultat extends ProduitCreditDetail {
+  avertissements: string[]
+}
+
+/** TOUS les produits (actifs, inactifs, provisoires) — écran de gestion. Distinct de
+ * `listerProduitsCredit` ci-dessus (actifs seulement, schéma léger, choix à la demande). */
+export async function listerProduitsCreditGestion(): Promise<ProduitCreditDetail[]> {
+  const { data } = await api.get<ProduitCreditDetail[]>('/credit/produits/referentiel')
+  return data
+}
+
+export async function creerProduitCredit(
+  produit: CreationProduitCredit,
+): Promise<ProduitCreditDetail> {
+  const { data } = await api.post<ProduitCreditDetail>('/credit/produits', produit)
+  return data
+}
+
+export async function modifierProduitCredit(
+  id: string,
+  modifications: ModificationProduitCredit,
+): Promise<ProduitCreditDetail> {
+  const { data } = await api.patch<ProduitCreditDetail>(`/credit/produits/${id}`, modifications)
+  return data
+}
+
+/** Lève le provisoire. Peut réussir avec un avertissement non bloquant (compte client non
+ * rattaché) — voir `ValidationProduitCreditResultat.avertissements`. GARDE-FOU STRICT côté
+ * serveur : refuse aussi si taux_bp > 0 sans compte de produits d'intérêts rattaché. */
+export async function validerProduitCredit(id: string): Promise<ValidationProduitCreditResultat> {
+  const { data } = await api.post<ValidationProduitCreditResultat>(
+    `/credit/produits/${id}/valider`,
+  )
+  return data
+}
+
+export async function changerActivationProduitCredit(
+  id: string,
+  isActive: boolean,
+  motif: string,
+): Promise<ProduitCreditDetail> {
+  const { data } = await api.patch<ProduitCreditDetail>(`/credit/produits/${id}/activation`, {
+    is_active: isActive,
+    motif,
+  })
+  return data
+}
+
+export interface RattachementsProduitCredit {
+  id: string
+  code: string
+  name: string
+  compte_credit_membre: CompteRattachement | null
+  compte_credit_client: CompteRattachement | null
+  compte_produits_interets: CompteRattachement | null
+}
+
+export interface ModificationRattachementsProduitCredit {
+  compte_credit_membre: string | null
+  compte_credit_client: string | null
+  compte_produits_interets: string | null
+  motif: string
+}
+
+export async function lireRattachementsProduitCredit(
+  id: string,
+): Promise<RattachementsProduitCredit> {
+  const { data } = await api.get<RattachementsProduitCredit>(`/credit/produits/${id}/rattachements`)
+  return data
+}
+
+export async function modifierRattachementsProduitCredit(
+  id: string,
+  modifications: ModificationRattachementsProduitCredit,
+): Promise<RattachementsProduitCredit> {
+  const { data } = await api.patch<RattachementsProduitCredit>(
+    `/credit/produits/${id}/rattachements`,
+    modifications,
+  )
+  return data
 }
