@@ -184,14 +184,6 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/rattachements-epargne',
         permission: 'compta.plan.read',
       },
-      // Taux d'intérêt épargne : écran séparé des rattachements ci-dessus (comptes vs valeurs
-      // de calcul), même paire de permissions, juste à côté dans le menu.
-      {
-        etat: 'actif',
-        libelle: M.entrees.parametresInteretEpargne,
-        chemin: '/comptabilite/parametres-interet-epargne',
-        permission: 'compta.plan.read',
-      },
       {
         etat: 'actif',
         libelle: M.entrees.rattachementsCaisse,
