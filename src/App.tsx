@@ -240,7 +240,9 @@ export function App() {
               <Route
                 path="/credit/reclassification"
                 element={
-                  <RoutePermission permission="credit.delinquency.executer">
+                  <RoutePermission
+                    permission={['credit.delinquency.read', 'credit.delinquency.executer']}
+                  >
                     <PageReclassification />
                   </RoutePermission>
                 }

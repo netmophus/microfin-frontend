@@ -57,6 +57,8 @@ export function PagePaliersSouffrance() {
         <AlertDescription>{P.avertissement}</AlertDescription>
       </Alert>
 
+      <p className="text-xs text-warning">{P.bandeauBaremeProvisoire}</p>
+
       {paliers.isPending ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{P.chargement}</p>
       ) : paliers.isError ? (
@@ -91,6 +93,8 @@ export function PagePaliersSouffrance() {
                     <th className="px-3 py-2 text-right font-medium">{P.colonneTaux}</th>
                     <th className="px-3 py-2 text-left font-medium">{P.colonneEncours}</th>
                     <th className="px-3 py-2 text-left font-medium">{P.colonneDotation}</th>
+                    <th className="px-3 py-2 text-left font-medium">{P.colonneProvision}</th>
+                    <th className="px-3 py-2 text-left font-medium">{P.colonneReprise}</th>
                     {peutGerer && <th className="px-3 py-2" />}
                   </tr>
                 </thead>
@@ -177,6 +181,12 @@ function LigneLecture({
       <td className="px-3 py-2">
         <TexteCompte compte={palier.compte_dotation} />
       </td>
+      <td className="px-3 py-2">
+        <TexteCompte compte={palier.compte_provision} />
+      </td>
+      <td className="px-3 py-2">
+        <TexteCompte compte={palier.compte_reprise} />
+      </td>
       {peutGerer && (
         <td className="px-3 py-2 text-right">
           <div className="flex justify-end gap-2">
@@ -210,6 +220,12 @@ function LigneEdition({
   const [compteDotation, setCompteDotation] = useState(
     palier?.compte_dotation?.account_number ?? null,
   )
+  const [compteProvision, setCompteProvision] = useState(
+    palier?.compte_provision?.account_number ?? null,
+  )
+  const [compteReprise, setCompteReprise] = useState(
+    palier?.compte_reprise?.account_number ?? null,
+  )
   const [isTerminal, setIsTerminal] = useState(palier?.is_terminal ?? false)
   const [motif, setMotif] = useState('')
 
@@ -229,6 +245,8 @@ function LigneEdition({
     taux_provision_bp: tauxNum,
     compte_encours: compteEncours,
     compte_dotation: compteDotation,
+    compte_provision: compteProvision,
+    compte_reprise: compteReprise,
     is_terminal: isTerminal,
     motif: motif.trim(),
   })
@@ -242,7 +260,7 @@ function LigneEdition({
 
   return (
     <tr className="border-b bg-brand-subtle/30 last:border-0">
-      <td className="px-3 py-3 align-top" colSpan={5}>
+      <td className="px-3 py-3 align-top" colSpan={7}>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1">
             <Label htmlFor={`${idBase}-code`}>{P.code}</Label>
@@ -317,6 +335,30 @@ function LigneEdition({
                 : null
             }
           />
+          <SelecteurCompte
+            id={`${idBase}-provision`}
+            label={P.colonneProvision}
+            filtre="saisie"
+            valeur={compteProvision}
+            onChange={setCompteProvision}
+            libelleInitial={
+              palier?.compte_provision
+                ? `${palier.compte_provision.account_number} — ${palier.compte_provision.name}`
+                : null
+            }
+          />
+          <SelecteurCompte
+            id={`${idBase}-reprise`}
+            label={P.colonneReprise}
+            filtre="saisie"
+            valeur={compteReprise}
+            onChange={setCompteReprise}
+            libelleInitial={
+              palier?.compte_reprise
+                ? `${palier.compte_reprise.account_number} — ${palier.compte_reprise.name}`
+                : null
+            }
+          />
           <div className="space-y-1 sm:col-span-3">
             <Label htmlFor={`${idBase}-motif`}>{P.motif}</Label>
             <Input
@@ -366,7 +408,7 @@ function LigneSuppression({
 
   return (
     <tr className="border-b bg-warning-subtle/30 last:border-0">
-      <td className="px-3 py-3 align-top" colSpan={5}>
+      <td className="px-3 py-3 align-top" colSpan={7}>
         <p className="text-sm">
           {P.confirmerRetrait} — <span className="font-medium">{palier.libelle}</span> (
           {palier.code})

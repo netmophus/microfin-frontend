@@ -1,15 +1,15 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useAPermission } from '@/features/auth/useProfil'
 import {
   executerReclassement,
   messageRefusCredit,
   previsualiserReclassement,
-  type ApercuReclassement,
   type LigneApercuReclassement,
   type LigneReclassement,
   type RapportReclassement,
@@ -18,6 +18,8 @@ import { formatFcfa } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
 const R = LIBELLES.reclassification
+
+const CLE_APERCU = ['credit', 'delinquency-apercu']
 
 function fmt(gabarit: string, valeurs: Record<string, string>): string {
   return gabarit.replace(/\{(\w+)\}/g, (_, cle) => valeurs[cle] ?? '')
@@ -28,24 +30,26 @@ function libellePalier(code: string | null, libelle: string | null): string {
 }
 
 /**
- * Reclassification des crédits en souffrance (CR5c) — réservée à la DIRECTION (acte
- * d'institution, `credit.delinquency.executer`). Même règle que le versement d'intérêts
- * épargne (E5) : on PRÉVISUALISE avant de rien écrire — l'aperçu pose de vraies écritures de
- * dotation/reprise de provision sur potentiellement tout le portefeuille, donc « ça a l'air
- * juste » se vérifie AVANT le clic, pas après.
+ * Supervision PERMANENTE des crédits en souffrance (CR5c, chantier supervision lot 2) : l'état
+ * se charge AU MONTAGE (useQuery), sans action requise — le même calcul pur que l'exécution
+ * (`previsualiser_reclassement`, côté serveur), accessible en lecture à `credit.delinquency.read`
+ * OU `credit.delinquency.executer`. Seule l'EXÉCUTION (qui pose de vraies écritures de
+ * dotation/reprise sur potentiellement tout le portefeuille) reste réservée à la DIRECTION
+ * (`credit.delinquency.executer`) et exige une confirmation renforcée — même règle que le
+ * versement d'intérêts épargne (E5).
  */
 export function PageReclassification() {
-  const [apercu, setApercu] = useState<ApercuReclassement | null>(null)
+  const client = useQueryClient()
+  const peutExecuter = useAPermission('credit.delinquency.executer')
   const [confirmation, setConfirmation] = useState(false)
   const [rapport, setRapport] = useState<RapportReclassement | null>(null)
 
-  const previsualisation = useMutation({
-    mutationFn: previsualiserReclassement,
-    onSuccess: (data) => {
-      setApercu(data)
-      setConfirmation(false)
-      setRapport(null)
-    },
+  const apercuRequete = useQuery({
+    queryKey: CLE_APERCU,
+    queryFn: previsualiserReclassement,
+    // Inutile de garder la supervision à jour en arrière-plan pendant qu'on affiche le rapport
+    // d'une exécution déjà terminée — elle reprend dès qu'on revient dessus (recommencer()).
+    enabled: rapport === null,
   })
 
   const execution = useMutation({
@@ -53,18 +57,17 @@ export function PageReclassification() {
     onSuccess: (data) => {
       setRapport(data)
       setConfirmation(false)
-      setApercu(null)
     },
   })
 
   const recommencer = () => {
-    setApercu(null)
     setRapport(null)
     setConfirmation(false)
-    previsualisation.reset()
     execution.reset()
+    void client.invalidateQueries({ queryKey: CLE_APERCU })
   }
 
+  const apercu = apercuRequete.data ?? null
   const rienAReclasser = apercu !== null && apercu.a_reclasser === 0
 
   return (
@@ -75,36 +78,40 @@ export function PageReclassification() {
           {R.titre}
         </h1>
         <p className="text-sm text-muted-foreground">{R.intro}</p>
+        <p className="mt-1 text-xs text-warning">{R.bandeauBaremeProvisoire}</p>
       </header>
 
-      {/* Étape 1 — lancer l'aperçu. */}
-      {!apercu && !rapport && (
-        <div className="space-y-3">
-          <Button onClick={() => previsualisation.mutate()} disabled={previsualisation.isPending}>
-            {previsualisation.isPending ? R.previsualisationEnCours : R.previsualiser}
-          </Button>
-          {previsualisation.isError && (
-            <Alert variant="destructive" role="alert">
-              <AlertDescription>{messageRefusCredit(previsualisation.error, R.echec)}</AlertDescription>
-            </Alert>
-          )}
-        </div>
+      {/* Chargement — pas besoin d'action : la supervision se charge seule au montage. Mis en
+          pause (enabled: rapport === null) tant que le rapport d'une exécution est affiché. */}
+      {rapport === null && apercuRequete.isPending && (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          {R.previsualisationEnCours}
+        </p>
       )}
 
-      {/* Étape 2 — rien à reclasser : on le dit, on ne reste jamais muet. */}
-      {rienAReclasser && (
-        <Alert role="status">
+      {/* Erreur — ce qui a échoué, et un bouton Réessayer (4 états obligatoires). */}
+      {rapport === null && apercuRequete.isError && (
+        <Alert variant="destructive" role="alert">
           <AlertDescription className="space-y-2">
-            <p className="font-medium">{R.apercuAucun}</p>
-            <Button size="sm" variant="ghost" onClick={recommencer}>
-              {R.recommencer}
+            <p>{R.echecChargement}</p>
+            <Button size="sm" variant="outline" onClick={() => void apercuRequete.refetch()}>
+              {R.reessayer}
             </Button>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Étape 2bis — l'aperçu, avec quelque chose à montrer. */}
-      {apercu && apercu.a_reclasser > 0 && !confirmation && (
+      {/* Vide — rien à reclasser : on le dit, on ne reste jamais muet. */}
+      {rapport === null && rienAReclasser && !confirmation && (
+        <Alert role="status">
+          <AlertDescription>
+            <p className="font-medium">{R.apercuAucun}</p>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Données — la supervision permanente, avec quelque chose à montrer. */}
+      {rapport === null && apercu && apercu.a_reclasser > 0 && !confirmation && (
         <section className="space-y-3 rounded-md border p-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">{R.apercuTitre}</p>
           <p className="text-lg font-semibold">
@@ -125,16 +132,17 @@ export function PageReclassification() {
 
           <TableauApercu lignes={apercu.lignes} />
 
-          <div className="flex gap-2">
-            <Button onClick={() => setConfirmation(true)}>{R.confirmer}</Button>
-            <Button variant="ghost" onClick={recommencer}>
-              {R.annuler}
-            </Button>
-          </div>
+          {/* Masquer le bouton n'est qu'une commodité d'affichage — le serveur refuse déjà
+              l'exécution sans credit.delinquency.executer (403). */}
+          {peutExecuter && (
+            <div className="flex gap-2">
+              <Button onClick={() => setConfirmation(true)}>{R.confirmer}</Button>
+            </div>
+          )}
         </section>
       )}
 
-      {/* Étape 3 — confirmation RENFORCÉE : on va poser de vraies écritures. */}
+      {/* Confirmation RENFORCÉE : on va poser de vraies écritures. */}
       {apercu && confirmation && (
         <section className="space-y-3 rounded-md border border-warning/50 bg-warning-subtle/40 p-4">
           <p className="font-medium">{R.confirmerTitre}</p>

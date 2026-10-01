@@ -55,6 +55,8 @@ function palier(o: Partial<PalierSouffrance> = {}): PalierSouffrance {
     taux_provision_bp: 5000,
     compte_encours: null,
     compte_dotation: null,
+    compte_provision: null,
+    compte_reprise: null,
     is_terminal: false,
     is_provisional: true,
     ...o,
@@ -153,9 +155,48 @@ describe('PagePaliersSouffrance', () => {
         taux_provision_bp: 2500,
         compte_encours: '2921',
         compte_dotation: null,
+        compte_provision: null,
+        compte_reprise: null,
         is_terminal: false,
         motif: 'Ajout de palier, test',
       }),
+    )
+  })
+
+  it('rattache les comptes de provision et de reprise, indépendamment des deux autres', async () => {
+    listerSimule.mockResolvedValue([])
+    creerSimule.mockResolvedValue(palier({ id: 'nouveau', code: 'NOUVEAU' }))
+    afficher()
+    await screen.findByText('Aucun palier configuré.')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un palier' }))
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'NOUVEAU' } })
+    fireEvent.change(screen.getByLabelText('Libellé'), { target: { value: 'Palier test' } })
+    fireEvent.change(screen.getByLabelText('Seuil (jours)'), { target: { value: '90' } })
+    fireEvent.change(
+      screen.getByLabelText('Taux de provision (points de base — 10000 = 100 %)'),
+      { target: { value: '2500' } },
+    )
+    const champProvision = screen.getByLabelText('Compte de provision')
+    fireEvent.change(champProvision, { target: { value: '2991' } })
+    fireEvent.blur(champProvision)
+    const champReprise = screen.getByLabelText('Compte de reprise')
+    fireEvent.change(champReprise, { target: { value: '764' } })
+    fireEvent.blur(champReprise)
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Ajout de palier, test' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(creerSimule).toHaveBeenCalledWith(
+        expect.objectContaining({
+          compte_encours: null,
+          compte_dotation: null,
+          compte_provision: '2991',
+          compte_reprise: '764',
+        }),
+      ),
     )
   })
 

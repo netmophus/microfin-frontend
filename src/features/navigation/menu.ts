@@ -145,13 +145,15 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/credit',
         permission: 'credit.demande.read',
       },
-      // Reclassification automatique (CR5c) : acte D'INSTITUTION, réservé à la direction —
-      // même patron que le versement d'intérêts ci-dessus.
+      // Supervision de la souffrance (CR5c, chantier lot 2) : lecture permanente ouverte à
+      // credit.delinquency.read (direction, comptable, responsable d'agence) ; l'exécution
+      // (acte D'INSTITUTION) reste réservée à credit.delinquency.executer — l'écran gère déjà
+      // la distinction, l'entrée de menu ne fait que l'ouvrir au plus large des deux.
       {
         etat: 'actif',
         libelle: M.entrees.reclassification,
         chemin: '/credit/reclassification',
-        permission: 'credit.delinquency.executer',
+        permission: ['credit.delinquency.read', 'credit.delinquency.executer'],
       },
       aVenir(M.entrees.recouvrement),
     ],

@@ -1177,13 +1177,19 @@ export const LIBELLES = {
 
   reclassification: {
     titre: 'Reclassification des crédits en souffrance',
+    // Supervision PERMANENTE (chantier lot 2) : l'état se charge seul, aucun clic requis. Seule
+    // l'exécution (qui pose de vraies écritures) exige une confirmation explicite.
     intro:
-      'Prévisualisez, puis lancez. Aucun crédit n’est reclassé tant que vous n’avez pas confirmé.',
-    previsualiser: 'Prévisualiser',
+      'L’état des crédits à reclasser se met à jour automatiquement. Aucun crédit n’est reclassé tant que vous n’avez pas confirmé.',
+    // Bandeau discret (barème provisoire, chantier supervision de la souffrance).
+    bandeauBaremeProvisoire:
+      'Barème provisoire — seuils et quotités de provision à valider par l’expert-comptable SFD.',
     previsualisationEnCours: 'Calcul en cours…',
+    echecChargement: 'Impossible de charger la supervision de la souffrance.',
+    reessayer: 'Réessayer',
 
-    // Prévisualisation : ce qui SERAIT reclassé, rien n'est encore écrit.
-    apercuTitre: 'Prévisualisation — rien n’est encore reclassé',
+    // Ce qui SERAIT reclassé, rien n'est encore écrit — vue permanente.
+    apercuTitre: 'Supervision — rien n’est encore reclassé',
     // {n} et {total} injectés.
     apercuResume: '{n} dossier(s) seraient reclassés, sur {total} dossier(s) décaissés évalués.',
     apercuAucun:
@@ -2096,6 +2102,10 @@ export const LIBELLES = {
       'Les seuils (en jours de retard), taux de provision et comptes rattachés à chaque palier de la créance saine à irrécouvrable.',
     avertissement:
       'Ce changement s’applique aux prochaines reclassifications, jamais aux écritures déjà passées.',
+    // Bandeau discret, distinct de l'avertissement ci-dessus (celui-ci porte sur le BARÈME
+    // lui-même, pas sur la portée d'un changement) — chantier supervision de la souffrance.
+    bandeauBaremeProvisoire:
+      'Barème provisoire — seuils et quotités de provision à valider par l’expert-comptable SFD.',
     provisoire: 'Provisoire',
     provisoireAide: 'Seuils et taux de démonstration — à valider par l’expert-comptable SFD.',
     chargement: 'Chargement des paliers…',
@@ -2108,6 +2118,8 @@ export const LIBELLES = {
     colonneTaux: 'Taux de provision',
     colonneEncours: 'Compte d’encours',
     colonneDotation: 'Compte de dotation',
+    colonneProvision: 'Compte de provision',
+    colonneReprise: 'Compte de reprise',
     aucun: '— non rattaché —',
     terminal: 'Terminal (irrécouvrable)',
 

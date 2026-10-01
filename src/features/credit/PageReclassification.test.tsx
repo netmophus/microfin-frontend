@@ -6,12 +6,19 @@ import { executerReclassement, previsualiserReclassement } from '@/features/cred
 import { PageReclassification } from '@/features/credit/PageReclassification'
 
 /**
- * Reclassification des crédits en souffrance (CR5c). Points durs : la PRÉVISUALISATION
- * obligatoire montre ce qui SERAIT reclassé (palier avant/après par dossier) sans rien écrire ;
- * un rattachement manquant est DIT avant le clic, pas découvert après ; la confirmation est
- * renforcée (de vraies écritures de provision) ; le rapport final détaille aussi palier
- * avant/après et signale les dossiers ignorés.
+ * Supervision PERMANENTE des crédits en souffrance (CR5c, chantier supervision lot 2). Points
+ * durs : l'état se charge SEUL au montage (pas de clic requis) ; le bouton d'exécution n'existe
+ * que pour credit.delinquency.executer, un rôle avec credit.delinquency.read SEUL accède à
+ * l'écran en lecture ; un rattachement manquant est DIT avant le clic, pas découvert après ; la
+ * confirmation est renforcée (de vraies écritures de provision) ; le rapport final détaille
+ * aussi palier avant/après et signale les dossiers ignorés.
  */
+
+const etat = vi.hoisted(() => ({ permissions: ['credit.delinquency.executer'] as string[] }))
+
+vi.mock('@/features/auth/useProfil', () => ({
+  useAPermission: (p: string) => etat.permissions.includes(p),
+}))
 
 vi.mock('@/features/credit/api', async () => {
   const reel = await vi.importActual<typeof import('@/features/credit/api')>(
@@ -30,10 +37,6 @@ function afficher() {
       <PageReclassification />
     </QueryClientProvider>,
   )
-}
-
-function lancerApercu() {
-  fireEvent.click(screen.getByRole('button', { name: 'Prévisualiser' }))
 }
 
 const apercuAvecDossier = {
@@ -58,13 +61,13 @@ const apercuAvecDossier = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  etat.permissions = ['credit.delinquency.executer']
 })
 
 describe('PageReclassification', () => {
-  it('prévisualise : montre le palier avant/après par dossier, sans rien reclasser', async () => {
+  it('charge l’état au montage, sans qu’il faille cliquer sur quoi que ce soit', async () => {
     apercuSimule.mockResolvedValue(apercuAvecDossier)
     afficher()
-    lancerApercu()
 
     expect(
       await screen.findByText(/1 dossier\(s\) seraient reclassés, sur 5 dossier\(s\)/),
@@ -72,7 +75,22 @@ describe('PageReclassification', () => {
     expect(screen.getByText('CR-2026-0000003')).toBeVisible()
     expect(screen.getByText('Sain')).toBeVisible() // palier avant
     expect(screen.getByText('Souffrance (SOUFFRANCE)')).toBeVisible() // palier après
+    expect(apercuSimule).toHaveBeenCalledOnce()
     expect(executionSimulee).not.toHaveBeenCalled() // dry-run : rien exécuté
+  })
+
+  it('bouton d’exécution absent sans credit.delinquency.executer — un rôle en lecture seule accède à l’écran', async () => {
+    etat.permissions = ['credit.delinquency.read']
+    apercuSimule.mockResolvedValue(apercuAvecDossier)
+    afficher()
+
+    // L'écran charge et affiche la supervision normalement...
+    expect(
+      await screen.findByText(/1 dossier\(s\) seraient reclassés, sur 5 dossier\(s\)/),
+    ).toBeVisible()
+    expect(screen.getByText('CR-2026-0000003')).toBeVisible()
+    // ...mais sans le bouton qui déclenche l'exécution.
+    expect(screen.queryByRole('button', { name: 'Lancer la reclassification' })).toBeNull()
   })
 
   it('signale un rattachement manquant AVANT le clic, pas après coup', async () => {
@@ -81,14 +99,13 @@ describe('PageReclassification', () => {
       rattachements_manquants: 1,
       lignes: [
         {
-          ...apercuAvecDossier.lignes[0],
+          ...apercuAvecDossier.lignes[0]!,
           rattachement_manquant:
             'le palier « Souffrance » n’a pas de compte d’encours rattaché (paramétrage)',
         },
       ],
     })
     afficher()
-    lancerApercu()
 
     expect(
       await screen.findByText(/1 dossier\(s\) échoueraient faute de compte rattaché/),
@@ -117,7 +134,6 @@ describe('PageReclassification', () => {
       ],
     })
     afficher()
-    lancerApercu()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Lancer la reclassification' }))
     // Confirmation renforcée : on énonce qu'on va poser de vraies écritures.
@@ -141,7 +157,6 @@ describe('PageReclassification', () => {
       lignes: [],
     })
     afficher()
-    lancerApercu()
     fireEvent.click(await screen.findByRole('button', { name: 'Lancer la reclassification' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Lancer la reclassification' }))
 
@@ -159,11 +174,27 @@ describe('PageReclassification', () => {
       lignes: [],
     })
     afficher()
-    lancerApercu()
 
     expect(
       await screen.findByText(/tous les crédits décaissés sont dans le bon palier/),
     ).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Lancer la reclassification' })).toBeNull()
+  })
+
+  it('chargement de la supervision en échec : message clair et bouton Réessayer', async () => {
+    apercuSimule.mockRejectedValue(new Error('échec réseau'))
+    afficher()
+
+    expect(
+      await screen.findByText('Impossible de charger la supervision de la souffrance.'),
+    ).toBeVisible()
+    const reessayer = screen.getByRole('button', { name: 'Réessayer' })
+
+    apercuSimule.mockResolvedValue(apercuAvecDossier)
+    fireEvent.click(reessayer)
+
+    expect(
+      await screen.findByText(/1 dossier\(s\) seraient reclassés, sur 5 dossier\(s\)/),
+    ).toBeVisible()
   })
 })

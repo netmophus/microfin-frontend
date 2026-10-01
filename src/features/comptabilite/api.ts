@@ -506,6 +506,10 @@ export interface PalierSouffrance {
   taux_provision_bp: number
   compte_encours: CompteRattachement | null
   compte_dotation: CompteRattachement | null
+  // Bilan (contra-actif) qui porte la provision accumulée / produit de reprise — un palier à
+  // taux 0 (ex. retard simple) n'en a besoin d'aucun, voir reclassification.py.
+  compte_provision: CompteRattachement | null
+  compte_reprise: CompteRattachement | null
   is_terminal: boolean
   is_provisional: boolean
 }
@@ -517,6 +521,8 @@ export interface EcriturePalier {
   taux_provision_bp: number
   compte_encours: string | null
   compte_dotation: string | null
+  compte_provision: string | null
+  compte_reprise: string | null
   is_terminal: boolean
   motif: string
 }
