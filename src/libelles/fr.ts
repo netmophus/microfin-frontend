@@ -200,6 +200,7 @@ export const LIBELLES = {
       grandLivre: 'Grand livre',
       balance: 'Balance',
       ecrituresOD: 'Écritures diverses (OD)',
+      exercicesComptables: 'Exercices comptables',
       comptaAnalytique: 'Comptabilité analytique',
       tresorerieImmo: 'Trésorerie et Immobilisations',
       reportingBceao: 'Reporting BCEAO',
@@ -2219,6 +2220,70 @@ export const LIBELLES = {
     pagination: 'Page {page} sur {total}',
     pageSuivante: 'Page suivante',
     pagePrecedente: 'Page précédente',
+  },
+
+  exercicesComptables: {
+    titre: 'Exercices comptables',
+    sousTitre:
+      'Clôture technique d’un exercice : solde les comptes de charges et de produits vers le compte de résultat en instance d’approbation (591). L’affectation définitive du résultat, après approbation, est un chantier séparé, pas encore disponible.',
+    chargement: 'Chargement des exercices…',
+    erreur: 'Impossible de charger les exercices. Réessayez dans un instant.',
+    reessayer: 'Réessayer',
+    listeVide: 'Aucun exercice n’a encore été ouvert.',
+    interdit: 'Vous n’avez pas la permission de gérer les exercices comptables.',
+
+    colCode: 'Exercice',
+    colLibelle: 'Libellé',
+    colPeriode: 'Période',
+    colStatut: 'Statut',
+    statutOuvert: 'Ouvert',
+    statutClos: 'Clos',
+
+    cloturer: 'Clôturer',
+    retour: 'Retour à la liste',
+
+    // {code} injecté.
+    apercuTitre: 'Aperçu de la clôture — {code}',
+    apercuChargement: 'Calcul du résultat…',
+    apercuErreur: 'Impossible de calculer l’aperçu de clôture.',
+
+    // {montant} déjà formaté.
+    resultatExcedent: 'Excédent : {montant}',
+    resultatDeficit: 'Déficit : {montant}',
+    resultatNul: 'Résultat nul — aucun excédent ni déficit sur cet exercice.',
+    // {compte} injecté (numéro du compte 591).
+    compteResultatMention:
+      'Porté au compte {compte} (résultat en instance d’approbation), en attente d’approbation.',
+
+    detailTitre: 'Détail par compte',
+    colDetailCompte: 'Compte',
+    colDetailLibelle: 'Libellé',
+    colDetailDebit: 'Débit',
+    colDetailCredit: 'Crédit',
+    colDetailRegularisation: 'Régularisation',
+    sensDebit: 'Débit',
+    sensCredit: 'Crédit',
+
+    brouillonsTitre: 'Brouillons en attente',
+    // {n} injecté.
+    brouillonsTexte:
+      '{n} brouillon(s) empêchent la clôture. Validez-les ou supprimez-les avant de continuer.',
+    colBrouillonJournal: 'Journal',
+    colBrouillonDate: 'Date',
+    colBrouillonDescription: 'Description',
+
+    rienACloturer: 'Aucun mouvement de charges ou de produits sur cet exercice : rien à clôturer.',
+
+    // {code} injecté.
+    confirmerCloture:
+      'Clôturer l’exercice {code} ? Cette action est DÉFINITIVE : aucune réouverture n’est possible. Une erreur constatée après clôture se corrige par contre-passation dans l’exercice ouvert.',
+    confirmerClotureBouton: 'Confirmer la clôture',
+    annuler: 'Annuler',
+    clotureEnCours: 'Clôture en cours…',
+    // {code} et {numero} injectés.
+    clotureReussie: 'Exercice {code} clôturé — pièce {numero}.',
+
+    echec: 'L’opération a échoué. Réessayez.',
   },
 
   tiersKyc: {

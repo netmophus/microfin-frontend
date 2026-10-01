@@ -637,3 +637,69 @@ export async function contrePasserEcritureOD(id: string): Promise<EcritureODDeta
 export async function supprimerEcritureOD(id: string): Promise<void> {
   await api.delete(`/comptabilite/ecritures/${id}`)
 }
+
+// --- Clôture d'exercice (chantier P1, lot b1) -----------------------------------------------
+//
+// Clôture TECHNIQUE uniquement : solde les comptes de charges/produits (classe 6/7) vers 591
+// (« Excédent ou déficit en instance d'approbation »). L'affectation du résultat (591 -> 592/58,
+// après approbation de l'assemblée générale) est un lot SÉPARÉ (b2), pas encore fait.
+
+export interface ExerciceResume {
+  id: string
+  code: string
+  label: string
+  date_debut: string
+  date_fin: string
+  status: 'ouvert' | 'clos'
+}
+
+export interface LigneResultatCloture {
+  account_number: string
+  name: string
+  account_class: number
+  total_debit: number
+  total_credit: number
+  side: 'D' | 'C'
+  amount: number
+}
+
+export interface BrouillonBloquant {
+  entry_id: string
+  journal_code: string
+  entry_date: string
+  description: string
+}
+
+export interface ApercuCloture {
+  exercice: ExerciceResume
+  resultat: number
+  compte_resultat: string
+  lignes: LigneResultatCloture[]
+  brouillons_bloquants: BrouillonBloquant[]
+  cloturable: boolean
+}
+
+export interface ClotureExerciceResultat {
+  exercice: ExerciceResume
+  entry_number: string
+  resultat: number
+}
+
+export async function listerExercices(): Promise<ExerciceResume[]> {
+  const { data } = await api.get<ExerciceResume[]>('/comptabilite/exercices')
+  return data
+}
+
+export async function previsualiserCloture(exerciceId: string): Promise<ApercuCloture> {
+  const { data } = await api.get<ApercuCloture>(
+    `/comptabilite/exercices/${exerciceId}/previsualisation-cloture`,
+  )
+  return data
+}
+
+export async function cloturerExercice(exerciceId: string): Promise<ClotureExerciceResultat> {
+  const { data } = await api.post<ClotureExerciceResultat>(
+    `/comptabilite/exercices/${exerciceId}/cloture`,
+  )
+  return data
+}

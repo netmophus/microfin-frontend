@@ -17,6 +17,7 @@ import { PageSessionsManquantes } from '@/features/caisse/PageSessionsManquantes
 import { PageTransfertsCaisse } from '@/features/caisse/PageTransfertsCaisse'
 import { PageBalance } from '@/features/comptabilite/PageBalance'
 import { PageEcrituresOD } from '@/features/comptabilite/PageEcrituresOD'
+import { PageExercices } from '@/features/comptabilite/PageExercices'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
 import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
 import { PageParametresCaisse } from '@/features/comptabilite/PageParametresCaisse'
@@ -349,6 +350,14 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.ecriture.read">
                     <PageEcrituresOD />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/exercices"
+                element={
+                  <RoutePermission permission="compta.exercice.manage">
+                    <PageExercices />
                   </RoutePermission>
                 }
               />

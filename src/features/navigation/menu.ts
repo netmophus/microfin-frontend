@@ -247,6 +247,15 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/ecritures-od',
         permission: 'compta.ecriture.read',
       },
+      // Clôture d'exercice (chantier P1, lot b1) : consulter la liste ou l'aperçu de clôture
+      // est déjà un acte de gestion sur ce périmètre, pas une simple lecture — une seule
+      // permission pour tout l'écran, à la différence de l'OD (lecture/post/reverse séparés).
+      {
+        etat: 'actif',
+        libelle: M.entrees.exercicesComptables,
+        chemin: '/comptabilite/exercices',
+        permission: 'compta.exercice.manage',
+      },
       aVenir(M.entrees.comptaAnalytique),
       // Rapprochement épargne : vue de contrôle réservée à l'audit/direction/comptable.
       {
