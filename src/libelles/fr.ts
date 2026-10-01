@@ -957,6 +957,7 @@ export const LIBELLES = {
       approuve: 'Approuvée',
       refuse: 'Refusée',
       decaisse: 'Décaissée',
+      solde: 'Soldée par anticipation',
     } as Record<string, string>,
 
     // --- Page liste (réseau, filtrable) ---
@@ -1069,6 +1070,31 @@ export const LIBELLES = {
     apercuDocDossier: 'Dossier',
     apercuSignatureClient: 'Signature du client',
     apercuSignatureDate: 'Date',
+
+    // --- Solde anticipé (clôture totale avant terme) ---
+    soldeAnticipeAction: 'Solder par anticipation',
+    soldeAnticipeApercuChargement: 'Calcul du montant à régler…',
+    soldeAnticipeApercuErreur: 'Impossible de calculer le solde anticipé.',
+    soldeAnticipeTitre: 'Solde anticipé — montant à régler aujourd’hui',
+    soldeAnticipeCapitalRestant: 'Capital restant dû',
+    soldeAnticipeInteretsCourus: 'Intérêts courus',
+    soldeAnticipeTotal: 'Total à régler',
+    // {jours}/{date} — {date} déjà formatée. Le point de départ du prorata (dernière échéance
+    // payée, ou décaissement si aucune ne l'est encore).
+    soldeAnticipeJours: (jours: number, date: string) =>
+      jours <= 1
+        ? `1 jour d’intérêts courus depuis le ${date}.`
+        : `${jours} jours d’intérêts courus depuis le ${date}.`,
+    soldeAnticipeIrreversible:
+      'Cette action est irréversible : elle clôture définitivement le dossier de crédit.',
+    soldeAnticipeConfirmer: 'Confirmer le solde anticipé',
+    soldeAnticipeEnCours: 'Solde en cours…',
+    soldeAnticipeEchec: 'Le solde anticipé a échoué. Réessayez.',
+    // {date} déjà formatée — bandeau persistant, visible à chaque revisite du dossier.
+    soldeAnticipeBandeau: (date: string) => `Soldé par anticipation le ${date}.`,
+    // Sous une échéance FUTURE non touchée, une fois le dossier soldé par anticipation — jamais
+    // masquée (le plan reste un témoin historique), seulement neutralisée (grisée + ce texte).
+    echeanceNonDue: 'Non due — soldé par anticipation',
   },
 
   interets: {

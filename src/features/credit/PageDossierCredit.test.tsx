@@ -8,8 +8,10 @@ import {
   decaisserDemandeCredit,
   deciderDemandeCredit,
   lireApercuEcheancierCredit,
+  lireApercuSoldeAnticipeCredit,
   lireDemandeCredit,
   lireEcheancierCredit,
+  solderParAnticipationCredit,
   type DemandeCreditDetail,
 } from '@/features/credit/api'
 import { PageDossierCredit } from '@/features/credit/PageDossierCredit'
@@ -44,6 +46,8 @@ vi.mock('@/features/credit/api', async () => {
     decaisserDemandeCredit: vi.fn(),
     lireEcheancierCredit: vi.fn(),
     lireApercuEcheancierCredit: vi.fn(),
+    lireApercuSoldeAnticipeCredit: vi.fn(),
+    solderParAnticipationCredit: vi.fn(),
   }
 })
 
@@ -59,6 +63,8 @@ const deciderSimule = vi.mocked(deciderDemandeCredit)
 const decaisserSimule = vi.mocked(decaisserDemandeCredit)
 const echeancierSimule = vi.mocked(lireEcheancierCredit)
 const apercuSimule = vi.mocked(lireApercuEcheancierCredit)
+const apercuSoldeSimule = vi.mocked(lireApercuSoldeAnticipeCredit)
+const soldeSimule = vi.mocked(solderParAnticipationCredit)
 const comptesSimules = vi.mocked(listerComptesMembre)
 const ID = 'd1'
 
@@ -80,6 +86,7 @@ function unDossier(o: Partial<DemandeCreditDetail> = {}): DemandeCreditDetail {
     montant_decide: null,
     decided_at: null,
     motif_decision: null,
+    solde_at: null,
     ...o,
   }
 }
@@ -578,5 +585,134 @@ describe('PageDossierCredit', () => {
     expect(screen.getByText('Signature du client')).toBeInTheDocument()
     expect(screen.getAllByText('Date').length).toBeGreaterThan(0)
     expect(screen.getByText('Aperçu de l’échéancier de crédit')).toBeInTheDocument()
+  })
+
+  // --- Solde anticipé (clôture totale avant terme, lot D) ---------------------------------
+
+  function unEcheancierDecaisse() {
+    return [
+      {
+        numero: 1,
+        due_date: '2026-09-04',
+        capital: 25000,
+        interets: 3000,
+        total: 28000,
+        capital_restant_du: 275000,
+        status: 'a_echoir' as const,
+        montant_paye: 0,
+        solde_du: 28000,
+      },
+      {
+        numero: 2,
+        due_date: '2026-10-04',
+        capital: 25000,
+        interets: 2750,
+        total: 27750,
+        capital_restant_du: 250000,
+        status: 'a_echoir' as const,
+        montant_paye: 0,
+        solde_du: 27750,
+      },
+    ]
+  }
+
+  it('bouton « Solder par anticipation » absent sans credit.remboursement.create', async () => {
+    lireSimule.mockResolvedValue(unDossier({ status: 'decaisse' }))
+    echeancierSimule.mockResolvedValue(unEcheancierDecaisse())
+    afficher()
+
+    await screen.findByText('Échéancier')
+    expect(screen.queryByRole('button', { name: 'Solder par anticipation' })).toBeNull()
+  })
+
+  it('bouton « Solder par anticipation » absent si le crédit n’est pas décaissé', async () => {
+    etat.permissions = ['credit.remboursement.create']
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
+    afficher()
+
+    await screen.findByText('Approuvée pour 400 000 F.')
+    expect(screen.queryByRole('button', { name: 'Solder par anticipation' })).toBeNull()
+  })
+
+  it('l’aperçu affiche le capital restant, les intérêts courus et le total avant toute confirmation', async () => {
+    etat.permissions = ['credit.remboursement.create']
+    lireSimule.mockResolvedValue(unDossier({ status: 'decaisse' }))
+    echeancierSimule.mockResolvedValue(unEcheancierDecaisse())
+    apercuSoldeSimule.mockResolvedValue({
+      capital_restant: 275000,
+      interets_courus: 1500,
+      montant_total: 276500,
+      date_reference_interets: '2026-09-04',
+      jours_courus: 15,
+    })
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Solder par anticipation' }))
+
+    expect(await screen.findByText('275 000 F')).toBeVisible()
+    expect(screen.getByText('1 500 F')).toBeVisible()
+    expect(screen.getByText('276 500 F')).toBeVisible()
+    // Rien n'est parti tant que la confirmation n'a pas été explicitement donnée.
+    expect(soldeSimule).not.toHaveBeenCalled()
+    expect(screen.getByText(/irréversible/)).toBeVisible()
+  })
+
+  it('aperçu non soldable : motif clair affiché, aucune confirmation proposée', async () => {
+    etat.permissions = ['credit.remboursement.create']
+    lireSimule.mockResolvedValue(unDossier({ status: 'decaisse' }))
+    echeancierSimule.mockResolvedValue(unEcheancierDecaisse())
+    apercuSoldeSimule.mockRejectedValue(
+      new AxiosError('rejet', undefined, undefined, undefined, {
+        status: 422,
+        data: {
+          detail:
+            'L’échéance #1 de ce crédit porte déjà un versement partiel : le solde anticipé n’est pas possible en l’état.',
+        },
+      } as never),
+    )
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Solder par anticipation' }))
+
+    expect(
+      await screen.findByText(
+        'L’échéance #1 de ce crédit porte déjà un versement partiel : le solde anticipé n’est pas possible en l’état.',
+      ),
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Confirmer le solde anticipé' })).toBeNull()
+  })
+
+  it('après confirmation, le dossier est rafraîchi : bandeau affiché et échéances futures grisées', async () => {
+    etat.permissions = ['credit.remboursement.create']
+    lireSimule.mockResolvedValueOnce(unDossier({ status: 'decaisse' }))
+    echeancierSimule.mockResolvedValue(unEcheancierDecaisse())
+    apercuSoldeSimule.mockResolvedValue({
+      capital_restant: 275000,
+      interets_courus: 1500,
+      montant_total: 276500,
+      date_reference_interets: '2026-09-04',
+      jours_courus: 15,
+    })
+    soldeSimule.mockResolvedValue({
+      capital_regle: 275000,
+      interets_courus: 1500,
+      montant_total: 276500,
+      jours_courus: 15,
+      solde_at: '2026-09-19T10:00:00Z',
+      status: 'solde',
+      entry_number: 'CA-2026-000123',
+    })
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Solder par anticipation' }))
+    await screen.findByText('276 500 F')
+
+    // Le dossier rechargé après l'action revient déjà soldé (comme le ferait le serveur).
+    lireSimule.mockResolvedValue(unDossier({ status: 'solde', solde_at: '2026-09-19T10:00:00Z' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le solde anticipé' }))
+
+    await waitFor(() => expect(soldeSimule).toHaveBeenCalledWith(ID))
+    expect(await screen.findByText('Soldé par anticipation le 19/09/2026.')).toBeVisible()
+    expect(screen.getAllByText('Non due — soldé par anticipation').length).toBe(2)
   })
 })

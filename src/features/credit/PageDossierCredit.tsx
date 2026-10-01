@@ -14,9 +14,11 @@ import {
   decaisserDemandeCredit,
   deciderDemandeCredit,
   lireApercuEcheancierCredit,
+  lireApercuSoldeAnticipeCredit,
   lireDemandeCredit,
   lireEcheancierCredit,
   messageRefusCredit,
+  solderParAnticipationCredit,
   type DemandeCreditDetail,
   type EcheanceApercuCredit,
   type EcheanceCredit,
@@ -137,7 +139,13 @@ export function PageDossierCredit() {
         </>
       )}
 
-      {d.status === 'decaisse' && <TableauEcheancier applicationId={d.id} />}
+      {d.status === 'solde' && d.solde_at && <BandeauSoldeAnticipe dateIso={d.solde_at} />}
+
+      {(d.status === 'decaisse' || d.status === 'solde') && (
+        <TableauEcheancier applicationId={d.id} neutraliserFutures={d.status === 'solde'} />
+      )}
+
+      {d.status === 'decaisse' && <PanneauSoldeAnticipe dossier={d} onSolde={rafraichir} />}
     </div>
   )
 }
@@ -418,13 +426,19 @@ function PanneauDecaissement({
   )
 }
 
-/** Table partagée par l'échéancier réel (avec statut) et l'aperçu (sans — rien n'est suivi). */
+/** Table partagée par l'échéancier réel (avec statut) et l'aperçu (sans — rien n'est suivi).
+ * `neutraliserSiAEchoir` : une fois le dossier soldé par anticipation, les échéances encore
+ * 'a_echoir' ne sont ni supprimées ni masquées (le plan reste un témoin historique, arbitrage
+ * acté) mais visiblement neutralisées — grisées ET un texte explicite, jamais la couleur seule
+ * (règle d'accessibilité du projet). */
 function TableEcheances({
   lignes,
   avecStatut,
+  neutraliserSiAEchoir = false,
 }: {
   lignes: (EcheanceCredit | EcheanceApercuCredit)[]
   avecStatut: boolean
+  neutraliserSiAEchoir?: boolean
 }) {
   return (
     <div className="overflow-x-auto rounded-md border">
@@ -443,32 +457,46 @@ function TableEcheances({
           </tr>
         </thead>
         <tbody>
-          {lignes.map((e) => (
-            <tr key={e.numero} className="border-b last:border-0">
-              <td className="px-3 py-2 tabular-nums">{e.numero}</td>
-              <td className="px-3 py-2">{new Date(e.due_date).toLocaleDateString('fr-FR')}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.capital)}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.interets)}</td>
-              <td className="px-3 py-2 text-right font-semibold tabular-nums">
-                {formatFcfa(e.total)}
-                {/* CR5b : le solde restant, seulement si un versement partiel a déjà eu lieu —
-                    sinon `total` seul suffit déjà à dire ce qui est dû. */}
-                {'status' in e && e.status === 'partiellement_paye' && (
-                  <span className="block text-xs font-normal text-muted-foreground">
-                    {fmt(C.soldeRestant, { montant: formatFcfa(e.solde_du) })}
-                  </span>
-                )}
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                {formatFcfa(e.capital_restant_du)}
-              </td>
-              {avecStatut && 'status' in e && (
-                <td className="px-3 py-2">
-                  <BadgeStatutEcheance statut={e.status} />
+          {lignes.map((e) => {
+            const nonDue =
+              neutraliserSiAEchoir && 'status' in e && e.status === 'a_echoir'
+            return (
+              <tr
+                key={e.numero}
+                className={
+                  nonDue ? 'border-b opacity-50 last:border-0' : 'border-b last:border-0'
+                }
+              >
+                <td className="px-3 py-2 tabular-nums">{e.numero}</td>
+                <td className="px-3 py-2">{new Date(e.due_date).toLocaleDateString('fr-FR')}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.capital)}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.interets)}</td>
+                <td className="px-3 py-2 text-right font-semibold tabular-nums">
+                  {formatFcfa(e.total)}
+                  {/* CR5b : le solde restant, seulement si un versement partiel a déjà eu lieu —
+                      sinon `total` seul suffit déjà à dire ce qui est dû. */}
+                  {'status' in e && e.status === 'partiellement_paye' && (
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {fmt(C.soldeRestant, { montant: formatFcfa(e.solde_du) })}
+                    </span>
+                  )}
+                  {nonDue && (
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {C.echeanceNonDue}
+                    </span>
+                  )}
                 </td>
-              )}
-            </tr>
-          ))}
+                <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                  {formatFcfa(e.capital_restant_du)}
+                </td>
+                {avecStatut && 'status' in e && (
+                  <td className="px-3 py-2">
+                    <BadgeStatutEcheance statut={e.status} />
+                  </td>
+                )}
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
@@ -476,8 +504,15 @@ function TableEcheances({
 }
 
 /** L'échéancier persisté — reste visible à CHAQUE revisite du dossier, pas seulement juste
- * après le décaissement (nouvelle requête, indépendante de la mutation). */
-function TableauEcheancier({ applicationId }: { applicationId: string }) {
+ * après le décaissement (nouvelle requête, indépendante de la mutation).
+ * `neutraliserFutures` (dossier soldé par anticipation) : voir TableEcheances. */
+function TableauEcheancier({
+  applicationId,
+  neutraliserFutures,
+}: {
+  applicationId: string
+  neutraliserFutures: boolean
+}) {
   const requete = useQuery({
     queryKey: ['credit', 'echeancier', applicationId],
     queryFn: () => lireEcheancierCredit(applicationId),
@@ -508,7 +543,11 @@ function TableauEcheancier({ applicationId }: { applicationId: string }) {
           </span>
         )}
       </div>
-      <TableEcheances lignes={requete.data} avecStatut />
+      <TableEcheances
+        lignes={requete.data}
+        avecStatut
+        neutraliserSiAEchoir={neutraliserFutures}
+      />
     </section>
   )
 }
@@ -606,6 +645,127 @@ function ApercuEcheancier({ dossier }: { dossier: DemandeCreditDetail }) {
             <div className="mt-10 border-t border-foreground" />
           </div>
         </div>
+      </div>
+    </section>
+  )
+}
+
+/** Bandeau persistant (visible à chaque revisite, pas seulement juste après l'action) disant
+ * QUAND le dossier a été soldé par anticipation — la seule trace de cet évènement en dehors de
+ * l'écriture comptable et de l'audit, puisque l'échéancier n'est jamais réécrit. */
+function BandeauSoldeAnticipe({ dateIso }: { dateIso: string }) {
+  return (
+    <div
+      role="status"
+      className="rounded-md border border-success/50 bg-success-subtle/40 px-3 py-2 text-sm"
+    >
+      <p className="font-medium">
+        {C.soldeAnticipeBandeau(new Date(dateIso).toLocaleDateString('fr-FR'))}
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Solde par anticipation (clôture totale avant terme), réservé à `credit.remboursement.create`
+ * (même permission que le remboursement normal — solder, c'est encaisser). AVANT toute action :
+ * l'aperçu (calcul pur) est TOUJOURS affiché en premier, montant exact du jour, pour que
+ * l'utilisateur confirme en connaissance de cause — jamais un clic aveugle. Une erreur d'aperçu
+ * (échéance en cours déjà partiellement payée, etc.) est affichée telle quelle, SANS proposer de
+ * confirmer (pas de bouton qui échouerait au clic).
+ */
+function PanneauSoldeAnticipe({
+  dossier,
+  onSolde,
+}: {
+  dossier: DemandeCreditDetail
+  onSolde: () => void
+}) {
+  const peutSolder = useAPermission('credit.remboursement.create')
+  const [declenche, setDeclenche] = useState(false)
+
+  const apercu = useQuery({
+    queryKey: ['credit', 'solde-anticipe-apercu', dossier.id],
+    queryFn: () => lireApercuSoldeAnticipeCredit(dossier.id),
+    enabled: declenche,
+    retry: false,
+  })
+
+  const mutation = useMutation({
+    mutationFn: () => solderParAnticipationCredit(dossier.id),
+    onSuccess: onSolde,
+  })
+
+  if (!peutSolder) return null
+
+  if (!declenche) {
+    return (
+      <section className="rounded-lg border p-4">
+        <Button size="sm" variant="outline" onClick={() => setDeclenche(true)}>
+          {C.soldeAnticipeAction}
+        </Button>
+      </section>
+    )
+  }
+
+  if (apercu.isPending) {
+    return <p className="py-4 text-sm text-muted-foreground">{C.soldeAnticipeApercuChargement}</p>
+  }
+
+  if (apercu.isError) {
+    return (
+      <section className="space-y-3 rounded-lg border p-4">
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {messageRefusCredit(apercu.error, C.soldeAnticipeApercuErreur)}
+          </AlertDescription>
+        </Alert>
+        <Button size="sm" variant="ghost" onClick={() => setDeclenche(false)}>
+          {C.annuler}
+        </Button>
+      </section>
+    )
+  }
+
+  const a = apercu.data
+
+  return (
+    <section className="space-y-3 rounded-lg border border-warning/40 bg-warning-subtle/40 p-4">
+      <h2 className="text-sm font-semibold">{C.soldeAnticipeTitre}</h2>
+
+      <dl className="divide-y">
+        <Ligne label={C.soldeAnticipeCapitalRestant} valeur={formatFcfa(a.capital_restant)} />
+        <Ligne label={C.soldeAnticipeInteretsCourus} valeur={formatFcfa(a.interets_courus)} />
+        <Ligne label={C.soldeAnticipeTotal} valeur={formatFcfa(a.montant_total)} />
+      </dl>
+      <p className="text-xs text-muted-foreground">
+        {C.soldeAnticipeJours(
+          a.jours_courus,
+          new Date(a.date_reference_interets).toLocaleDateString('fr-FR'),
+        )}
+      </p>
+      <p className="text-sm font-medium">{C.soldeAnticipeIrreversible}</p>
+
+      {mutation.isError && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {messageRefusCredit(mutation.error, C.soldeAnticipeEchec)}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex gap-2">
+        <Button size="sm" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+          {mutation.isPending ? C.soldeAnticipeEnCours : C.soldeAnticipeConfirmer}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setDeclenche(false)}
+          disabled={mutation.isPending}
+        >
+          {C.annuler}
+        </Button>
       </div>
     </section>
   )

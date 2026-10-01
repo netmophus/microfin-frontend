@@ -32,7 +32,7 @@ export interface DemandeCredit {
   product_name: string
   montant_demande: number
   duree_echeances: number
-  status: string // 'en_instruction' | 'approuve' | 'refuse' | 'decaisse'
+  status: string // 'en_instruction' | 'approuve' | 'refuse' | 'decaisse' | 'solde'
   created_at: string
 }
 
@@ -41,6 +41,9 @@ export interface DemandeCreditDetail extends DemandeCredit {
   montant_decide: number | null
   decided_at: string | null
   motif_decision: string | null
+  // Solde anticipé (lot D) : renseigné seulement si status='solde' — l'échéancier ne le dit
+  // pas (échéances futures jamais réécrites), c'est la SEULE source de cette date à l'écran.
+  solde_at: string | null
 }
 
 export interface DemandeCreditDecaissee extends DemandeCreditDetail {
@@ -223,6 +226,52 @@ export async function rembourserDemandeCredit(
   const { data } = await api.post<RemboursementRecu>(`/credit/demandes/${id}/remboursement`, {
     montant,
   })
+  return data
+}
+
+// --- Solde anticipé (clôture totale avant terme, lot C/D) ---------------------------------
+// TOTAL seulement (pas de partiel anticipé) : capital restant dû + intérêts courus au jour du
+// calcul, AUCUNE pénalité. Les échéances FUTURES ne sont jamais réécrites ni supprimées — le
+// plan reste un témoin historique, à neutraliser visuellement seulement (voir PageDossierCredit).
+
+export interface ApercuSoldeAnticipeCredit {
+  capital_restant: number
+  interets_courus: number
+  montant_total: number
+  date_reference_interets: string
+  jours_courus: number
+}
+
+export interface SoldeAnticipeCreditRecu {
+  capital_regle: number
+  interets_courus: number
+  montant_total: number
+  jours_courus: number
+  solde_at: string
+  status: string
+  entry_number: string
+}
+
+/**
+ * Aperçu PUR (calcul, rien n'est écrit) de ce que coûterait un solde anticipé AUJOURD'HUI —
+ * à présenter AVANT de proposer la confirmation. Une erreur (422) dit pourquoi le crédit n'est
+ * pas dans un état soldable (message métier, affiché tel quel).
+ */
+export async function lireApercuSoldeAnticipeCredit(
+  id: string,
+): Promise<ApercuSoldeAnticipeCredit> {
+  const { data } = await api.get<ApercuSoldeAnticipeCredit>(
+    `/credit/demandes/${id}/solde-anticipe/apercu`,
+  )
+  return data
+}
+
+/**
+ * Exécute le solde anticipé : le serveur RECALCULE toujours à sa propre date (aucun montant
+ * envoyé ici) — les montants ne coïncident avec l'aperçu que s'il a été calculé le même jour.
+ */
+export async function solderParAnticipationCredit(id: string): Promise<SoldeAnticipeCreditRecu> {
+  const { data } = await api.post<SoldeAnticipeCreditRecu>(`/credit/demandes/${id}/solde-anticipe`)
   return data
 }
 

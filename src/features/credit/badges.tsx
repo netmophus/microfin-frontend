@@ -4,13 +4,15 @@ import { LIBELLES } from '@/libelles/fr'
 /**
  * Badge de statut d'un dossier de crédit. En instruction = en attente (warning), approuvée =
  * succès, refusée = danger, décaissée = brand (plus loin dans le cycle, pas un aboutissement
- * neutre — de l'argent est sorti).
+ * neutre — de l'argent est sorti), soldée (normalement ou par anticipation) = succès, un
+ * aboutissement positif du dossier.
  */
 const TON_STATUT_DOSSIER: Record<string, BadgeTon> = {
   en_instruction: 'warning',
   approuve: 'success',
   refuse: 'danger',
   decaisse: 'brand',
+  solde: 'success',
 }
 
 export function BadgeStatutDossier({ statut }: { statut: string }) {
