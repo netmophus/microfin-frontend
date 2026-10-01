@@ -548,3 +548,92 @@ export async function modifierPalierSouffrance(
 export async function retirerPalierSouffrance(id: string, motif: string): Promise<void> {
   await api.post(`/credit/paliers-souffrance/${id}/retirer`, { motif })
 }
+
+// --- Saisie manuelle d'écriture (OD), chantier P1 lot 1 ------------------------------------
+//
+// Journal OD (Opérations diverses) UNIQUEMENT — jamais un champ envoyé par cet écran, c'est le
+// serveur qui l'impose structurellement (voir comptabilite/ecritures_od.py côté backend).
+// `account_number`, pas un UUID : SelecteurCompte (filtre 'saisie') ne connaît que des numéros.
+
+export interface LigneSaisieOD {
+  account_number: string
+  side: 'D' | 'C'
+  amount: number
+  label?: string | null
+}
+
+export interface CreationEcritureOD {
+  entry_date: string
+  description: string
+  lignes: LigneSaisieOD[]
+}
+
+export interface LigneEcritureOD {
+  account_number: string
+  name: string
+  side: 'D' | 'C'
+  amount: number
+  label: string | null
+}
+
+// `equilibree`/`nb_lignes` évitent à l'écran de recalculer ce que le serveur sait déjà — pour
+// griser « Valider » (nb_lignes < 2 OU déséquilibrée) sans requête supplémentaire.
+export interface EcritureODResume {
+  id: string
+  entry_number: string | null
+  entry_date: string
+  description: string
+  status: 'brouillon' | 'validee'
+  nb_lignes: number
+  total_debit: number
+  total_credit: number
+  equilibree: boolean
+  est_contre_passation: boolean
+  deja_contre_passee: boolean
+}
+
+export interface EcritureODDetail extends EcritureODResume {
+  lignes: LigneEcritureOD[]
+}
+
+export interface PageEcrituresOD {
+  lignes: EcritureODResume[]
+  total: number
+  page: number
+  taille: number
+}
+
+export const TAILLE_PAGE_ECRITURES_OD = 50
+
+export async function listerEcrituresOD(page = 1): Promise<PageEcrituresOD> {
+  const { data } = await api.get<PageEcrituresOD>('/comptabilite/ecritures', {
+    params: { page, taille: TAILLE_PAGE_ECRITURES_OD },
+  })
+  return data
+}
+
+export async function lireEcritureOD(id: string): Promise<EcritureODDetail> {
+  const { data } = await api.get<EcritureODDetail>(`/comptabilite/ecritures/${id}`)
+  return data
+}
+
+export async function creerEcritureOD(corps: CreationEcritureOD): Promise<EcritureODDetail> {
+  const { data } = await api.post<EcritureODDetail>('/comptabilite/ecritures', corps)
+  return data
+}
+
+export async function validerEcritureOD(id: string): Promise<EcritureODDetail> {
+  const { data } = await api.post<EcritureODDetail>(`/comptabilite/ecritures/${id}/validation`)
+  return data
+}
+
+export async function contrePasserEcritureOD(id: string): Promise<EcritureODDetail> {
+  const { data } = await api.post<EcritureODDetail>(
+    `/comptabilite/ecritures/${id}/contre-passation`,
+  )
+  return data
+}
+
+export async function supprimerEcritureOD(id: string): Promise<void> {
+  await api.delete(`/comptabilite/ecritures/${id}`)
+}

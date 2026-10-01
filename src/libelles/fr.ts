@@ -199,6 +199,7 @@ export const LIBELLES = {
       recouvrement: 'Recouvrement',
       grandLivre: 'Grand livre',
       balance: 'Balance',
+      ecrituresOD: 'Écritures diverses (OD)',
       comptaAnalytique: 'Comptabilité analytique',
       tresorerieImmo: 'Trésorerie et Immobilisations',
       reportingBceao: 'Reporting BCEAO',
@@ -2144,6 +2145,80 @@ export const LIBELLES = {
     retraitEnCours: 'Retrait…',
     echec: 'L’enregistrement a échoué. Réessayez.',
     echecRetrait: 'Le retrait a échoué. Réessayez.',
+  },
+
+  ecrituresOD: {
+    titre: 'Écritures diverses (OD)',
+    sousTitre:
+      'Saisie manuelle d’écriture, réservée au journal des opérations diverses — les autres journaux (caisse, banque) restent alimentés par les modules métier.',
+    chargement: 'Chargement des écritures…',
+    erreur: 'Impossible de charger les écritures. Réessayez dans un instant.',
+    reessayer: 'Réessayer',
+    listeVide: 'Aucune écriture dans le journal OD pour l’instant.',
+    interdit: 'Vous n’avez pas la permission de consulter ces écritures.',
+
+    colDate: 'Date',
+    colNumero: 'N° de pièce',
+    colDescription: 'Description',
+    colDebit: 'Débit',
+    colCredit: 'Crédit',
+    colStatut: 'Statut',
+    brouillonSansNumero: '— brouillon —',
+    statutBrouillon: 'Brouillon',
+    statutValidee: 'Validée',
+    estContrePassation: 'Contre-passation',
+    dejaContrePassee: 'Contre-passée',
+
+    nouvelle: 'Nouvelle écriture OD',
+    nouvelleTitre: 'Nouvelle écriture (journal OD)',
+    champDescription: 'Description',
+    champDescriptionPlaceholder: 'Ex. Régularisation suite à rapprochement',
+    champDate: 'Date de la pièce',
+
+    colligneCompte: 'Compte',
+    colligneSens: 'Sens',
+    colligneMontant: 'Montant',
+    colligneLibelle: 'Libellé (facultatif)',
+    sensDebit: 'Débit',
+    sensCredit: 'Crédit',
+    ajouterLigne: 'Ajouter une ligne',
+    retirerLigne: 'Retirer la ligne',
+    // {n} injecté.
+    ligneNumero: 'Ligne {n}',
+
+    totalDebit: 'Total débit',
+    totalCredit: 'Total crédit',
+    equilibree: 'Équilibrée',
+    // {montant} déjà formaté (valeur absolue de l'écart).
+    desequilibre: 'Déséquilibrée — écart de {montant}',
+    moinsDeDeuxLignes: 'Au moins deux lignes sont nécessaires pour valider.',
+
+    enregistrerBrouillon: 'Enregistrer le brouillon',
+    enregistrementEnCours: 'Enregistrement…',
+    annuler: 'Annuler',
+
+    valider: 'Valider',
+    validationEnCours: 'Validation…',
+    confirmerValidation:
+      'Valider cette écriture ? Elle deviendra immuable et numérotée — seule une contre-passation pourra ensuite la corriger.',
+    supprimer: 'Supprimer',
+    confirmerSuppression: 'Supprimer ce brouillon ?',
+    suppressionEnCours: 'Suppression…',
+    contrePasser: 'Contre-passer',
+    contrePassationEnCours: 'Contre-passation…',
+    // {numero} injecté — le numéro de la pièce d'origine.
+    confirmerContrePassation:
+      'Contre-passer la pièce {numero} ? Une pièce inverse sera créée et validée ; la pièce d’origine reste intacte et visible.',
+    confirmerContrePassationTitre: 'Confirmer la contre-passation',
+
+    echec: 'L’opération a échoué. Réessayez.',
+    echecChargementDetail: 'Impossible de charger le détail de cette écriture.',
+    retour: 'Retour à la liste',
+
+    // {page} et {total} injectés.
+    pagination: 'Page {page} sur {total}',
+    pageSuivante: 'Page suivante',
+    pagePrecedente: 'Page précédente',
   },
 
   tiersKyc: {

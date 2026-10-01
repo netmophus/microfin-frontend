@@ -238,6 +238,15 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/balance',
         permission: 'compta.rapport.read',
       },
+      // Saisie manuelle d'écriture (OD, chantier P1 lot 1) : lecture ouverte à
+      // compta.ecriture.read — le brouillon/validation/contre-passation restent gardés à
+      // l'écran lui-même (compta.ecriture.post/.reverse), comme les autres écrans sensibles.
+      {
+        etat: 'actif',
+        libelle: M.entrees.ecrituresOD,
+        chemin: '/comptabilite/ecritures-od',
+        permission: 'compta.ecriture.read',
+      },
       aVenir(M.entrees.comptaAnalytique),
       // Rapprochement épargne : vue de contrôle réservée à l'audit/direction/comptable.
       {
