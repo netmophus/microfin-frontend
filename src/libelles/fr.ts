@@ -2225,7 +2225,7 @@ export const LIBELLES = {
   exercicesComptables: {
     titre: 'Exercices comptables',
     sousTitre:
-      'Clôture technique d’un exercice : solde les comptes de charges et de produits vers le compte de résultat en instance d’approbation (591). L’affectation définitive du résultat, après approbation, est un chantier séparé, pas encore disponible.',
+      'Clôture technique d’un exercice : solde les comptes de charges et de produits vers le compte de résultat en instance d’approbation (591). Une fois clos, affectez le résultat (réserves et/ou report à nouveau) après approbation de l’assemblée générale, et générez les à-nouveaux de l’exercice suivant.',
     chargement: 'Chargement des exercices…',
     erreur: 'Impossible de charger les exercices. Réessayez dans un instant.',
     reessayer: 'Réessayer',
@@ -2238,8 +2238,10 @@ export const LIBELLES = {
     colStatut: 'Statut',
     statutOuvert: 'Ouvert',
     statutClos: 'Clos',
+    resultatAffecteBadge: 'Résultat affecté',
 
     cloturer: 'Clôturer',
+    affecterResultat: 'Affecter le résultat',
     retour: 'Retour à la liste',
 
     // {code} injecté.
@@ -2284,6 +2286,79 @@ export const LIBELLES = {
     clotureReussie: 'Exercice {code} clôturé — pièce {numero}.',
 
     echec: 'L’opération a échoué. Réessayez.',
+
+    // --- Affectation du résultat (lot b2a) ---------------------------------------------------
+
+    // {code} injecté.
+    apercuAffectationTitre: 'Affectation du résultat — {code}',
+    apercuAffectationChargement: 'Calcul du montant à affecter…',
+    apercuAffectationErreur: 'Impossible de calculer l’aperçu d’affectation.',
+    dejaAffecte: 'Le résultat de cet exercice a déjà été affecté.',
+    rienAAffecter: 'Le résultat de clôture de cet exercice était nul : rien à affecter.',
+
+    // {montant} déjà formaté.
+    affectationExcedent: 'Excédent à affecter : {montant}',
+    affectationDeficit: 'Déficit à affecter : {montant}',
+    // {montant} déjà formaté — déficit reporté intégralement, aucune ventilation possible.
+    deficitReporteIntegralement:
+      'Le déficit sera reporté intégralement en report à nouveau (58) : {montant}.',
+
+    champReserveGenerale: 'Réserve générale (5521)',
+    champReservesFacultatives: 'Réserves facultatives (5522)',
+    champAutresReserves: 'Autres réserves (5523)',
+    champReportANouveau: 'Report à nouveau (58)',
+    totalVentile: 'Total ventilé',
+    // {montant} déjà formaté.
+    ventilationComplete: 'La ventilation correspond exactement à l’excédent à affecter.',
+    // {total} et {montant} déjà formatés.
+    ventilationIncorrecte: 'Total ventilé {total} — doit égaler exactement {montant}.',
+
+    affecterResultatBouton: 'Affecter le résultat',
+
+    // {code} injecté.
+    confirmerAffectation:
+      'Affecter le résultat de l’exercice {code} ? Cette action pose une écriture et ne peut pas être annulée — une erreur se corrige par contre-passation dans l’exercice ouvert.',
+    confirmerAffectationBouton: 'Confirmer l’affectation',
+    affectationEnCours: 'Affectation en cours…',
+    // {code} et {numero} injectés.
+    affectationReussie: 'Résultat de l’exercice {code} affecté — pièce {numero}.',
+
+    // --- À-nouveaux (lot b2b) -----------------------------------------------------------------
+
+    genererANouveaux: 'Générer les à-nouveaux',
+    aNouveauxGeneresBadge: 'À-nouveaux générés',
+
+    // {code} injecté — l'exercice SOURCE (celui dont on reprend les soldes de clôture).
+    anTitre: 'À-nouveaux — {code}',
+    anChargement: 'Calcul des soldes à reporter…',
+    anErreur: 'Impossible de calculer l’aperçu des à-nouveaux.',
+    anDejaGeneres: 'Les à-nouveaux de cet exercice ont déjà été générés.',
+    anRienAReporter:
+      'Aucun compte de bilan à solde non nul sur cet exercice : rien à reporter.',
+    // {date} injectée (JJ/MM/AAAA).
+    anSuivantAbsent:
+      'L’exercice suivant n’existe pas encore. Ouvrez un exercice commençant le {date} avant de générer les à-nouveaux.',
+    // {code} et {statut} injectés.
+    anSuivantPasOuvert: 'L’exercice suivant ({code}) existe mais n’est pas ouvert (statut : {statut}).',
+    // {debit} et {credit} déjà formatés.
+    anDesequilibre:
+      'Le bilan de clôture ne s’équilibre pas (débit {debit} ≠ crédit {credit}) — vérifiez la comptabilité de cet exercice avant de réessayer.',
+
+    anDetailTitre: 'Comptes reportés',
+    colANCompte: 'Compte',
+    colANLibelle: 'Libellé',
+    colANSens: 'Sens',
+    colANMontant: 'Montant',
+    // {montant} déjà formaté.
+    anTotalReporte: 'Total reporté : {montant}',
+
+    // {codeSuivant} et {codeSource} injectés.
+    confirmerANouveaux:
+      'Générer les à-nouveaux de l’exercice {codeSuivant} à partir de la clôture de {codeSource} ? Cette action pose une écriture dans le journal AN et ne peut pas être annulée.',
+    confirmerANouveauxBouton: 'Confirmer la génération',
+    anEnCours: 'Génération en cours…',
+    // {code} et {numero} injectés.
+    anReussis: 'À-nouveaux de l’exercice {code} générés — pièce {numero}.',
   },
 
   tiersKyc: {

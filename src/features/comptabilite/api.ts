@@ -641,8 +641,8 @@ export async function supprimerEcritureOD(id: string): Promise<void> {
 // --- Clôture d'exercice (chantier P1, lot b1) -----------------------------------------------
 //
 // Clôture TECHNIQUE uniquement : solde les comptes de charges/produits (classe 6/7) vers 591
-// (« Excédent ou déficit en instance d'approbation »). L'affectation du résultat (591 -> 592/58,
-// après approbation de l'assemblée générale) est un lot SÉPARÉ (b2), pas encore fait.
+// (« Excédent ou déficit en instance d'approbation »). L'affectation du résultat (591 -> réserves
+// et/ou 58, après approbation de l'assemblée générale) est le lot b2a, plus bas dans ce fichier.
 
 export interface ExerciceResume {
   id: string
@@ -651,6 +651,8 @@ export interface ExerciceResume {
   date_debut: string
   date_fin: string
   status: 'ouvert' | 'clos'
+  resultat_affecte: boolean
+  a_nouveaux_generes: boolean
 }
 
 export interface LigneResultatCloture {
@@ -700,6 +702,99 @@ export async function previsualiserCloture(exerciceId: string): Promise<ApercuCl
 export async function cloturerExercice(exerciceId: string): Promise<ClotureExerciceResultat> {
   const { data } = await api.post<ClotureExerciceResultat>(
     `/comptabilite/exercices/${exerciceId}/cloture`,
+  )
+  return data
+}
+
+// --- Affectation du résultat (chantier P1, lot b2a) ------------------------------------------
+//
+// Ventilation À LA MAIN (pas de taux automatique) : réserve générale (5521), réserves
+// facultatives (5522), autres réserves (5523), report à nouveau (58). Sur un déficit, seul
+// report_a_nouveau est accepté (refusé côté serveur si les réserves sont non nulles) — l'écran
+// ne propose même pas les champs réserves dans ce cas, voir PageExercices.tsx.
+// 592 n'est JAMAIS utilisé (décision actée) : 591 solde directement vers réserves/58.
+
+export interface ApercuAffectation {
+  exercice: ExerciceResume
+  montant: number | null
+  deja_affecte: boolean
+  affectable: boolean
+}
+
+export interface VentilationAffectation {
+  reserve_generale: number
+  reserves_facultatives: number
+  autres_reserves: number
+  report_a_nouveau: number
+}
+
+export interface AffectationResultatResultat {
+  exercice: ExerciceResume
+  entry_number: string
+  montant: number
+  ventilation: VentilationAffectation
+}
+
+export async function previsualiserAffectation(exerciceId: string): Promise<ApercuAffectation> {
+  const { data } = await api.get<ApercuAffectation>(
+    `/comptabilite/exercices/${exerciceId}/previsualisation-affectation`,
+  )
+  return data
+}
+
+export async function affecterResultat(
+  exerciceId: string,
+  ventilation: VentilationAffectation,
+): Promise<AffectationResultatResultat> {
+  const { data } = await api.post<AffectationResultatResultat>(
+    `/comptabilite/exercices/${exerciceId}/affectation`,
+    ventilation,
+  )
+  return data
+}
+
+// --- À-nouveaux (chantier P1, lot b2b) --------------------------------------------------------
+//
+// Report des soldes de clôture des comptes de BILAN (classes 1-5) de l'exercice source vers
+// l'exercice suivant, journal AN. Indépendant de l'affectation du résultat (b2a, décision
+// actée) : 591 se reporte tel quel, affecté ou non. L'exercice suivant doit EXISTER et être
+// 'ouvert' — jamais automatisé, c'est un acte manuel séparé (CLI).
+
+export interface LigneANouveaux {
+  account_number: string
+  name: string
+  account_class: number
+  side: 'D' | 'C'
+  amount: number
+}
+
+export interface ApercuANouveaux {
+  exercice_source: ExerciceResume
+  exercice_suivant: ExerciceResume | null
+  lignes: LigneANouveaux[]
+  total_debit: number
+  total_credit: number
+  equilibre: boolean
+  deja_genere: boolean
+  generable: boolean
+}
+
+export interface ANouveauxResultat {
+  exercice_suivant: ExerciceResume
+  entry_number: string
+  total: number
+}
+
+export async function previsualiserANouveaux(exerciceId: string): Promise<ApercuANouveaux> {
+  const { data } = await api.get<ApercuANouveaux>(
+    `/comptabilite/exercices/${exerciceId}/previsualisation-a-nouveaux`,
+  )
+  return data
+}
+
+export async function genererANouveaux(exerciceId: string): Promise<ANouveauxResultat> {
+  const { data } = await api.post<ANouveauxResultat>(
+    `/comptabilite/exercices/${exerciceId}/a-nouveaux`,
   )
   return data
 }
