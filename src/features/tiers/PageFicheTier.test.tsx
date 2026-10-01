@@ -70,6 +70,7 @@ const RESUME: FicheTier = {
   tier_number: 'M-2026-0000001',
   tier_type: 'individual',
   status: 'prospect',
+  is_member: false,
   primary_agency_id: 'a1',
   display_name: 'Diallo Amadou',
   // AUCUN bloc individu/personne_morale/groupement : c'est la vue read.basic.
@@ -80,6 +81,7 @@ const COMPLETE: FicheTier = {
   tier_number: 'M-2026-0000001',
   tier_type: 'individual',
   status: 'prospect',
+  is_member: false,
   primary_agency_id: 'a1',
   primary_phone: '70000000',
   created_at: '2026-07-23T10:00:00Z',

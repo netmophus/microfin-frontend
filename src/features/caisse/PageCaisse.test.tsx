@@ -81,6 +81,10 @@ beforeEach(() => {
     seuil_tolerance: 500,
     compte_ecart_manquant: { account_number: '6099', name: 'Diverses charges financières' },
     compte_ecart_excedent: { account_number: '7099', name: 'Divers produits' },
+    // Pont comptable des transferts (sous-chantier 2, lot 2b) : non paramétré ici, état légitime.
+    compte_transit: null,
+    compte_ecart_transfert_manquant: null,
+    compte_ecart_transfert_excedent: null,
     is_provisional: true,
   })
   // Un seul poste assigné par défaut — présélectionné, la plupart des tests n'ont rien de plus

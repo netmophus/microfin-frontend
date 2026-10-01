@@ -225,8 +225,9 @@ export function PageTransfertsCaisse() {
 
 function PanneauInitiation({ onFini, onAnnuler }: { onFini: () => void; onAnnuler: () => void }) {
   const [niveauSource, setNiveauSource] = useState<NiveauTransfert>('coffre')
+  // NIVEAUX_ADJACENTS.coffre est un tableau fixe non vide (voir api.ts) — toujours défini.
   const [niveauDestination, setNiveauDestination] = useState<NiveauTransfert>(
-    NIVEAUX_ADJACENTS.coffre[0],
+    NIVEAUX_ADJACENTS.coffre[0]!,
   )
   const [posteId, setPosteId] = useState('')
   const [montant, setMontant] = useState('')
@@ -261,7 +262,8 @@ function PanneauInitiation({ onFini, onAnnuler }: { onFini: () => void; onAnnule
     setNiveauSource(n)
     const destinations = NIVEAUX_ADJACENTS[n]
     if (!destinations.includes(niveauDestination)) {
-      setNiveauDestination(destinations[0])
+      // Même garantie que ci-dessus : chaque entrée de NIVEAUX_ADJACENTS est non vide.
+      setNiveauDestination(destinations[0]!)
     }
     setPosteId('')
   }

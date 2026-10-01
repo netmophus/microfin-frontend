@@ -32,6 +32,7 @@ function ligne(partiel: Partial<LigneTier>): LigneTier {
     tier_type: 'individual',
     display_name: 'Diallo Amadou',
     status: 'prospect',
+    is_member: false,
     primary_agency_id: 'a1',
     ...partiel,
   }

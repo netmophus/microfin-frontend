@@ -39,6 +39,7 @@ function fiche(partiel: Partial<FicheTier>): FicheTier {
     tier_number: 'M-2026-0000001',
     tier_type: 'individual',
     status: 'actif',
+    is_member: false,
     primary_agency_id: 'a1',
     ...partiel,
   }

@@ -100,7 +100,12 @@ describe('PagePlanComptable', () => {
   it('création : le compte créé n’est pas provisoire, la liste se rafraîchit', async () => {
     etat.permissions = ['compta.plan.manage']
     listerSimule.mockResolvedValue({ lignes: [], total: 0, page: 1, taille: 25 })
-    creerSimule.mockResolvedValue(compte({ account_number: '6034', is_provisional: false }))
+    creerSimule.mockResolvedValue({
+      ...compte({ account_number: '6034', is_provisional: false }),
+      notes: null,
+      created_at: '2026-08-01T00:00:00Z',
+      updated_at: '2026-08-01T00:00:00Z',
+    })
     afficher()
     await screen.findByText(/Aucun compte/i)
 
