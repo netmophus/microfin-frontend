@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAPermission } from '@/features/auth/useProfil'
 import {
   type JourneeComptable,
   cloturerJournee,
@@ -39,9 +40,17 @@ function formatHorodatage(iso: string): string {
  * ouverte à la fois (réseau entier, pas par agence), date comptable distincte de la date
  * système. Rien d'autre n'est encore branché dessus (ni la caisse, ni la datation des
  * opérations) — ces lots viendront après.
+ *
+ * RÉORGANISATION RBAC (post lot 4b) : la route est gardée par compta.journee.read (COMPTABLE
+ * et ADMIN_FONCTIONNEL) — la consultation (statut courant, historique) est donc toujours
+ * visible. Les boutons Ouvrir/Clôturer, acte D'EXPLOITATION, sont gardés ICI par
+ * compta.journee.manage (ADMIN_FONCTIONNEL seul) : masqués, pas seulement désactivés, pour un
+ * COMPTABLE qui n'a que la lecture — même patron que `PageEcrituresOD` (compta.ecriture.post/
+ * .reverse distincts de la lecture).
  */
 export function PageJourneeComptable() {
   const client = useQueryClient()
+  const peutGerer = useAPermission('compta.journee.manage')
   const [ouvertureVisible, setOuvertureVisible] = useState(false)
   const [dateSaisie, setDateSaisie] = useState('')
   const [confirmationCloture, setConfirmationCloture] = useState(false)
@@ -99,7 +108,7 @@ export function PageJourneeComptable() {
           {couranteRequete.data.journee === null ? (
             <>
               <p className="text-sm text-muted-foreground">{J.aucuneOuverte}</p>
-              {!ouvertureVisible && (
+              {peutGerer && !ouvertureVisible && (
                 <Button
                   onClick={() => ouvrirLeFormulaire(couranteRequete.data.prochaine_date_proposee)}
                 >
@@ -119,7 +128,7 @@ export function PageJourneeComptable() {
                   })}
                 </p>
               </div>
-              {!confirmationCloture && (
+              {peutGerer && !confirmationCloture && (
                 <Button variant="outline" onClick={() => setConfirmationCloture(true)}>
                   {J.cloturerBouton}
                 </Button>
@@ -127,7 +136,7 @@ export function PageJourneeComptable() {
             </>
           )}
 
-          {ouvertureVisible && couranteRequete.data.journee === null && (
+          {peutGerer && ouvertureVisible && couranteRequete.data.journee === null && (
             <div className="space-y-3 rounded-md border border-dashed p-3">
               <div className="space-y-1">
                 <Label htmlFor="journee-date">{J.champDate}</Label>
@@ -169,7 +178,7 @@ export function PageJourneeComptable() {
             </div>
           )}
 
-          {confirmationCloture && couranteRequete.data.journee !== null && (
+          {peutGerer && confirmationCloture && couranteRequete.data.journee !== null && (
             <div className="space-y-3 rounded-md border border-warning/50 bg-warning-subtle/40 p-3">
               <p className="text-sm font-medium">
                 {fmt(J.confirmerCloture, {

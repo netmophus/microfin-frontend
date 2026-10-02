@@ -393,7 +393,7 @@ export function App() {
               <Route
                 path="/comptabilite/journee"
                 element={
-                  <RoutePermission permission="compta.journee.manage">
+                  <RoutePermission permission="compta.journee.read">
                     <PageJourneeComptable />
                   </RoutePermission>
                 }

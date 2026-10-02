@@ -68,6 +68,18 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/audit',
         permission: 'audit.read',
       },
+      // Journée comptable (chantier P1bis, lot 1 ; réorganisation RBAC post lot 4b) :
+      // l'ouverture/clôture est un acte D'EXPLOITATION, pas comptable — déplacée de
+      // Comptabilité vers Administration. L'entrée de menu suit la permission de LECTURE
+      // (compta.journee.read, détenue par COMPTABLE et ADMIN_FONCTIONNEL) : un COMPTABLE doit
+      // pouvoir consulter la journée ouverte, même sans pouvoir l'ouvrir/la clôturer — les
+      // boutons d'action sont gardés séparément à l'écran par compta.journee.manage.
+      {
+        etat: 'actif',
+        libelle: M.entrees.journeeComptable,
+        chemin: '/comptabilite/journee',
+        permission: 'compta.journee.read',
+      },
       aVenir(M.entrees.parametrage),
     ],
   },
@@ -277,14 +289,6 @@ export const MENU: readonly GroupeMenu[] = [
         libelle: M.entrees.exercicesComptables,
         chemin: '/comptabilite/exercices',
         permission: 'compta.exercice.manage',
-      },
-      // Journée comptable (chantier P1bis, lot 1) : lifecycle QUOTIDIEN, permission DISTINCTE
-      // de compta.exercice.manage (annuel) — même raisonnement de granularité fine.
-      {
-        etat: 'actif',
-        libelle: M.entrees.journeeComptable,
-        chemin: '/comptabilite/journee',
-        permission: 'compta.journee.manage',
       },
       // Calendrier des jours fériés (chantier P1bis, lot 4a) : permission DISTINCTE de
       // compta.journee.manage (paramétrage annuel, pas le cycle quotidien).

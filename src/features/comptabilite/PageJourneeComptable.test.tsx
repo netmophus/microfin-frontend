@@ -17,8 +17,17 @@ import { PageJourneeComptable } from '@/features/comptabilite/PageJourneeComptab
  * Journée comptable. Points durs : aucune journée ouverte -> formulaire pré-rempli avec la
  * date proposée, modifiable ; journée ouverte -> date + acteur affichés, pas de second
  * formulaire d'ouverture ; clôture définitive -> confirmation explicite avant l'appel serveur ;
- * historique jamais vide muet.
+ * historique jamais vide muet ; réorganisation RBAC post lot 4b -> les boutons Ouvrir/Clôturer
+ * sont MASQUÉS (pas seulement désactivés) pour un acteur qui n'a que compta.journee.read.
  */
+
+const etat = vi.hoisted(() => ({
+  permissions: ['compta.journee.read', 'compta.journee.manage'] as string[],
+}))
+
+vi.mock('@/features/auth/useProfil', () => ({
+  useAPermission: (p: string) => etat.permissions.includes(p),
+}))
 
 vi.mock('@/features/comptabilite/api', async () => {
   const reel = await vi.importActual<typeof import('@/features/comptabilite/api')>(
@@ -66,6 +75,7 @@ function afficher() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  etat.permissions = ['compta.journee.read', 'compta.journee.manage']
   listerSimule.mockResolvedValue([])
 })
 
@@ -155,5 +165,23 @@ describe('PageJourneeComptable', () => {
     afficher()
 
     expect(await screen.findByText('Aucune journée n’a encore été ouverte.')).toBeVisible()
+  })
+
+  it('bouton Ouvrir absent sans compta.journee.manage (réorganisation RBAC post lot 4b)', async () => {
+    etat.permissions = ['compta.journee.read']
+    couranteSimulee.mockResolvedValue(courante())
+    afficher()
+
+    expect(await screen.findByText('Aucune journée comptable n’est ouverte.')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Ouvrir la journée' })).not.toBeInTheDocument()
+  })
+
+  it('bouton Clôturer absent sans compta.journee.manage (réorganisation RBAC post lot 4b)', async () => {
+    etat.permissions = ['compta.journee.read']
+    couranteSimulee.mockResolvedValue(courante({ journee: journee() }))
+    afficher()
+
+    expect(await screen.findByText('Ouverte')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Clôturer la journée' })).not.toBeInTheDocument()
   })
 })
