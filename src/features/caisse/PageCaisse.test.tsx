@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { AxiosError } from 'axios'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -128,6 +129,31 @@ describe('PageCaisse', () => {
 
     await waitFor(() => expect(ouvertureSimulee).toHaveBeenCalledWith(50_000, 'p1'))
     expect(await screen.findByText('60 000 F')).toBeVisible() // solde théorique en direct
+  })
+
+  it('aucune journée comptable ouverte : le refus du serveur s’affiche en clair, pas un 500 brut (chantier P1bis lot 2)', async () => {
+    sessionSimulee.mockResolvedValue(null)
+    ouvertureSimulee.mockRejectedValue(
+      new AxiosError('rejet', undefined, undefined, undefined, {
+        status: 422,
+        data: {
+          detail:
+            "Aucune journée comptable n'est ouverte. Demandez l'ouverture de la journée avant d'ouvrir une caisse.",
+        },
+      } as never),
+    )
+    afficher()
+    await screen.findByText('Ouvrir la caisse')
+    await waitFor(() => expect(screen.getByLabelText('Poste de caisse')).toHaveValue('p1'))
+
+    fireEvent.change(screen.getByLabelText('Fonds initial compté'), { target: { value: '50000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la caisse' }))
+
+    expect(
+      await screen.findByText(
+        "Aucune journée comptable n'est ouverte. Demandez l'ouverture de la journée avant d'ouvrir une caisse.",
+      ),
+    ).toBeVisible()
   })
 
   it('aucun poste assigné : message clair, formulaire non soumissible', async () => {

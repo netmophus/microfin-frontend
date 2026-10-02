@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -105,6 +106,29 @@ describe('PageJourneeComptable', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer la clôture' }))
     await waitFor(() => expect(cloturerSimule).toHaveBeenCalled())
+  })
+
+  it('clôture refusée (caisses encore ouvertes) : le motif du serveur s’affiche en clair (chantier P1bis lot 2)', async () => {
+    couranteSimulee.mockResolvedValue(courante({ journee: journee() }))
+    cloturerSimule.mockRejectedValue(
+      new AxiosError('rejet', undefined, undefined, undefined, {
+        status: 422,
+        data: {
+          detail:
+            '2 caisse(s) encore ouverte(s) : fermez-les avant de clôturer la journée comptable.',
+        },
+      } as never),
+    )
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Clôturer la journée' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la clôture' }))
+
+    expect(
+      await screen.findByText(
+        '2 caisse(s) encore ouverte(s) : fermez-les avant de clôturer la journée comptable.',
+      ),
+    ).toBeVisible()
   })
 
   it('historique : affiche les journées, « — » pour l’acteur absent', async () => {
