@@ -23,6 +23,7 @@ import { PageExercices } from '@/features/comptabilite/PageExercices'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
 import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
 import { PageJourneeComptable } from '@/features/comptabilite/PageJourneeComptable'
+import { PageJoursFeries } from '@/features/comptabilite/PageJoursFeries'
 import { PageMappingEtatsFinanciers } from '@/features/comptabilite/PageMappingEtatsFinanciers'
 import { PageParametresCaisse } from '@/features/comptabilite/PageParametresCaisse'
 import { PageParametresParts } from '@/features/comptabilite/PageParametresParts'
@@ -394,6 +395,14 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.journee.manage">
                     <PageJourneeComptable />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/jours-feries"
+                element={
+                  <RoutePermission permission="compta.calendrier.manage">
+                    <PageJoursFeries />
                   </RoutePermission>
                 }
               />

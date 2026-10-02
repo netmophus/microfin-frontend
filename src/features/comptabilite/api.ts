@@ -944,3 +944,34 @@ export async function cloturerJournee(): Promise<JourneeComptable> {
   const { data } = await api.post<JourneeComptable>('/comptabilite/journees/cloture')
   return data
 }
+
+// --- Calendrier des jours fériés (chantier P1bis, lot 4a) --------------------------------------
+//
+// ADDITIF STRICT : fondation seule (table + paramétrage). Le report effectif des échéances sur
+// un jour férié est le lot 4b, pas encore fait.
+
+export interface JourFerie {
+  id: string
+  date_feriee: string
+  libelle: string
+  created_at: string
+}
+
+export async function listerJoursFeries(annee: number): Promise<JourFerie[]> {
+  const { data } = await api.get<JourFerie[]>('/comptabilite/jours-feries', {
+    params: { annee },
+  })
+  return data
+}
+
+export async function ajouterJourFerie(dateFeriee: string, libelle: string): Promise<JourFerie> {
+  const { data } = await api.post<JourFerie>('/comptabilite/jours-feries', {
+    date_feriee: dateFeriee,
+    libelle,
+  })
+  return data
+}
+
+export async function supprimerJourFerie(id: string): Promise<void> {
+  await api.delete(`/comptabilite/jours-feries/${id}`)
+}

@@ -205,6 +205,7 @@ export const LIBELLES = {
       ecrituresOD: 'Écritures diverses (OD)',
       exercicesComptables: 'Exercices comptables',
       journeeComptable: 'Journée comptable',
+      joursFeries: 'Jours fériés',
       comptaAnalytique: 'Comptabilité analytique',
       tresorerieImmo: 'Trésorerie et Immobilisations',
       reportingBceao: 'Reporting BCEAO',
@@ -2504,6 +2505,38 @@ export const LIBELLES = {
     statutOuverte: 'Ouverte',
     statutCloturee: 'Clôturée',
     sansValeur: '—',
+  },
+
+  joursFeries: {
+    titre: 'Jours fériés',
+    sousTitre:
+      'Les fériés sont saisis par date précise, année par année : les fêtes musulmanes suivent le calendrier lunaire et ne tombent jamais le même jour d’une année sur l’autre.',
+    chargement: 'Chargement des jours fériés…',
+    erreur: 'Impossible de charger les jours fériés. Réessayez dans un instant.',
+    reessayer: 'Réessayer',
+    interdit: 'Vous n’avez pas la permission de gérer le calendrier des jours fériés.',
+
+    champAnnee: 'Année',
+
+    ajoutTitre: 'Ajouter un jour férié',
+    champDate: 'Date',
+    champLibelle: 'Libellé',
+    libellePlaceholder: 'Ex. : Tabaski, Fête du travail…',
+    ajouterBouton: 'Ajouter',
+    ajoutEnCours: 'Ajout en cours…',
+    ajoutEchec: 'Impossible d’ajouter ce jour férié. Réessayez.',
+
+    listeVide: 'Aucun jour férié saisi pour cette année.',
+    colDate: 'Date',
+    colLibelle: 'Libellé',
+    supprimerBouton: 'Supprimer',
+
+    // {libelle} et {date} (déjà formatée) injectés.
+    confirmerSuppression: 'Supprimer le jour férié « {libelle} » du {date} ?',
+    confirmerSuppressionBouton: 'Confirmer la suppression',
+    suppressionEnCours: 'Suppression en cours…',
+    suppressionEchec: 'Impossible de supprimer ce jour férié. Réessayez.',
+    annuler: 'Annuler',
   },
 
   tiersKyc: {

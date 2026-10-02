@@ -286,6 +286,14 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/journee',
         permission: 'compta.journee.manage',
       },
+      // Calendrier des jours fériés (chantier P1bis, lot 4a) : permission DISTINCTE de
+      // compta.journee.manage (paramétrage annuel, pas le cycle quotidien).
+      {
+        etat: 'actif',
+        libelle: M.entrees.joursFeries,
+        chemin: '/comptabilite/jours-feries',
+        permission: 'compta.calendrier.manage',
+      },
       aVenir(M.entrees.comptaAnalytique),
       // Rapprochement épargne : vue de contrôle réservée à l'audit/direction/comptable.
       {
