@@ -238,6 +238,28 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/balance',
         permission: 'compta.rapport.read',
       },
+      // États financiers RCSFD (chantier P1, dernier lot) : bilan + compte de résultat, lecture
+      // pure, même permission que les autres rapports.
+      {
+        etat: 'actif',
+        libelle: M.entrees.bilan,
+        chemin: '/comptabilite/bilan',
+        permission: 'compta.rapport.read',
+      },
+      {
+        etat: 'actif',
+        libelle: M.entrees.compteResultat,
+        chemin: '/comptabilite/compte-resultat',
+        permission: 'compta.rapport.read',
+      },
+      // Administration du mapping comptes -> postes (optionnel) : compta.plan.manage, comme le
+      // reste du paramétrage du plan de comptes.
+      {
+        etat: 'actif',
+        libelle: M.entrees.mappingEtatsFinanciers,
+        chemin: '/comptabilite/mapping-etats-financiers',
+        permission: 'compta.plan.manage',
+      },
       // Saisie manuelle d'écriture (OD, chantier P1 lot 1) : lecture ouverte à
       // compta.ecriture.read — le brouillon/validation/contre-passation restent gardés à
       // l'écran lui-même (compta.ecriture.post/.reverse), comme les autres écrans sensibles.

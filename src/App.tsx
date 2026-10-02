@@ -16,10 +16,13 @@ import { PagePostes } from '@/features/caisse/PagePostes'
 import { PageSessionsManquantes } from '@/features/caisse/PageSessionsManquantes'
 import { PageTransfertsCaisse } from '@/features/caisse/PageTransfertsCaisse'
 import { PageBalance } from '@/features/comptabilite/PageBalance'
+import { PageBilan } from '@/features/comptabilite/PageBilan'
+import { PageCompteResultat } from '@/features/comptabilite/PageCompteResultat'
 import { PageEcrituresOD } from '@/features/comptabilite/PageEcrituresOD'
 import { PageExercices } from '@/features/comptabilite/PageExercices'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
 import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
+import { PageMappingEtatsFinanciers } from '@/features/comptabilite/PageMappingEtatsFinanciers'
 import { PageParametresCaisse } from '@/features/comptabilite/PageParametresCaisse'
 import { PageParametresParts } from '@/features/comptabilite/PageParametresParts'
 import { PagePaliersSouffrance } from '@/features/comptabilite/PagePaliersSouffrance'
@@ -342,6 +345,30 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.rapport.read">
                     <PageBalance />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/bilan"
+                element={
+                  <RoutePermission permission="compta.rapport.read">
+                    <PageBilan />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/compte-resultat"
+                element={
+                  <RoutePermission permission="compta.rapport.read">
+                    <PageCompteResultat />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/mapping-etats-financiers"
+                element={
+                  <RoutePermission permission="compta.plan.manage">
+                    <PageMappingEtatsFinanciers />
                   </RoutePermission>
                 }
               />

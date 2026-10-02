@@ -798,3 +798,107 @@ export async function genererANouveaux(exerciceId: string): Promise<ANouveauxRes
   )
   return data
 }
+
+// --- États financiers : bilan + compte de résultat (chantier P1, dernier lot) -----------------
+//
+// Mapping compte -> poste en base (administré séparément, voir ListerMapping/ModifierMapping
+// ci-dessous). CONTRA_ACTIF vient en déduction de l'actif, jamais au passif. Un bilan pris EN
+// COURS d'exercice peut légitimement ne pas s'équilibrer (le résultat de la période n'est pas
+// encore entré dans les capitaux propres) — ce n'est signalé comme une anomalie qu'à l'écran,
+// jamais masqué.
+
+export type MasseEtat = 'ACTIF' | 'PASSIF' | 'CONTRA_ACTIF' | 'CHARGE' | 'PRODUIT'
+
+export interface LignePoste {
+  poste_libelle: string
+  poste_ordre: number
+  masse: MasseEtat
+  montant: number
+}
+
+export interface CompteNonMappe {
+  account_number: string
+  name: string
+  account_class: number
+  solde: number
+}
+
+export interface Bilan {
+  date: string
+  actif: LignePoste[]
+  passif: LignePoste[]
+  total_actif_brut: number
+  total_contra_actif: number
+  total_actif_net: number
+  total_passif: number
+  ecart: number
+  equilibre: boolean
+  comptes_non_mappes: CompteNonMappe[]
+}
+
+export async function chargerBilan(dateParam?: string): Promise<Bilan> {
+  const { data } = await api.get<Bilan>('/comptabilite/etats/bilan', {
+    params: { date: dateParam || undefined },
+  })
+  return data
+}
+
+export interface CompteResultatEtat {
+  exercice: ExerciceResume
+  date_debut: string
+  date_fin: string
+  exercice_clos: boolean
+  charges: LignePoste[]
+  produits: LignePoste[]
+  total_charges: number
+  total_produits: number
+  resultat_net: number
+  source_resultat: 'periode' | 'cloture'
+  comptes_non_mappes: CompteNonMappe[]
+}
+
+export async function chargerCompteResultat(exerciceId: string): Promise<CompteResultatEtat> {
+  const { data } = await api.get<CompteResultatEtat>('/comptabilite/etats/compte-resultat', {
+    params: { exercice_id: exerciceId },
+  })
+  return data
+}
+
+// --- Administration du mapping comptes -> postes (optionnel, lot c) ---------------------------
+
+export type MasseMapping = MasseEtat | 'MIXTE'
+
+export interface LigneMappingAdmin {
+  account_id: string
+  account_number: string
+  name: string
+  account_class: number
+  etat: 'BILAN' | 'RESULTAT'
+  masse: MasseMapping
+  poste_libelle: string
+  poste_ordre: number
+  gere_manuellement: boolean
+}
+
+export async function listerMapping(): Promise<LigneMappingAdmin[]> {
+  const { data } = await api.get<LigneMappingAdmin[]>('/comptabilite/etats/mapping')
+  return data
+}
+
+export interface ModificationMapping {
+  etat: 'BILAN' | 'RESULTAT'
+  masse: MasseMapping
+  poste_libelle: string
+  poste_ordre: number
+}
+
+export async function modifierMapping(
+  accountId: string,
+  modification: ModificationMapping,
+): Promise<LigneMappingAdmin> {
+  const { data } = await api.patch<LigneMappingAdmin>(
+    `/comptabilite/etats/mapping/${accountId}`,
+    modification,
+  )
+  return data
+}

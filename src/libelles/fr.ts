@@ -199,6 +199,9 @@ export const LIBELLES = {
       recouvrement: 'Recouvrement',
       grandLivre: 'Grand livre',
       balance: 'Balance',
+      bilan: 'Bilan',
+      compteResultat: 'Compte de résultat',
+      mappingEtatsFinanciers: 'Mapping états financiers',
       ecrituresOD: 'Écritures diverses (OD)',
       exercicesComptables: 'Exercices comptables',
       comptaAnalytique: 'Comptabilité analytique',
@@ -1791,6 +1794,105 @@ export const LIBELLES = {
     vide: 'Aucun compte mouvementé sur la période choisie.',
     interdit: 'Vous n’avez pas la permission de consulter les rapports comptables.',
     erreur: 'Impossible de charger la balance. Réessayez dans un instant.',
+  },
+
+  bilan: {
+    titre: 'Bilan',
+    sousTitre: 'La situation patrimoniale à une date — actif et passif.',
+
+    filtreDate: 'À la date du',
+
+    chargement: 'Calcul du bilan…',
+    erreur: 'Impossible de charger le bilan. Réessayez dans un instant.',
+    interdit: 'Vous n’avez pas la permission de consulter les rapports comptables.',
+
+    colonneActif: 'ACTIF',
+    colonnePassif: 'PASSIF',
+    colonnePoste: 'Poste',
+    colonneMontant: 'Montant',
+    videActif: 'Aucun poste d’actif à cette date.',
+    videPassif: 'Aucun poste de passif à cette date.',
+
+    totalActifBrut: 'Total actif brut',
+    totalContraActif: 'Provisions et amortissements',
+    totalActifNet: 'Total actif net',
+    totalPassif: 'Total passif',
+
+    equilibre: 'Le bilan s’équilibre : actif net = passif.',
+    // {montant} déjà formaté.
+    desequilibre: 'Écart de {montant} entre l’actif net et le passif.',
+    desequilibreNote:
+      'Un écart sur un exercice EN COURS peut simplement signifier que le résultat de la période n’a pas encore été clôturé — vérifiez avant de vous inquiéter.',
+
+    comptesNonMappesTitre: 'Comptes non mappés',
+    // {n} injecté.
+    comptesNonMappesTexte:
+      '{n} compte(s) avec un solde ne sont rattachés à aucun poste — contactez l’administrateur du mapping.',
+    colNonMappeCompte: 'Compte',
+    colNonMappeLibelle: 'Libellé',
+    colNonMappeSolde: 'Solde',
+  },
+
+  compteResultat: {
+    titre: 'Compte de résultat',
+    sousTitre: 'Charges et produits d’un exercice.',
+
+    selectionExercice: 'Exercice',
+
+    chargement: 'Calcul du compte de résultat…',
+    erreur: 'Impossible de charger le compte de résultat. Réessayez dans un instant.',
+    interdit: 'Vous n’avez pas la permission de consulter les rapports comptables.',
+
+    colonneCharges: 'CHARGES',
+    colonneProduits: 'PRODUITS',
+    colonnePoste: 'Poste',
+    colonneMontant: 'Montant',
+    videCharges: 'Aucune charge sur la période.',
+    videProduits: 'Aucun produit sur la période.',
+
+    totalCharges: 'Total charges',
+    totalProduits: 'Total produits',
+    // {montant} déjà formaté.
+    resultatExcedent: 'Excédent : {montant}',
+    resultatDeficit: 'Déficit : {montant}',
+    resultatNul: 'Résultat nul.',
+
+    sourcePeriode: 'Calculé sur la période de l’exercice, en cours.',
+    sourceCloture:
+      'Résultat re-dérivé de la clôture — le détail par poste n’est plus disponible, l’exercice est clos.',
+
+    comptesNonMappesTitre: 'Comptes non mappés',
+    // {n} injecté.
+    comptesNonMappesTexte:
+      '{n} compte(s) avec un solde ne sont rattachés à aucun poste — contactez l’administrateur du mapping.',
+  },
+
+  mappingEtatsFinanciers: {
+    titre: 'Mapping états financiers',
+    sousTitre: 'Rattachement de chaque compte à son poste de bilan ou de compte de résultat.',
+
+    chargement: 'Chargement du mapping…',
+    erreur: 'Impossible de charger le mapping. Réessayez dans un instant.',
+    interdit: 'Vous n’avez pas la permission de gérer le mapping des états financiers.',
+
+    colCompte: 'Compte',
+    colLibelle: 'Libellé',
+    colEtat: 'État',
+    colMasse: 'Masse',
+    colPoste: 'Poste',
+    colOrdre: 'Ordre',
+    gereManuellementBadge: 'Ajusté à la main',
+
+    modifier: 'Modifier',
+    enregistrer: 'Enregistrer',
+    annuler: 'Annuler',
+    enregistrementEnCours: 'Enregistrement…',
+    echec: 'L’opération a échoué. Réessayez.',
+
+    champEtat: 'État',
+    champMasse: 'Masse',
+    champPoste: 'Libellé du poste',
+    champOrdre: 'Ordre d’affichage',
   },
 
   rattachementsEpargne: {
