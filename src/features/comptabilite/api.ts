@@ -902,3 +902,45 @@ export async function modifierMapping(
   )
   return data
 }
+
+// --- Journée comptable (chantier P1bis, lot 1) -----------------------------------------------
+//
+// ADDITIF STRICT : fondation seule (modèle, ouverture/fermeture, écran). Aucun autre module
+// (caisse, datation des opérations) n'est encore branché dessus.
+
+export interface JourneeComptable {
+  id: string
+  date_comptable: string
+  status: 'ouverte' | 'cloturee'
+  opened_at: string
+  opened_par_nom: string | null
+  closed_at: string | null
+  closed_par_nom: string | null
+}
+
+export interface JourneeCourante {
+  journee: JourneeComptable | null
+  prochaine_date_proposee: string
+}
+
+export async function chargerJourneeCourante(): Promise<JourneeCourante> {
+  const { data } = await api.get<JourneeCourante>('/comptabilite/journees/courante')
+  return data
+}
+
+export async function listerJournees(): Promise<JourneeComptable[]> {
+  const { data } = await api.get<JourneeComptable[]>('/comptabilite/journees')
+  return data
+}
+
+export async function ouvrirJournee(dateComptable: string): Promise<JourneeComptable> {
+  const { data } = await api.post<JourneeComptable>('/comptabilite/journees', {
+    date_comptable: dateComptable,
+  })
+  return data
+}
+
+export async function cloturerJournee(): Promise<JourneeComptable> {
+  const { data } = await api.post<JourneeComptable>('/comptabilite/journees/cloture')
+  return data
+}

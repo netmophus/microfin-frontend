@@ -278,6 +278,14 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/comptabilite/exercices',
         permission: 'compta.exercice.manage',
       },
+      // Journée comptable (chantier P1bis, lot 1) : lifecycle QUOTIDIEN, permission DISTINCTE
+      // de compta.exercice.manage (annuel) — même raisonnement de granularité fine.
+      {
+        etat: 'actif',
+        libelle: M.entrees.journeeComptable,
+        chemin: '/comptabilite/journee',
+        permission: 'compta.journee.manage',
+      },
       aVenir(M.entrees.comptaAnalytique),
       // Rapprochement épargne : vue de contrôle réservée à l'audit/direction/comptable.
       {

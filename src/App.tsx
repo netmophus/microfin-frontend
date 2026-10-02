@@ -22,6 +22,7 @@ import { PageEcrituresOD } from '@/features/comptabilite/PageEcrituresOD'
 import { PageExercices } from '@/features/comptabilite/PageExercices'
 import { PageFicheCompte } from '@/features/comptabilite/PageFicheCompte'
 import { PageGrandLivre } from '@/features/comptabilite/PageGrandLivre'
+import { PageJourneeComptable } from '@/features/comptabilite/PageJourneeComptable'
 import { PageMappingEtatsFinanciers } from '@/features/comptabilite/PageMappingEtatsFinanciers'
 import { PageParametresCaisse } from '@/features/comptabilite/PageParametresCaisse'
 import { PageParametresParts } from '@/features/comptabilite/PageParametresParts'
@@ -385,6 +386,14 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.exercice.manage">
                     <PageExercices />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/comptabilite/journee"
+                element={
+                  <RoutePermission permission="compta.journee.manage">
+                    <PageJourneeComptable />
                   </RoutePermission>
                 }
               />

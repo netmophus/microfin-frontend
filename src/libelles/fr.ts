@@ -204,6 +204,7 @@ export const LIBELLES = {
       mappingEtatsFinanciers: 'Mapping états financiers',
       ecrituresOD: 'Écritures diverses (OD)',
       exercicesComptables: 'Exercices comptables',
+      journeeComptable: 'Journée comptable',
       comptaAnalytique: 'Comptabilité analytique',
       tresorerieImmo: 'Trésorerie et Immobilisations',
       reportingBceao: 'Reporting BCEAO',
@@ -2461,6 +2462,48 @@ export const LIBELLES = {
     anEnCours: 'Génération en cours…',
     // {code} et {numero} injectés.
     anReussis: 'À-nouveaux de l’exercice {code} générés — pièce {numero}.',
+  },
+
+  journeeComptable: {
+    titre: 'Journée comptable',
+    sousTitre:
+      'La journée comptable centralise la date à laquelle les opérations sont enregistrées. Elle n’est pas forcément la date du jour : un vendredi soir, on ouvre déjà la journée du lundi suivant.',
+    chargement: 'Chargement de la journée…',
+    erreur: 'Impossible de charger la journée comptable. Réessayez dans un instant.',
+    reessayer: 'Réessayer',
+    interdit: 'Vous n’avez pas la permission de gérer la journée comptable.',
+
+    aucuneOuverte: 'Aucune journée comptable n’est ouverte.',
+    // {date} déjà formatée.
+    journeeOuverteDepuis: 'Journée du {date}, ouverte par {acteur} le {horodatage}.',
+    acteurInconnu: 'un acteur non identifié',
+
+    ouvrirBouton: 'Ouvrir la journée',
+    champDate: 'Date comptable',
+    // {date} déjà formatée — proposition par défaut (prochain jour ouvré).
+    dateProposeeNote: 'Date proposée : {date}. Modifiable avant confirmation.',
+    confirmerOuvertureBouton: 'Confirmer l’ouverture',
+    ouvertureEnCours: 'Ouverture en cours…',
+    annuler: 'Annuler',
+
+    cloturerBouton: 'Clôturer la journée',
+    // {date} déjà formatée.
+    confirmerCloture:
+      'Clôturer la journée du {date} ? Cette action est DÉFINITIVE : aucune réouverture n’est possible.',
+    confirmerClotureBouton: 'Confirmer la clôture',
+    clotureEnCours: 'Clôture en cours…',
+
+    echec: 'L’opération a échoué. Réessayez.',
+
+    historiqueTitre: 'Historique',
+    historiqueVide: 'Aucune journée n’a encore été ouverte.',
+    colDate: 'Date comptable',
+    colStatut: 'Statut',
+    colOuvertePar: 'Ouverte par',
+    colClotureePar: 'Clôturée par',
+    statutOuverte: 'Ouverte',
+    statutCloturee: 'Clôturée',
+    sansValeur: '—',
   },
 
   tiersKyc: {
