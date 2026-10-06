@@ -312,7 +312,16 @@ export const MENU: readonly GroupeMenu[] = [
   {
     id: 'conformite',
     titre: M.groupes.conformite,
-    entrees: [aVenir(M.entrees.reportingBceao), aVenir(M.entrees.lbcFt)],
+    entrees: [
+      {
+        etat: 'actif',
+        libelle: M.entrees.ratiosPrudentiels,
+        chemin: '/conformite/ratios',
+        permission: 'conformite.ratio.read',
+      },
+      aVenir(M.entrees.reportingBceao),
+      aVenir(M.entrees.lbcFt),
+    ],
   },
   {
     id: 'pilotage',

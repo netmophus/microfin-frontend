@@ -208,6 +208,7 @@ export const LIBELLES = {
       joursFeries: 'Jours fériés',
       comptaAnalytique: 'Comptabilité analytique',
       tresorerieImmo: 'Trésorerie et Immobilisations',
+      ratiosPrudentiels: 'Ratios prudentiels',
       reportingBceao: 'Reporting BCEAO',
       lbcFt: 'LBC/FT',
       decisionnel: 'Décisionnel',
@@ -1796,6 +1797,89 @@ export const LIBELLES = {
     vide: 'Aucun compte mouvementé sur la période choisie.',
     interdit: 'Vous n’avez pas la permission de consulter les rapports comptables.',
     erreur: 'Impossible de charger la balance. Réessayez dans un instant.',
+  },
+
+  ratiosPrudentiels: {
+    titre: 'Ratios prudentiels',
+    sousTitre:
+      'Conformité aux normes prudentielles applicables aux systèmes financiers décentralisés, à une date d’arrêté.',
+    filtreDate: 'Arrêté au',
+    dateReference: 'Données arrêtées au {date}',
+
+    chargement: 'Calcul des ratios…',
+    erreur: 'Impossible de calculer les ratios prudentiels. Réessayez dans un instant.',
+    interdit: 'Vous n’avez pas la permission de consulter les ratios prudentiels.',
+    reessayer: 'Réessayer',
+    vide: 'Aucun ratio prudentiel n’est paramétré. L’administrateur de la conformité doit d’abord en déclarer.',
+    aucuneEcriture:
+      'Aucune écriture validée à cette date : les ratios ne peuvent pas être calculés. Choisissez une date postérieure à la première écriture comptable.',
+
+    // Avertissements : lecture seule, ils ne modifient ni la valeur ni le statut du ratio.
+    avertissementLabel: 'Point d’attention',
+    // Complète « Conforme » pour les lecteurs d’écran (l’icône seule ne suffit pas).
+    conformeAvecAvertissement: 'avec point d’attention',
+    detailAvertissements: 'Points d’attention',
+
+    // Synthèse au-dessus du tableau. {n} injecté.
+    syntheseConformes: '{n} conforme(s)',
+    syntheseNonConformes: '{n} non conforme(s)',
+    syntheseNonCalculables: '{n} non calculable(s)',
+    syntheseEnAttente: '{n} en attente de paramétrage',
+
+    colRatio: 'Ratio',
+    colReference: 'Référence',
+    colSeuil: 'Seuil',
+    colValeur: 'Valeur',
+    colStatut: 'Statut',
+    colEcart: 'Marge / écart',
+
+    operateurLe: '≤',
+    operateurGe: '≥',
+
+    statutConforme: 'Conforme',
+    statutNonConforme: 'Non conforme',
+    statutNonCalculable: 'Non calculable',
+    statutEnAttente: 'En attente',
+
+    // {valeur} déjà formaté, en points de pourcentage.
+    margeConforme: 'Marge de {valeur} pt',
+    ecartNonConforme: 'Écart de {valeur} pt',
+    enAttenteTexte: 'Non activé',
+    nonCalculableTexte: 'Dénominateur nul',
+
+    voirDetail: 'Voir le détail',
+    // {libelle} injecté.
+    voirDetailRatio: 'Voir le détail du ratio {libelle}',
+
+    detailTitre: 'Détail du ratio',
+    detailFermer: 'Fermer le détail',
+    detailChargement: 'Chargement du détail…',
+    detailErreur: 'Impossible de charger le détail de ce ratio. Réessayez dans un instant.',
+    detailEnAttente:
+      'Ce ratio n’est pas encore activé : la valeur ci-dessous est un calcul de contrôle, elle ne constitue pas un résultat réglementaire.',
+    detailNumerateur: 'Numérateur',
+    detailDenominateur: 'Dénominateur',
+    detailValeur: 'Valeur',
+    detailComposition: 'Composition',
+    detailCompositionVide:
+      'Aucun compte n’est encore rattaché à cet agrégat : sa composition n’est pas paramétrée.',
+    detailCompositionSpeciale:
+      'Agrégat calculé par une règle dédiée : il n’a pas de décomposition par compte.',
+    colPrefixe: 'Comptes (préfixe)',
+    colSens: 'Sens',
+    colSolde: 'Solde',
+    colContribution: 'Contribution',
+    sensPlus: '+',
+    sensMoins: '−',
+    // {montant} déjà formaté.
+    complementTutelle: 'Dont complément de provisions exigé par la tutelle : {montant}',
+    totalAgregat: 'Total',
+    // {n} injecté : nombre de comptes de la composition dont le solde est nul à cette date.
+    afficherSoldesNuls: 'Afficher les {n} compte(s) à solde nul',
+    masquerSoldesNuls: 'Masquer les comptes à solde nul',
+    aucunSoldeNonNul: 'Aucun compte de cette composition n’a de solde à cette date.',
+    // {seuil} déjà formaté avec son opérateur, ex. « ≤ 200,00 % ».
+    detailResume: 'Valeur {valeur} pour un seuil de {seuil}',
   },
 
   bilan: {

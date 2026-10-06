@@ -31,6 +31,7 @@ import { PagePaliersSouffrance } from '@/features/comptabilite/PagePaliersSouffr
 import { PagePlanComptable } from '@/features/comptabilite/PagePlanComptable'
 import { PageRattachementsCaisse } from '@/features/comptabilite/PageRattachementsCaisse'
 import { PageRattachementsEpargne } from '@/features/comptabilite/PageRattachementsEpargne'
+import { PageRatiosPrudentiels } from '@/features/conformite/PageRatiosPrudentiels'
 import { PageCredit } from '@/features/credit/PageCredit'
 import { PageDossierCredit } from '@/features/credit/PageDossierCredit'
 import { PageProduitsCredit } from '@/features/credit/PageProduitsCredit'
@@ -347,6 +348,14 @@ export function App() {
                 element={
                   <RoutePermission permission="compta.rapport.read">
                     <PageBalance />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/conformite/ratios"
+                element={
+                  <RoutePermission permission="conformite.ratio.read">
+                    <PageRatiosPrudentiels />
                   </RoutePermission>
                 }
               />
