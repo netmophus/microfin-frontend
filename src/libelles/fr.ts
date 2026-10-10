@@ -1979,6 +1979,16 @@ export const LIBELLES = {
     champMasse: 'Masse',
     champPoste: 'Libellé du poste',
     champOrdre: 'Ordre d’affichage',
+
+    orphelinsTitre: (n: number) =>
+      `${n} ${n > 1 ? 'comptes sans poste' : 'compte sans poste'} — ${
+        n > 1 ? 'ils sortiront' : 'il sortira'
+      } du bilan`,
+    orphelinsErreur:
+      'La liste des comptes sans poste est indisponible. Le mapping ci-dessous reste consultable.',
+    heriteraDe: (poste: string) => `Hériterait de : ${poste}`,
+    aucunPosteParent: 'Aucun poste proposé (parent non mappé)',
+    ranger: 'Ranger',
   },
 
   rattachementsEpargne: {

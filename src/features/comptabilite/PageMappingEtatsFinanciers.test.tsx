@@ -1,10 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  creerMapping,
   listerMapping,
+  listerOrphelinsMapping,
   modifierMapping,
+  type CompteOrphelinMapping,
   type LigneMappingAdmin,
 } from '@/features/comptabilite/api'
 import { PageMappingEtatsFinanciers } from '@/features/comptabilite/PageMappingEtatsFinanciers'
@@ -19,11 +22,34 @@ vi.mock('@/features/comptabilite/api', async () => {
   const reel = await vi.importActual<typeof import('@/features/comptabilite/api')>(
     '@/features/comptabilite/api',
   )
-  return { ...reel, listerMapping: vi.fn(), modifierMapping: vi.fn() }
+  return {
+    ...reel,
+    listerMapping: vi.fn(),
+    modifierMapping: vi.fn(),
+    listerOrphelinsMapping: vi.fn(),
+    creerMapping: vi.fn(),
+  }
 })
 
 const listerSimule = vi.mocked(listerMapping)
 const modifierSimule = vi.mocked(modifierMapping)
+const orphelinsSimule = vi.mocked(listerOrphelinsMapping)
+const creerSimule = vi.mocked(creerMapping)
+
+function orphelin(o: Partial<CompteOrphelinMapping> = {}): CompteOrphelinMapping {
+  return {
+    account_id: 'orph-1',
+    account_number: '101100',
+    name: 'Coffre',
+    account_class: 1,
+    parent_number: '1011',
+    parent_etat: 'BILAN',
+    parent_masse: 'ACTIF',
+    parent_poste_libelle: 'Valeurs en caisse',
+    parent_poste_ordre: 10,
+    ...o,
+  }
+}
 
 function ligne(o: Partial<LigneMappingAdmin> = {}): LigneMappingAdmin {
   return {
@@ -51,6 +77,7 @@ function afficher() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  orphelinsSimule.mockResolvedValue([])
 })
 
 describe('PageMappingEtatsFinanciers', () => {
@@ -114,5 +141,74 @@ describe('PageMappingEtatsFinanciers', () => {
 
     expect(await screen.findByRole('button', { name: 'Modifier' })).toBeVisible()
     expect(modifierSimule).not.toHaveBeenCalled()
+  })
+
+  it('n’affiche aucun bandeau quand il n’y a pas d’orphelin', async () => {
+    listerSimule.mockResolvedValue([ligne()])
+    afficher()
+
+    await screen.findByText('5521')
+
+    expect(screen.queryByText(/sans poste/)).not.toBeInTheDocument()
+  })
+
+  it('affiche le bandeau avec le poste que le parent ferait hériter', async () => {
+    listerSimule.mockResolvedValue([ligne()])
+    orphelinsSimule.mockResolvedValue([
+      orphelin(),
+      orphelin({
+        account_id: 'orph-2',
+        account_number: '1T9000',
+        name: 'Sans parent mappé',
+        parent_number: null,
+        parent_etat: null,
+        parent_masse: null,
+        parent_poste_libelle: null,
+        parent_poste_ordre: null,
+      }),
+    ])
+    afficher()
+
+    expect(await screen.findByText('2 comptes sans poste — ils sortiront du bilan')).toBeVisible()
+    expect(screen.getByText('Hériterait de : Valeurs en caisse')).toBeVisible()
+    expect(screen.getByText('Aucun poste proposé (parent non mappé)')).toBeVisible()
+  })
+
+  it('ranger : formulaire prérempli avec le parent, crée la ligne puis le bandeau disparaît', async () => {
+    listerSimule.mockResolvedValue([ligne()])
+    orphelinsSimule.mockResolvedValueOnce([orphelin()]).mockResolvedValue([])
+    creerSimule.mockResolvedValue(ligne({ account_id: 'orph-1', gere_manuellement: true }))
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ranger' }))
+    expect(screen.getByLabelText('Libellé du poste')).toHaveValue('Valeurs en caisse')
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(creerSimule).toHaveBeenCalledWith('orph-1', {
+        etat: 'BILAN',
+        masse: 'ACTIF',
+        poste_libelle: 'Valeurs en caisse',
+        poste_ordre: 10,
+      }),
+    )
+    await waitFor(() => expect(screen.queryByText(/sans poste/)).not.toBeInTheDocument())
+  })
+
+  it('ranger un orphelin sans parent mappé : formulaire vide', async () => {
+    listerSimule.mockResolvedValue([ligne()])
+    orphelinsSimule.mockResolvedValue([
+      orphelin({
+        parent_etat: null,
+        parent_masse: null,
+        parent_poste_libelle: null,
+        parent_poste_ordre: null,
+      }),
+    ])
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ranger' }))
+
+    expect(screen.getByLabelText('Libellé du poste')).toHaveValue('')
   })
 })

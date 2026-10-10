@@ -892,6 +892,34 @@ export interface ModificationMapping {
   poste_ordre: number
 }
 
+export interface CompteOrphelinMapping {
+  account_id: string
+  account_number: string
+  name: string
+  account_class: number
+  parent_number: string | null
+  parent_etat: 'BILAN' | 'RESULTAT' | null
+  parent_masse: MasseMapping | null
+  parent_poste_libelle: string | null
+  parent_poste_ordre: number | null
+}
+
+export async function listerOrphelinsMapping(): Promise<CompteOrphelinMapping[]> {
+  const { data } = await api.get<CompteOrphelinMapping[]>('/comptabilite/etats/mapping/orphelins')
+  return data
+}
+
+export async function creerMapping(
+  accountId: string,
+  creation: ModificationMapping,
+): Promise<LigneMappingAdmin> {
+  const { data } = await api.post<LigneMappingAdmin>('/comptabilite/etats/mapping', {
+    account_id: accountId,
+    ...creation,
+  })
+  return data
+}
+
 export async function modifierMapping(
   accountId: string,
   modification: ModificationMapping,

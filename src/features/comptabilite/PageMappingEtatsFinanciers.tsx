@@ -7,17 +7,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
+  creerMapping,
   listerMapping,
+  listerOrphelinsMapping,
   messageRefusCompte,
   modifierMapping,
+  type CompteOrphelinMapping,
   type LigneMappingAdmin,
   type MasseMapping,
+  type ModificationMapping,
 } from '@/features/comptabilite/api'
 import { LIBELLES } from '@/libelles/fr'
 
 const M = LIBELLES.mappingEtatsFinanciers
 
 const CLE_LISTE = ['comptabilite', 'etats', 'mapping']
+const CLE_ORPHELINS = ['comptabilite', 'etats', 'mapping', 'orphelins']
 
 const ETATS = ['BILAN', 'RESULTAT'] as const
 const MASSES: MasseMapping[] = ['ACTIF', 'PASSIF', 'CONTRA_ACTIF', 'CHARGE', 'PRODUIT', 'MIXTE']
@@ -36,6 +41,7 @@ export function PageMappingEtatsFinanciers() {
   const [enEdition, setEnEdition] = useState<string | null>(null)
 
   const requete = useQuery({ queryKey: CLE_LISTE, queryFn: listerMapping })
+  const orphelins = useQuery({ queryKey: CLE_ORPHELINS, queryFn: listerOrphelinsMapping })
 
   const lignes = (requete.data ?? []).filter((ligne) => {
     const recherche = filtre.trim().toLowerCase()
@@ -53,6 +59,15 @@ export function PageMappingEtatsFinanciers() {
         <h1 className="text-xl font-semibold tracking-tight">{M.titre}</h1>
         <p className="text-sm text-muted-foreground">{M.sousTitre}</p>
       </div>
+
+      {orphelins.isError && (
+        <Alert role="status">
+          <AlertDescription>{M.orphelinsErreur}</AlertDescription>
+        </Alert>
+      )}
+      {orphelins.data && orphelins.data.length > 0 && (
+        <BandeauOrphelins orphelins={orphelins.data} />
+      )}
 
       <div className="flex flex-wrap items-end gap-3 rounded-md border bg-muted/20 p-3">
         <div className="space-y-1">
@@ -92,7 +107,15 @@ export function PageMappingEtatsFinanciers() {
                 enEdition === ligne.account_id ? (
                   <LigneEdition
                     key={ligne.account_id}
-                    ligne={ligne}
+                    numero={ligne.account_number}
+                    nom={ligne.name}
+                    initiales={{
+                      etat: ligne.etat,
+                      masse: ligne.masse,
+                      poste_libelle: ligne.poste_libelle,
+                      poste_ordre: ligne.poste_ordre,
+                    }}
+                    enregistrer={(valeurs) => modifierMapping(ligne.account_id, valeurs)}
                     onFini={() => setEnEdition(null)}
                     onAnnuler={() => setEnEdition(null)}
                   />
@@ -143,30 +166,94 @@ function LigneMapping({
   )
 }
 
+/**
+ * Bandeau des comptes de saisie sans poste : sans ligne de mapping, un compte sort du bilan.
+ * « Ranger » ouvre le même formulaire que Modifier, prérempli avec le poste du parent s'il est
+ * mappé (ce que le bandeau annonce déjà : « Hériterait de : … »), vide sinon.
+ */
+function BandeauOrphelins({ orphelins }: { orphelins: CompteOrphelinMapping[] }) {
+  const [enRangement, setEnRangement] = useState<string | null>(null)
+
+  return (
+    <section
+      aria-label={M.orphelinsTitre(orphelins.length)}
+      className="space-y-2 rounded-md border border-warning/50 bg-warning-subtle/40 p-3"
+    >
+      <h2 className="text-sm font-semibold">{M.orphelinsTitre(orphelins.length)}</h2>
+      <div className="overflow-x-auto rounded-md border bg-background">
+        <table className="w-full text-sm">
+          <tbody>
+            {orphelins.map((o) =>
+              enRangement === o.account_id ? (
+                <LigneEdition
+                  key={o.account_id}
+                  numero={o.account_number}
+                  nom={o.name}
+                  initiales={{
+                    etat: o.parent_etat ?? 'BILAN',
+                    masse: o.parent_masse ?? 'ACTIF',
+                    poste_libelle: o.parent_poste_libelle ?? '',
+                    poste_ordre: o.parent_poste_ordre ?? 0,
+                  }}
+                  enregistrer={(valeurs) => creerMapping(o.account_id, valeurs)}
+                  onFini={() => setEnRangement(null)}
+                  onAnnuler={() => setEnRangement(null)}
+                />
+              ) : (
+                <tr key={o.account_id} className="border-b last:border-0">
+                  <td className="px-3 py-2 font-mono text-xs">{o.account_number}</td>
+                  <td className="px-3 py-2">{o.name}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {o.parent_poste_libelle
+                      ? M.heriteraDe(o.parent_poste_libelle)
+                      : M.aucunPosteParent}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Button size="sm" variant="outline" onClick={() => setEnRangement(o.account_id)}>
+                      {M.ranger}
+                    </Button>
+                  </td>
+                </tr>
+              ),
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
 function LigneEdition({
-  ligne,
+  numero,
+  nom,
+  initiales,
+  enregistrer,
   onFini,
   onAnnuler,
 }: {
-  ligne: LigneMappingAdmin
+  numero: string
+  nom: string
+  initiales: ModificationMapping
+  enregistrer: (valeurs: ModificationMapping) => Promise<unknown>
   onFini: () => void
   onAnnuler: () => void
 }) {
   const client = useQueryClient()
-  const [etat, setEtat] = useState<'BILAN' | 'RESULTAT'>(ligne.etat)
-  const [masse, setMasse] = useState<MasseMapping>(ligne.masse)
-  const [posteLibelle, setPosteLibelle] = useState(ligne.poste_libelle)
-  const [posteOrdre, setPosteOrdre] = useState(String(ligne.poste_ordre))
+  const [etat, setEtat] = useState<'BILAN' | 'RESULTAT'>(initiales.etat)
+  const [masse, setMasse] = useState<MasseMapping>(initiales.masse)
+  const [posteLibelle, setPosteLibelle] = useState(initiales.poste_libelle)
+  const [posteOrdre, setPosteOrdre] = useState(String(initiales.poste_ordre))
 
   const mutation = useMutation({
     mutationFn: () =>
-      modifierMapping(ligne.account_id, {
+      enregistrer({
         etat,
         masse,
         poste_libelle: posteLibelle.trim(),
         poste_ordre: Number.parseInt(posteOrdre, 10) || 0,
       }),
     onSuccess: () => {
+      // Préfixe commun aux deux clés : liste du mapping ET liste des orphelins se rafraîchissent.
       void client.invalidateQueries({ queryKey: CLE_LISTE })
       onFini()
     },
@@ -174,8 +261,8 @@ function LigneEdition({
 
   return (
     <tr className="border-b bg-muted/20 last:border-0">
-      <td className="px-3 py-2 font-mono text-xs align-top">{ligne.account_number}</td>
-      <td className="px-3 py-2 align-top">{ligne.name}</td>
+      <td className="px-3 py-2 font-mono text-xs align-top">{numero}</td>
+      <td className="px-3 py-2 align-top">{nom}</td>
       <td className="px-3 py-2 align-top">
         <select
           aria-label={M.champEtat}
