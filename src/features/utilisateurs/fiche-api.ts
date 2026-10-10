@@ -1,6 +1,6 @@
 import { AxiosError } from 'axios'
 
-import type { AgenceBreve } from '@/features/utilisateurs/api'
+import type { AgenceBreve, RoleBref } from '@/features/utilisateurs/api'
 import { api } from '@/lib/api'
 
 /**
@@ -11,11 +11,6 @@ import { api } from '@/lib/api'
  * personne inexistante de votre point de vue), un 403 est un refus de permission, un 409 un
  * conflit d'identifiant à la modification.
  */
-
-export interface RoleBref {
-  code: string
-  name: string
-}
 
 export interface Fiche {
   id: string

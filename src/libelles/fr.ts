@@ -134,12 +134,14 @@ export const LIBELLES = {
     // « adresse » seule évoque le domicile.
     colonneEmail: 'Adresse électronique',
     colonneAgence: 'Agence',
+    colonneRole: 'Rôle',
     colonneStatut: 'Statut',
 
     actif: 'Actif',
     inactif: 'Inactif',
     verrouille: 'Verrouillé',
     sansAgence: '—',
+    sansRole: '—',
 
     total: (n: number) => (n <= 1 ? `${n} utilisateur` : `${n} utilisateurs`),
     page: (courante: number, sur: number) => `Page ${courante} sur ${sur}`,

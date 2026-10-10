@@ -289,7 +289,7 @@ describe('PagePostes', () => {
     assignesSimules.mockResolvedValueOnce([]).mockResolvedValue([guichetier])
     utilisateursSimules.mockResolvedValue({
       lignes: [
-        { id: 'u1', matricule: 'MAT-1', username: 'g1', email: 'g1@ex.com', last_name: 'Souley', first_name: 'Awa', agence: null, is_active: true, is_locked: false },
+        { id: 'u1', matricule: 'MAT-1', username: 'g1', email: 'g1@ex.com', last_name: 'Souley', first_name: 'Awa', agence: null, roles: [], is_active: true, is_locked: false },
       ],
       total: 1, page: 1, taille: 100,
     })
@@ -384,6 +384,7 @@ describe('SectionCaissierPrincipal', () => {
           last_name: 'Dupont',
           first_name: 'Jean',
           agence: null,
+          roles: [],
           is_active: true,
           is_locked: false,
         },
@@ -457,6 +458,7 @@ describe('SectionCaissierPrincipal', () => {
           last_name: 'Dupont',
           first_name: 'Jean',
           agence: null,
+          roles: [],
           is_active: true,
           is_locked: false,
         },

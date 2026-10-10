@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -31,7 +31,12 @@ vi.mock('@/features/utilisateurs/api', async () => {
 
 const listerSimule = vi.mocked(listerUtilisateurs)
 
-function ligne(nom: string, actif = true, verrouille = false): LigneUtilisateur {
+function ligne(
+  nom: string,
+  actif = true,
+  verrouille = false,
+  roles: LigneUtilisateur['roles'] = [],
+): LigneUtilisateur {
   return {
     id: crypto.randomUUID(),
     matricule: `MAT-${nom}`,
@@ -40,6 +45,7 @@ function ligne(nom: string, actif = true, verrouille = false): LigneUtilisateur 
     last_name: nom,
     first_name: 'Test',
     agence: null,
+    roles,
     is_active: actif,
     is_locked: verrouille,
   }
@@ -134,5 +140,30 @@ describe('PageUtilisateurs', () => {
     await waitFor(() =>
       expect(listerSimule).toHaveBeenCalledWith(expect.objectContaining({ q: 'Kane' })),
     )
+  })
+
+  it('colonne Rôle : libellés séparés par une virgule, tiret si aucun rôle', async () => {
+    listerSimule.mockResolvedValue({
+      lignes: [
+        ligne('Diallo', true, false, [{ code: 'RESPONSABLE_AGENCE', name: 'Responsable d’agence' }]),
+        ligne('Kane', true, false, [
+          { code: 'CAISSIER', name: 'Caissier' },
+          { code: 'COMPTABLE', name: 'Comptable' },
+        ]),
+        ligne('Zeta'),
+      ],
+      total: 3,
+      page: 1,
+      taille: 25,
+    })
+
+    afficher()
+
+    expect(await screen.findByRole('columnheader', { name: 'Rôle' })).toBeVisible()
+    expect(screen.getByText('Responsable d’agence')).toBeVisible()
+    expect(screen.getByText('Caissier, Comptable')).toBeVisible()
+    const celluleZeta = screen.getByText('Zeta').closest('tr')
+    expect(celluleZeta).not.toBeNull()
+    expect(within(celluleZeta as HTMLElement).getAllByText('—').length).toBeGreaterThan(0)
   })
 })

@@ -17,6 +17,12 @@ export interface AgenceBreve {
   name: string
 }
 
+/** Rôle réduit à l'affichage : le libellé pour l'humain, le code pour la logique. */
+export interface RoleBref {
+  code: string
+  name: string
+}
+
 /** Une ligne du tableau. Reflète UtilisateurListeItem côté serveur. */
 export interface LigneUtilisateur {
   id: string
@@ -26,6 +32,7 @@ export interface LigneUtilisateur {
   last_name: string
   first_name: string
   agence: AgenceBreve | null
+  roles: RoleBref[]
   is_active: boolean
   is_locked: boolean
 }

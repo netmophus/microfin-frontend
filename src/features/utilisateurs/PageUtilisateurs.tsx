@@ -56,6 +56,10 @@ export function PageUtilisateurs() {
         id: 'agence',
         header: T.colonneAgence,
       }),
+      colonne.accessor((l) => l.roles.map((r) => r.name).join(', ') || T.sansRole, {
+        id: 'role',
+        header: T.colonneRole,
+      }),
       colonne.display({
         id: 'statut',
         header: T.colonneStatut,
