@@ -15,6 +15,7 @@ import {
 } from '@/features/tiers/api'
 import { listerDevises, listerPays } from '@/features/tiers/referentiels'
 import {
+  enFrancs,
   schemaEditionGroupement,
   schemaEditionPersonneMorale,
   type ChampsEditionGroupement,
@@ -109,7 +110,7 @@ function EditionPersonneMorale({
       rccm_number: detail.rccm_number ?? '',
       nif_number: detail.nif_number ?? '',
       constitution_date: detail.constitution_date,
-      capital_amount: detail.capital_amount ?? '',
+      capital_amount: detail.capital_amount === null ? '' : String(detail.capital_amount),
       capital_currency_id: detail.capital_currency_id ?? '',
       business_purpose: detail.business_purpose ?? '',
       headquarters_country_id: detail.headquarters_country_id,
@@ -125,7 +126,7 @@ function EditionPersonneMorale({
         rccm_number: c.rccm_number || null,
         nif_number: c.nif_number || null,
         constitution_date: c.constitution_date,
-        capital_amount: c.capital_amount || null,
+        capital_amount: enFrancs(c.capital_amount),
         capital_currency_id: c.capital_currency_id || null,
         business_purpose: c.business_purpose || null,
         headquarters_country_id: c.headquarters_country_id,
@@ -196,7 +197,7 @@ function EditionPersonneMorale({
       </Champ>
       <div className="grid grid-cols-2 gap-3">
         <Champ id="capital_amount" label={T.capital} erreur={errors.capital_amount?.message}>
-          <Input id="capital_amount" type="number" step="1" min="0" {...register('capital_amount')} />
+          <Input id="capital_amount" inputMode="numeric" {...register('capital_amount')} />
         </Champ>
         <Champ id="capital_currency_id" label={T.devise} erreur={errors.capital_currency_id?.message}>
           <select

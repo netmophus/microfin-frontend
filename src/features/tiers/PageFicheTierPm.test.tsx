@@ -119,7 +119,7 @@ const SOCIETE: FicheTier = {
     rccm_number: 'NI-NIA-2020-B-0042',
     nif_number: 'NIF-123',
     constitution_date: '2020-03-15',
-    capital_amount: '5000000.00',
+    capital_amount: 5000000,
     capital_currency_id: 'dev-xof',
     business_purpose: 'Négoce de céréales',
     headquarters_country_id: 'pays-ne',
@@ -296,13 +296,70 @@ describe('édition du profil', () => {
       rccm_number: 'NI-NIA-2020-B-0099',
       nif_number: null, // vidé : envoyé comme absence de valeur
       constitution_date: '2020-03-15',
-      capital_amount: '5000000.00',
+      capital_amount: 5000000,
       capital_currency_id: 'dev-xof',
       business_purpose: 'Négoce de céréales',
       headquarters_country_id: 'pays-ne',
     })
     // Succès : le formulaire se referme.
     await waitFor(() => expect(screen.queryByLabelText('Dénomination sociale')).toBeNull())
+  })
+
+  it('le capital se recharge en francs entiers, sans décimales', async () => {
+    etat.permissions = ['tiers.read', 'tiers.read.basic', 'tiers.update']
+    lireSimule.mockResolvedValue(SOCIETE)
+
+    afficher()
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }))
+
+    expect(screen.getByLabelText('Capital social, en francs (facultatif)')).toHaveValue('5000000')
+  })
+
+  it('un capital avec décimales est refusé sous le champ, rien n’est envoyé', async () => {
+    etat.permissions = ['tiers.read', 'tiers.read.basic', 'tiers.update']
+    lireSimule.mockResolvedValue(SOCIETE)
+
+    afficher()
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }))
+    fireEvent.change(screen.getByLabelText('Capital social, en francs (facultatif)'), {
+      target: { value: '1000000.50' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les modifications' }))
+
+    expect(await screen.findByText('Indiquez un montant en francs entiers, sans décimales.')).toBeVisible()
+    expect(modifierPmSimule).not.toHaveBeenCalled()
+  })
+
+  it('un capital saisi avec des espaces de groupement part en entier', async () => {
+    etat.permissions = ['tiers.read', 'tiers.read.basic', 'tiers.update']
+    lireSimule.mockResolvedValue(SOCIETE)
+    modifierPmSimule.mockResolvedValue(SOCIETE)
+
+    afficher()
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }))
+    fireEvent.change(screen.getByLabelText('Capital social, en francs (facultatif)'), {
+      target: { value: '1 000 000' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les modifications' }))
+
+    await waitFor(() => expect(modifierPmSimule).toHaveBeenCalledTimes(1))
+    expect(modifierPmSimule).toHaveBeenCalledWith(ID, expect.objectContaining({ capital_amount: 1000000 }))
+  })
+
+  it('un capital vidé part comme une absence de valeur', async () => {
+    etat.permissions = ['tiers.read', 'tiers.read.basic', 'tiers.update']
+    lireSimule.mockResolvedValue(SOCIETE)
+    modifierPmSimule.mockResolvedValue(SOCIETE)
+
+    afficher()
+    fireEvent.click(await screen.findByRole('button', { name: 'Modifier' }))
+    fireEvent.change(screen.getByLabelText('Capital social, en francs (facultatif)'), {
+      target: { value: '' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer les modifications' }))
+
+    await waitFor(() => expect(modifierPmSimule).toHaveBeenCalledTimes(1))
+    expect(modifierPmSimule).toHaveBeenCalledWith(ID, expect.objectContaining({ capital_amount: null }))
   })
 
   it('un RCCM déjà pris est refusé avec le message du serveur, le formulaire reste ouvert', async () => {

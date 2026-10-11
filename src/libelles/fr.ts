@@ -46,6 +46,12 @@ export const LIBELLES = {
   erreurs: {
     identifiantsIncorrects: 'Identifiant ou mot de passe incorrect.',
 
+    // Refus sans message du serveur : on dit au moins CE QUI s'est passé (jamais « vérifiez les champs » seul).
+    refusInterdit: 'Vous n’avez pas l’autorisation d’effectuer cette action.',
+    refusIntrouvable: 'Cette fiche est introuvable ou hors de votre périmètre.',
+    refusServeur: (code: number) =>
+      `Le serveur n’a pas pu traiter la demande (code ${code}). Réessayez ou prévenez l’administrateur.`,
+
     compteVerrouille: 'Compte verrouillé',
     compteVerrouilleDetail: (echeance: string) =>
       `Trop de tentatives infructueuses. Votre compte sera de nouveau accessible ${echeance}.`,
@@ -634,7 +640,8 @@ export const LIBELLES = {
     formeChoisir: 'Choisir…',
     dateConstitution: 'Date de constitution',
     siege: 'Pays du siège',
-    capital: 'Capital social (facultatif)',
+    capital: 'Capital social, en francs (facultatif)',
+    capitalEntier: 'Indiquez un montant en francs entiers, sans décimales.',
     devise: 'Devise',
     deviseChoisir: 'Choisir…',
 

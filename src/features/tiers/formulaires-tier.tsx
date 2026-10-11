@@ -24,6 +24,7 @@ import {
 } from '@/features/tiers/api'
 import { listerDevises, listerPays } from '@/features/tiers/referentiels'
 import {
+  enFrancs,
   schemaGroupement,
   schemaIndividu,
   schemaPersonneMorale,
@@ -53,7 +54,7 @@ function messageEchec(echec: EchecCreation): string {
     case 'reference':
       return T.reference
     case 'invalide':
-      return T.invalide
+      return echec.message ?? T.invalide
     case 'interdit':
       return T.interdit
     case 'reseau':
@@ -274,7 +275,7 @@ export function FormPersonneMorale({ agences, reseau, onCree, onAnnuler }: FormP
         legal_form: c.legal_form,
         constitution_date: c.constitution_date,
         headquarters_country_id: c.headquarters_country_id,
-        capital_amount: c.capital_amount?.trim() || null,
+        capital_amount: enFrancs(c.capital_amount),
         capital_currency_id: c.capital_currency_id?.trim() || null,
         commercial_name: c.commercial_name?.trim() || null,
         rccm_number: c.rccm_number?.trim() || null,
@@ -343,7 +344,7 @@ export function FormPersonneMorale({ agences, reseau, onCree, onAnnuler }: FormP
 
       <div className="grid grid-cols-2 gap-3">
         <Champ id="capital_amount" label={T.capital} erreur={errors.capital_amount?.message}>
-          <Input id="capital_amount" type="number" step="1" min="0" {...register('capital_amount')} />
+          <Input id="capital_amount" inputMode="numeric" {...register('capital_amount')} />
         </Champ>
         <Champ id="capital_currency_id" label={T.devise} erreur={errors.capital_currency_id?.message}>
           <select

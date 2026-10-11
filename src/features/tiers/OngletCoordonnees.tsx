@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
+import { messageErreurServeur } from '@/features/tiers/api'
 import { BadgePrincipal } from '@/features/tiers/badges'
 import {
   ajouterAdresse,
@@ -333,7 +334,7 @@ function FormTelephone({ tierId }: { tierId: string }) {
         setRefus(e.message)
         setForcable(e.forcable)
       } else {
-        setErreur(C.erreurGenerique)
+        setErreur(messageErreurServeur(e, C.erreurGenerique))
       }
     },
   })
@@ -421,7 +422,7 @@ function FormEmail({ tierId }: { tierId: string }) {
       void queryClient.invalidateQueries({ queryKey: ['tiers'] })
       fermer()
     },
-    onError: () => setErreur(C.erreurGenerique),
+    onError: (e) => setErreur(messageErreurServeur(e, C.erreurGenerique)),
   })
 
   return (
@@ -490,7 +491,7 @@ function FormAdresse({ tierId }: { tierId: string }) {
       void queryClient.invalidateQueries({ queryKey: ['tiers'] })
       fermer()
     },
-    onError: () => setErreur(C.erreurGenerique),
+    onError: (e) => setErreur(messageErreurServeur(e, C.erreurGenerique)),
   })
 
   // Miroir du backend : rue OU repère. On refuse localement le formulaire vide, message clair.

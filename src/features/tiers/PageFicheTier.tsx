@@ -417,7 +417,7 @@ function DetailMorale({ detail }: { detail: NonNullable<FicheTier['personne_mora
   const capital =
     detail.capital_amount === null
       ? null
-      : `${Number(detail.capital_amount).toLocaleString('fr-FR')}${codeDevise ? ` ${codeDevise}` : ''}`
+      : `${detail.capital_amount.toLocaleString('fr-FR')}${codeDevise ? ` ${codeDevise}` : ''}`
   return (
     <>
       <Ligne label={T.nomCommercial} valeur={detail.commercial_name} icone={Building2} />

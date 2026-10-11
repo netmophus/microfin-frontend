@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
-import type { IndividuDetail } from '@/features/tiers/api'
+import { messageErreurServeur, type IndividuDetail } from '@/features/tiers/api'
 import { BadgeRisque as BadgeRisqueBase } from '@/features/tiers/badges'
 import { mettreAJourKyc, type ModeEntree, type PpeRelation } from '@/features/tiers/kyc'
 import { listerSecteurs } from '@/features/tiers/referentiels'
@@ -74,7 +74,7 @@ export function OngletKyc({
       // Rafraîchit la fiche : badge de risque, bandeau des conditions, tout se met à jour.
       void queryClient.invalidateQueries({ queryKey: ['tiers'] })
     },
-    onError: () => setErreur(K.erreur),
+    onError: (e) => setErreur(messageErreurServeur(e, K.erreur)),
   })
 
   if (individu === null || individu === undefined) {

@@ -23,6 +23,18 @@ const commun = {
   primary_agency_id: z.string().optional(),
 }
 
+// Capital en francs ENTIERS : chiffres seulement (espaces de groupement tolérés), aucune décimale.
+const montantEntier = z
+  .string()
+  .trim()
+  .refine((v) => /^\d*$/.test(v.replace(/\s/g, '')), T.capitalEntier)
+
+/** « 1 000 000 » -> 1000000 ; vide -> null. La saisie a déjà été validée par `montantEntier`. */
+export function enFrancs(saisie: string | undefined): number | null {
+  const chiffres = (saisie ?? '').replace(/\s/g, '')
+  return chiffres === '' ? null : Number(chiffres)
+}
+
 export const schemaIndividu = z.object({
   last_name: z.string().trim().min(1, T.requis).max(100, T.trop_long),
   first_name: z.string().trim().min(1, T.requis).max(100, T.trop_long),
@@ -38,7 +50,7 @@ export const schemaPersonneMorale = z.object({
   legal_form: z.string().min(1, T.requis),
   constitution_date: z.string().min(1, T.requis).refine(pasDansLeFutur, T.dateFuture),
   headquarters_country_id: z.string().min(1, T.requis),
-  capital_amount: z.string().trim().optional(),
+  capital_amount: montantEntier.optional(),
   capital_currency_id: z.string().optional(),
   commercial_name: z.string().trim().max(300, T.trop_long).optional(),
   rccm_number: z.string().trim().max(50, T.trop_long).optional(),
@@ -74,7 +86,7 @@ export const schemaEditionPersonneMorale = z.object({
   rccm_number: z.string().trim().max(50, T.trop_long),
   nif_number: z.string().trim().max(50, T.trop_long),
   constitution_date: z.string().min(1, T.requis).refine(pasDansLeFutur, T.dateFuture),
-  capital_amount: z.string().trim(),
+  capital_amount: montantEntier,
   capital_currency_id: z.string(),
   business_purpose: z.string().trim(),
   headquarters_country_id: z.string().min(1, T.requis),

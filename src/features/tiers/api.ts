@@ -1,6 +1,7 @@
 import { AxiosError } from 'axios'
 
 import { api } from '@/lib/api'
+import { LIBELLES } from '@/libelles/fr'
 
 /**
  * Module Tiers — liste, fiche (adaptative), création des 3 types, timeline.
@@ -103,7 +104,7 @@ export interface PersonneMoraleDetail {
   rccm_number: string | null
   nif_number: string | null
   constitution_date: string
-  capital_amount: string | null
+  capital_amount: number | null // francs entiers
   capital_currency_id: string | null
   business_purpose: string | null
   headquarters_country_id: string
@@ -286,6 +287,43 @@ export function messageRefusParts(erreur: unknown, defaut: string): string {
   return defaut
 }
 
+const PREFIXE_VALIDATION = 'Value error, '
+
+/** Le message métier du serveur, quand il en donne un : un `detail` texte, ou la phrase française
+ *  d'une règle de validation (Pydantic la préfixe de « Value error, »). Les messages techniques
+ *  anglais de Pydantic ne sont JAMAIS repris. Nul si le serveur n'a rien dit d'exploitable. */
+export function detailServeur(erreur: unknown): string | null {
+  if (!(erreur instanceof AxiosError)) return null
+  const detail: unknown = erreur.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    for (const item of detail) {
+      const msg = (item as { msg?: unknown } | null)?.msg
+      if (typeof msg === 'string' && msg.startsWith(PREFIXE_VALIDATION)) {
+        return msg.slice(PREFIXE_VALIDATION.length)
+      }
+    }
+  }
+  return null
+}
+
+/** Ce qui s'est passé, d'après le code HTTP, quand le serveur n'a pas fourni de message. */
+export function messageErreurHttp(erreur: unknown): string | null {
+  if (!(erreur instanceof AxiosError)) return null
+  if (!erreur.response) return LIBELLES.erreurs.serveurInjoignable
+  const code = erreur.response.status
+  if (code === 403) return LIBELLES.erreurs.refusInterdit
+  if (code === 404) return LIBELLES.erreurs.refusIntrouvable
+  if (code === 405 || code >= 500) return LIBELLES.erreurs.refusServeur(code)
+  return null
+}
+
+/** Message à afficher pour un échec d'écriture : celui du serveur, sinon ce que dit le code HTTP,
+ *  sinon `defaut`. Jamais un « erreur » sans raison quand la raison est connue. */
+export function messageErreurServeur(erreur: unknown, defaut: string): string {
+  return detailServeur(erreur) ?? messageErreurHttp(erreur) ?? defaut
+}
+
 // --- création --------------------------------------------------------------------------
 
 /** Communs à toute création. primary_agency_id null = « mon agence » (dérivée du claim). */
@@ -308,7 +346,7 @@ export interface DonneesPersonneMorale extends CommunCreation {
   legal_form: string
   constitution_date: string
   headquarters_country_id: string
-  capital_amount: string | null
+  capital_amount: number | null // francs entiers
   capital_currency_id: string | null
   commercial_name: string | null
   rccm_number: string | null
@@ -328,7 +366,7 @@ export interface DonneesGroupement extends CommunCreation {
 export type EchecCreation =
   | { type: 'conflit' }
   | { type: 'reference' } // 422 avec une FK invalide (agence/pays)
-  | { type: 'invalide' }
+  | { type: 'invalide'; message?: string | null } // message du serveur, quand il en donne un
   | { type: 'interdit' }
   | { type: 'reseau' }
   | { type: 'inattendue' }
@@ -474,7 +512,7 @@ function traduireCreation(erreur: unknown): EchecCreation {
     case 409:
       return { type: 'conflit' }
     case 422:
-      return { type: 'invalide' }
+      return { type: 'invalide', message: detailServeur(erreur) }
     case 403:
       return { type: 'interdit' }
     default:
@@ -491,7 +529,7 @@ export interface ModificationPersonneMorale {
   rccm_number: string | null
   nif_number: string | null
   constitution_date: string
-  capital_amount: string | null
+  capital_amount: number | null // francs entiers
   capital_currency_id: string | null
   business_purpose: string | null
   headquarters_country_id: string
@@ -506,8 +544,9 @@ export interface ModificationGroupement {
   expected_member_count: number | null
 }
 
-/** Refus de la modification. `detail` est le message du serveur quand il est destiné à l'écran
- *  (ex. « Ce numéro RCCM est déjà rattaché à une autre fiche. »), sinon nul. */
+/** Refus de la modification. `detail` est le message à montrer tel quel : celui du serveur
+ *  (ex. « Ce numéro RCCM est déjà rattaché à une autre fiche. »), sinon ce que dit le code HTTP ;
+ *  nul seulement si rien n'est exploitable. */
 export class ErreurModification extends Error {
   readonly detail: string | null
 
@@ -523,11 +562,7 @@ async function modifierProfil<T>(url: string, donnees: T): Promise<FicheTier> {
     const reponse = await api.patch<FicheTier>(url, donnees)
     return reponse.data
   } catch (erreur) {
-    const detail =
-      erreur instanceof AxiosError && erreur.response?.status === 422
-        ? (erreur.response.data as { detail?: unknown } | undefined)?.detail
-        : undefined
-    throw new ErreurModification(typeof detail === 'string' ? detail : null)
+    throw new ErreurModification(detailServeur(erreur) ?? messageErreurHttp(erreur))
   }
 }
 
