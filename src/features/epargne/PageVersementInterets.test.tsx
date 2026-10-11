@@ -48,6 +48,7 @@ const apercuAvecComptes = {
   total: 45000,
   deja_traites: 0,
   deja_verse_le: null,
+  en_erreur: [] as string[],
   echantillon: [
     {
       account_number: 'EP-2026-0000001',
@@ -85,7 +86,13 @@ describe('PageVersementInterets', () => {
 
   it('verser exige une confirmation renforcée, puis rend le résultat', async () => {
     apercuSimule.mockResolvedValue(apercuAvecComptes)
-    versementSimule.mockResolvedValue({ traites: 3, credites: 3, ignores: 0, total: 45000 })
+    versementSimule.mockResolvedValue({
+      traites: 3,
+      credites: 3,
+      ignores: 0,
+      total: 45000,
+      en_erreur: [],
+    })
     afficher()
     remplirEtPrevisualiser()
 
@@ -132,6 +139,61 @@ describe('PageVersementInterets', () => {
 
     expect(await screen.findByText(/Aucun intérêt à verser sur cette période/)).toBeVisible()
     expect(screen.getByText(/produits d’épargne sont à taux 0/)).toBeVisible()
+  })
+
+  it('aperçu : les comptes en anomalie sont signalés avec leur message, les autres restent versables', async () => {
+    const message = 'mouvement sans pièce comptable sur le compte EP-2026-0000002 : calcul impossible'
+    apercuSimule.mockResolvedValue({ ...apercuAvecComptes, en_erreur: [message] })
+    afficher()
+    remplirEtPrevisualiser()
+
+    expect(await screen.findByText('1 compte non traité')).toBeVisible()
+    expect(screen.getByText(message)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Verser les intérêts' })).toBeVisible()
+  })
+
+  it('aperçu : des comptes en anomalie sont signalés même quand rien n’est à verser', async () => {
+    apercuSimule.mockResolvedValue({
+      ...apercuAvecComptes,
+      comptes_a_crediter: 0,
+      total: 0,
+      echantillon: [],
+      en_erreur: ['anomalie sur le compte EP-1 : calcul impossible', 'anomalie sur le compte EP-2 : calcul impossible'],
+    })
+    afficher()
+    remplirEtPrevisualiser()
+
+    expect(await screen.findByText('2 comptes non traités')).toBeVisible()
+    expect(screen.getByText(/compte EP-1/)).toBeVisible()
+    expect(screen.getByText(/compte EP-2/)).toBeVisible()
+  })
+
+  it('résultat du versement : les comptes non traités sont rappelés', async () => {
+    const message = 'mouvement sans pièce comptable sur le compte EP-2026-0000002 : calcul impossible'
+    apercuSimule.mockResolvedValue(apercuAvecComptes)
+    versementSimule.mockResolvedValue({
+      traites: 2,
+      credites: 2,
+      ignores: 0,
+      total: 30000,
+      en_erreur: [message],
+    })
+    afficher()
+    remplirEtPrevisualiser()
+    fireEvent.click(await screen.findByRole('button', { name: 'Verser les intérêts' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Verser les intérêts' }))
+
+    expect(await screen.findByText('1 compte non traité')).toBeVisible()
+    expect(screen.getByText(message)).toBeVisible()
+  })
+
+  it('aucune anomalie : aucun bandeau de comptes non traités', async () => {
+    apercuSimule.mockResolvedValue(apercuAvecComptes)
+    afficher()
+    remplirEtPrevisualiser()
+
+    await screen.findByText(/3 comptes concernés/)
+    expect(screen.queryByText(/non traité/)).toBeNull()
   })
 
   it('champs incomplets : le clic n’est pas silencieux, on réclame la saisie', async () => {

@@ -28,6 +28,26 @@ function jjmmaaaa(iso: string): string {
   return iso.split('-').reverse().join('/')
 }
 
+/** Comptes que le calcul n'a pas pu traiter : le nombre, puis chaque compte avec son message. */
+function ComptesNonTraites({ comptes }: { comptes: string[] }) {
+  if (comptes.length === 0) return null
+  return (
+    <Alert variant="destructive" role="alert">
+      <AlertDescription className="space-y-2">
+        <p className="font-medium">
+          {comptes.length === 1 ? I.nonTraitesUn : fmt(I.nonTraites, { n: String(comptes.length) })}
+        </p>
+        <p>{I.nonTraitesAide}</p>
+        <ul className="list-disc pl-5">
+          {comptes.map((message) => (
+            <li key={message}>{message}</li>
+          ))}
+        </ul>
+      </AlertDescription>
+    </Alert>
+  )
+}
+
 /**
  * Versement des intérêts — réservé à la DIRECTION (acte d'institution). La règle du module : on
  * PRÉVISUALISE avant de verser. L'écran calcule et MONTRE (total + détail par compte : taux,
@@ -147,6 +167,9 @@ export function PageVersementInterets() {
           </Alert>
         )}
       </form>
+
+      {/* Comptes en anomalie : signalés dès l'aperçu, qu'il y ait ou non quelque chose à verser. */}
+      {apercu && <ComptesNonTraites comptes={apercu.en_erreur} />}
 
       {/* Étape 2 — la prévisualisation (rien n'est encore versé). Si rien à verser, on DIT
           pourquoi : déjà versé (avec la date), taux 0, aucun compte, ou soldes insuffisants. */}
@@ -299,6 +322,7 @@ export function PageVersementInterets() {
           </AlertDescription>
         </Alert>
       )}
+      {rapport && <ComptesNonTraites comptes={rapport.en_erreur} />}
     </div>
   )
 }

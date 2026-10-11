@@ -1154,6 +1154,12 @@ export const LIBELLES = {
       'Cette période a déjà été traitée le {date}. Aucun nouveau versement ne sera fait.',
     dejaTraites: '{n} comptes déjà versés.',
 
+    // Comptes que le calcul ne peut pas traiter (anomalie de données) : signalés, jamais devinés.
+    nonTraitesUn: '1 compte non traité',
+    nonTraites: '{n} comptes non traités',
+    nonTraitesAide:
+      'Ces comptes comportent une anomalie de données et sont exclus du calcul. Les autres comptes sont traités normalement. Signalez-les à l’administrateur.',
+
     // Le détail par compte : de quoi vérifier « ça a l'air juste ».
     detailTitre: 'Détail (échantillon)',
     colCompte: 'Compte',

@@ -154,6 +154,7 @@ export interface ApercuInterets {
   total: number
   deja_traites: number
   deja_verse_le: string | null
+  en_erreur: string[] // comptes que le calcul ne peut pas traiter (anomalie de données)
   echantillon: LigneApercuInterets[]
 }
 
@@ -162,6 +163,7 @@ export interface RapportInterets {
   credites: number
   ignores: number
   total: number
+  en_erreur: string[] // comptes signalés, non traités
 }
 
 export interface LigneRapprochement {
