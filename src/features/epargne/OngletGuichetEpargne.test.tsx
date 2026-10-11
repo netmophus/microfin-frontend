@@ -161,6 +161,30 @@ describe('OngletGuichetEpargne', () => {
     expect(screen.getByText(/Nouveau solde : 17 000 F/)).toBeVisible()
   })
 
+  it('premier dépôt refusé : le message serveur s’affiche tel quel', async () => {
+    depotSimule.mockRejectedValue(
+      new AxiosError('rejet', undefined, undefined, undefined, {
+        status: 422,
+        data: {
+          detail: 'Premier dépôt insuffisant : ce produit exige au moins 5 000 F à l’ouverture.',
+        },
+      } as never),
+    )
+    afficher()
+    await chercherEtSelectionner()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dépôt' }))
+    fireEvent.change(screen.getByLabelText(/Montant/), { target: { value: '1000' } })
+    fireEvent.click(screen.getByRole('button', { name: /Continuer/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
+
+    expect(
+      await screen.findByText(
+        'Premier dépôt insuffisant : ce produit exige au moins 5 000 F à l’ouverture.',
+      ),
+    ).toBeVisible()
+  })
+
   it('retrait refusé : le message serveur s’affiche tel quel', async () => {
     retraitSimule.mockRejectedValue(
       new AxiosError('rejet', undefined, undefined, undefined, {

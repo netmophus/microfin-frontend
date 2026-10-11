@@ -62,6 +62,8 @@ function produit(partiel: Partial<ProduitEpargneDetail> = {}): ProduitEpargneDet
     base_jours: 360,
     regle_arrondi: 'plus_proche',
     solde_minimum_remunere: 0,
+    min_balance: 0,
+    depot_initial_minimum: 0,
     ...partiel,
   }
 }
@@ -157,6 +159,91 @@ describe('PageProduitsEpargne', () => {
         expect.objectContaining({ code: 'NEW', name: 'Nouveau produit', type: 'a_vue' }),
       ),
     )
+  })
+
+  it('création : dépôt initial minimum et solde plancher, avec leur aide, partent au serveur', async () => {
+    listerSimule.mockResolvedValue([])
+    creerSimule.mockResolvedValue(produit({ code: 'NEW' }))
+    afficher()
+    await screen.findByText(/Aucun produit d’épargne/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un produit' }))
+
+    expect(screen.getByText(/Montant minimum du premier dépôt sur un compte neuf/)).toBeVisible()
+    expect(screen.getByText(/Solde à conserver sur le compte après un retrait/)).toBeVisible()
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'NEW' } })
+    fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Nouveau produit' } })
+    fireEvent.change(screen.getByLabelText('Dépôt initial minimum (F CFA)'), {
+      target: { value: '5000' },
+    })
+    fireEvent.change(screen.getByLabelText('Solde plancher (F CFA)'), {
+      target: { value: '2000' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(creerSimule).toHaveBeenCalledWith(
+        expect.objectContaining({ depot_initial_minimum: 5000, min_balance: 2000 }),
+      ),
+    )
+  })
+
+  it('l’aide du solde minimum rémunéré le distingue du solde plancher', async () => {
+    listerSimule.mockResolvedValue([produit()])
+    afficher()
+    await screen.findByText('Épargne à vue')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+
+    expect(screen.getByLabelText('Solde minimum rémunéré (F CFA)')).toHaveAccessibleDescription(
+      'En dessous de ce solde, aucun intérêt n’est versé.',
+    )
+  })
+
+  it('modification : les deux montants sont préremplis, modifiables et envoyés', async () => {
+    listerSimule.mockResolvedValue([produit({ min_balance: 2000, depot_initial_minimum: 5000 })])
+    modifierSimule.mockResolvedValue(produit())
+    afficher()
+    await screen.findByText('Épargne à vue')
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+
+    expect(screen.getByLabelText('Dépôt initial minimum (F CFA)')).toHaveValue('5000')
+    expect(screen.getByLabelText('Solde plancher (F CFA)')).toHaveValue('2000')
+    fireEvent.change(screen.getByLabelText('Solde plancher (F CFA)'), {
+      target: { value: '3000' },
+    })
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Nouvelle règle du guichet' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(modifierSimule).toHaveBeenCalledWith(
+        'p1',
+        expect.objectContaining({ min_balance: 3000, depot_initial_minimum: 5000 }),
+      ),
+    )
+  })
+
+  it('un montant négatif ou décimal bloque l’enregistrement', async () => {
+    listerSimule.mockResolvedValue([produit()])
+    afficher()
+    await screen.findByText('Épargne à vue')
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Correction' },
+    })
+    const enregistrer = screen.getByRole('button', { name: 'Enregistrer' })
+    expect(enregistrer).not.toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Solde plancher (F CFA)'), { target: { value: '-1' } })
+    expect(enregistrer).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Solde plancher (F CFA)'), { target: { value: '1,5' } })
+    expect(enregistrer).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Solde plancher (F CFA)'), { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText('Dépôt initial minimum (F CFA)'), {
+      target: { value: '-5' },
+    })
+    expect(enregistrer).toBeDisabled()
   })
 
   it('ligne provisoire : mention et lien vers le rattachement comptable', async () => {

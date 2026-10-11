@@ -2079,7 +2079,14 @@ export const LIBELLES = {
     arrondi: 'Règle d’arrondi',
     arrondiPlusProche: 'Au plus proche',
     arrondiPlancher: 'Au franc inférieur',
-    soldeMinimum: 'Solde minimum rémunéré (francs CFA)',
+    soldeMinimum: 'Solde minimum rémunéré (F CFA)',
+    soldeMinimumAide: 'En dessous de ce solde, aucun intérêt n’est versé.',
+    depotInitialMinimum: 'Dépôt initial minimum (F CFA)',
+    depotInitialMinimumAide:
+      'Montant minimum du premier dépôt sur un compte neuf. 0 : aucune exigence.',
+    soldePlancher: 'Solde plancher (F CFA)',
+    soldePlancherAide:
+      'Solde à conserver sur le compte après un retrait. 0 : le compte peut être vidé.',
     motif: 'Motif (obligatoire)',
     motifPlaceholder: 'Pourquoi ce changement ?',
 

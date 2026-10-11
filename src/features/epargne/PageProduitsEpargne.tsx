@@ -69,6 +69,42 @@ function pourcentVersBp(saisie: string): number | null {
   return Math.round(nombre * 100)
 }
 
+/** Montant en francs entiers, positif ou nul (0 = aucune contrainte). */
+function montantValide(valeur: number): boolean {
+  return Number.isInteger(valeur) && valeur >= 0
+}
+
+/** Champ de montant en francs avec sa ligne d'aide, reliée au champ pour les lecteurs d'écran. */
+function ChampMontant({
+  id,
+  libelle,
+  aide,
+  valeur,
+  onChange,
+}: {
+  id: string
+  libelle: string
+  aide: string
+  valeur: string
+  onChange: (valeur: string) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <Label htmlFor={id}>{libelle}</Label>
+      <Input
+        id={id}
+        inputMode="numeric"
+        value={valeur}
+        aria-describedby={`${id}-aide`}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <p id={`${id}-aide`} className="text-xs text-muted-foreground">
+        {aide}
+      </p>
+    </div>
+  )
+}
+
 type EtatLigne = { id: string; type: 'edition' | 'activation' } | null
 
 /**
@@ -293,10 +329,14 @@ function LigneEdition({
   const [baseJours, setBaseJours] = useState<BaseJours>(produit.base_jours)
   const [arrondi, setArrondi] = useState<RegleArrondi>(produit.regle_arrondi)
   const [soldeMinimum, setSoldeMinimum] = useState(String(produit.solde_minimum_remunere))
+  const [depotInitial, setDepotInitial] = useState(String(produit.depot_initial_minimum))
+  const [plancher, setPlancher] = useState(String(produit.min_balance))
   const [motif, setMotif] = useState('')
 
   const tauxBp = pourcentVersBp(taux)
   const soldeMinimumValeur = Number(soldeMinimum)
+  const depotInitialValeur = Number(depotInitial)
+  const plancherValeur = Number(plancher)
   const idBase = `pe-${produit.id}`
 
   const mutation = useMutation({
@@ -310,6 +350,8 @@ function LigneEdition({
         base_jours: baseJours,
         regle_arrondi: arrondi,
         solde_minimum_remunere: soldeMinimumValeur,
+        min_balance: plancherValeur,
+        depot_initial_minimum: depotInitialValeur,
         motif: motif.trim(),
       }),
     onSuccess: onFini,
@@ -322,6 +364,8 @@ function LigneEdition({
     tauxBp <= 10000 &&
     Number.isInteger(soldeMinimumValeur) &&
     soldeMinimumValeur >= 0 &&
+    montantValide(depotInitialValeur) &&
+    montantValide(plancherValeur) &&
     motif.trim().length >= 3
 
   return (
@@ -421,15 +465,27 @@ function LigneEdition({
               ))}
             </select>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor={`${idBase}-solde-min`}>{P.soldeMinimum}</Label>
-            <Input
-              id={`${idBase}-solde-min`}
-              inputMode="numeric"
-              value={soldeMinimum}
-              onChange={(e) => setSoldeMinimum(e.target.value)}
-            />
-          </div>
+          <ChampMontant
+            id={`${idBase}-solde-min`}
+            libelle={P.soldeMinimum}
+            aide={P.soldeMinimumAide}
+            valeur={soldeMinimum}
+            onChange={setSoldeMinimum}
+          />
+          <ChampMontant
+            id={`${idBase}-depot-initial`}
+            libelle={P.depotInitialMinimum}
+            aide={P.depotInitialMinimumAide}
+            valeur={depotInitial}
+            onChange={setDepotInitial}
+          />
+          <ChampMontant
+            id={`${idBase}-plancher`}
+            libelle={P.soldePlancher}
+            aide={P.soldePlancherAide}
+            valeur={plancher}
+            onChange={setPlancher}
+          />
         </div>
 
         <div className="mt-3 max-w-md space-y-2">
@@ -535,9 +591,13 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
   const [baseJours, setBaseJours] = useState<BaseJours>(360)
   const [arrondi, setArrondi] = useState<RegleArrondi>('plus_proche')
   const [soldeMinimum, setSoldeMinimum] = useState('0')
+  const [depotInitial, setDepotInitial] = useState('0')
+  const [plancher, setPlancher] = useState('0')
 
   const tauxBp = pourcentVersBp(taux)
   const soldeMinimumValeur = Number(soldeMinimum)
+  const depotInitialValeur = Number(depotInitial)
+  const plancherValeur = Number(plancher)
   const idBase = 'pe-creation'
 
   const mutation = useMutation({
@@ -553,6 +613,8 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
         base_jours: baseJours,
         regle_arrondi: arrondi,
         solde_minimum_remunere: soldeMinimumValeur,
+        min_balance: plancherValeur,
+        depot_initial_minimum: depotInitialValeur,
       }),
     onSuccess: onFini,
   })
@@ -564,7 +626,9 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
     tauxBp >= 0 &&
     tauxBp <= 10000 &&
     Number.isInteger(soldeMinimumValeur) &&
-    soldeMinimumValeur >= 0
+    soldeMinimumValeur >= 0 &&
+    montantValide(depotInitialValeur) &&
+    montantValide(plancherValeur)
 
   return (
     <div className="space-y-3 rounded-md border p-4">
@@ -673,15 +737,27 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
             ))}
           </select>
         </div>
-        <div className="space-y-1">
-          <Label htmlFor={`${idBase}-solde-min`}>{P.soldeMinimum}</Label>
-          <Input
-            id={`${idBase}-solde-min`}
-            inputMode="numeric"
-            value={soldeMinimum}
-            onChange={(e) => setSoldeMinimum(e.target.value)}
-          />
-        </div>
+        <ChampMontant
+          id={`${idBase}-solde-min`}
+          libelle={P.soldeMinimum}
+          aide={P.soldeMinimumAide}
+          valeur={soldeMinimum}
+          onChange={setSoldeMinimum}
+        />
+        <ChampMontant
+          id={`${idBase}-depot-initial`}
+          libelle={P.depotInitialMinimum}
+          aide={P.depotInitialMinimumAide}
+          valeur={depotInitial}
+          onChange={setDepotInitial}
+        />
+        <ChampMontant
+          id={`${idBase}-plancher`}
+          libelle={P.soldePlancher}
+          aide={P.soldePlancherAide}
+          valeur={plancher}
+          onChange={setPlancher}
+        />
       </div>
 
       <p className="text-xs text-muted-foreground">{P.decouvertNonAutorise}</p>

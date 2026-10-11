@@ -238,6 +238,8 @@ export interface ProduitEpargneDetail {
   base_jours: BaseJours
   regle_arrondi: RegleArrondi
   solde_minimum_remunere: number
+  min_balance: number // solde plancher
+  depot_initial_minimum: number
 }
 
 export interface CreationProduitEpargne {
@@ -251,6 +253,8 @@ export interface CreationProduitEpargne {
   base_jours: BaseJours
   regle_arrondi: RegleArrondi
   solde_minimum_remunere: number
+  min_balance: number
+  depot_initial_minimum: number
 }
 
 export interface ModificationProduitEpargne {
@@ -262,6 +266,8 @@ export interface ModificationProduitEpargne {
   base_jours: BaseJours
   regle_arrondi: RegleArrondi
   solde_minimum_remunere: number
+  min_balance: number
+  depot_initial_minimum: number
   motif: string
 }
 
