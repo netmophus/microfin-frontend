@@ -123,7 +123,8 @@ describe('OngletComptesEpargne', () => {
           balance_after: 10000,
           operation_type: 'depot',
           label: null,
-          created_at: '2026-07-28T10:00:00Z',
+          date_comptable: '2026-01-02',
+          saisi_le: '2026-07-28T10:00:00Z',
           entry_number: 'CA-2026-000001',
         },
       ]),
@@ -134,6 +135,57 @@ describe('OngletComptesEpargne', () => {
     // Le libellé est inline dans « date · Dépôt · Pièce … » -> matcher souple.
     expect(await screen.findByText(/Dépôt/)).toBeVisible()
     expect(screen.getByText(/CA-2026-000001/)).toBeVisible()
+  })
+
+  it('relevé : affiche la date comptable de la pièce, la date de saisie reste en infobulle', async () => {
+    comptesSimules.mockResolvedValue([unCompte()])
+    detailSimule.mockResolvedValue(
+      detail([
+        {
+          id: 'm1',
+          sens: 'credit',
+          amount: 10000,
+          balance_after: 10000,
+          operation_type: 'depot',
+          label: null,
+          date_comptable: '2026-01-02',
+          saisi_le: '2026-10-10T10:00:00Z',
+          entry_number: 'CA-2026-000001',
+        },
+      ]),
+    )
+    afficher('actif')
+    fireEvent.click(await screen.findByRole('button', { name: /EP-2026-0000001/ }))
+
+    const ligne = await screen.findByText(/02\/01\/2026/)
+    expect(ligne).toBeVisible()
+    expect(ligne.textContent).not.toMatch(/10\/10\/2026/)
+    expect(ligne).toHaveAttribute('title', expect.stringMatching(/^Saisi le .*10\/10\/2026/))
+  })
+
+  it('relevé : une pièce sans date comptable affiche un tiret, pas la date de saisie', async () => {
+    comptesSimules.mockResolvedValue([unCompte()])
+    detailSimule.mockResolvedValue(
+      detail([
+        {
+          id: 'm2',
+          sens: 'credit',
+          amount: 500,
+          balance_after: 500,
+          operation_type: 'depot',
+          label: null,
+          date_comptable: null,
+          saisi_le: '2026-10-10T10:00:00Z',
+          entry_number: null,
+        },
+      ]),
+    )
+    afficher('actif')
+    fireEvent.click(await screen.findByRole('button', { name: /EP-2026-0000001/ }))
+
+    const ligne = await screen.findByText(/Dépôt/)
+    expect(ligne.textContent).toMatch(/^—/)
+    expect(ligne.textContent).not.toMatch(/10\/10\/2026/)
   })
 
   it('responsable : la fermeture affiche la restitution avant de confirmer', async () => {

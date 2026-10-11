@@ -37,7 +37,8 @@ export interface MouvementEpargne {
   balance_after: number
   operation_type: string
   label: string | null
-  created_at: string
+  date_comptable: string | null // journée comptable de la pièce
+  saisi_le: string // horodatage de saisie (audit)
   entry_number: string | null
 }
 

@@ -22,6 +22,13 @@ import { LIBELLES } from '@/libelles/fr'
 
 const E = LIBELLES.epargne
 
+/** AAAA-MM-JJ -> JJ/MM/AAAA, sans passer par Date : un jour comptable n'a pas de fuseau. */
+function dateComptable(iso: string | null): string {
+  if (!iso) return E.dateComptableAbsente
+  const [annee, mois, jour] = iso.split('-')
+  return `${jour}/${mois}/${annee}`
+}
+
 function fmt(gabarit: string, valeurs: Record<string, string>): string {
   return gabarit.replace(/\{(\w+)\}/g, (_, cle) => valeurs[cle] ?? '')
 }
@@ -160,8 +167,8 @@ function PanneauCompte({ compte, tierId }: { compte: CompteEpargne; tierId: stri
           <ul className="divide-y rounded-md border bg-background text-sm">
             {detail.data.mouvements.map((m) => (
               <li key={m.id} className="flex items-center justify-between gap-2 px-3 py-2">
-                <span>
-                  {new Date(m.created_at).toLocaleDateString('fr-FR')} ·{' '}
+                <span title={E.saisiLe(new Date(m.saisi_le).toLocaleString('fr-FR'))}>
+                  {dateComptable(m.date_comptable)} ·{' '}
                   {E.operations[m.operation_type] ?? m.operation_type}
                   {m.entry_number && (
                     <span className="text-muted-foreground">

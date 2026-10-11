@@ -915,6 +915,8 @@ export const LIBELLES = {
     chargementReleve: 'Chargement du relevé…',
     releve: 'Relevé des mouvements',
     releveVide: 'Aucun mouvement.',
+    saisiLe: (quand: string) => `Saisi le ${quand}`,
+    dateComptableAbsente: '—',
     operations: {
       depot: 'Dépôt',
       retrait: 'Retrait',
