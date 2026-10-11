@@ -202,7 +202,10 @@ export interface MouvementParts {
   unit_value: number
   amount: number
   entry_number: string | null
-  created_at: string
+  // Date de la pièce (journée comptable, AAAA-MM-JJ) : c'est elle que l'écran affiche.
+  date_comptable: string | null
+  // Horodatage de saisie : audit seulement, jamais la date de l'opération.
+  saisi_le: string
 }
 
 export interface FichePartsSociales {

@@ -102,6 +102,31 @@ describe('OngletParts', () => {
     expect(await screen.findByText(/ne détient aucune part sociale/)).toBeVisible()
   })
 
+  it('historique : affiche la date comptable de la pièce, la date de saisie reste en info-bulle', async () => {
+    etat.permissions = ['tiers.shares.read']
+    partsSimule.mockResolvedValue(
+      base({
+        mouvements: [
+          {
+            type: 'souscription_comptant',
+            shares_count: 10,
+            unit_value: 5000,
+            amount: 50000,
+            entry_number: 'CA-2026-000001',
+            date_comptable: '2026-01-02',
+            saisi_le: '2026-10-10T08:30:00Z',
+          },
+        ],
+      }),
+    )
+    afficher()
+
+    const ligne = await screen.findByText(/02\/01\/2026/)
+    expect(ligne).toBeVisible()
+    expect(screen.queryByText(/10\/10\/2026/)).toBeNull() // la date civile n'est pas la date affichée
+    expect(ligne).toHaveAttribute('title', expect.stringContaining('10/10/2026'))
+  })
+
   it('caissier : souscription au comptant → le tiers devient MEMBRE', async () => {
     etat.permissions = ['tiers.shares.read', 'tiers.shares.pay']
     // Au départ : client sans parts.

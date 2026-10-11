@@ -827,6 +827,8 @@ export const LIBELLES = {
     historique: 'Historique des parts',
     historiqueVide: 'Aucun mouvement de parts.',
     piece: 'Pièce',
+    saisiLe: (quand: string) => `Saisi le ${quand}`,
+    dateComptableAbsente: '—',
     operations: {
       souscription: 'Souscription (engagement)',
       liberation: 'Libération',

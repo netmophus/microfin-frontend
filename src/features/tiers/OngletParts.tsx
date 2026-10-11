@@ -28,6 +28,13 @@ function fcfa(montant: number): string {
   return `${montant.toLocaleString('fr-FR')} F`
 }
 
+/** AAAA-MM-JJ -> JJ/MM/AAAA, sans passer par Date : un jour comptable n'a pas de fuseau. */
+function dateComptable(iso: string | null): string {
+  if (!iso) return P.dateComptableAbsente
+  const [annee, mois, jour] = iso.split('-')
+  return `${jour}/${mois}/${annee}`
+}
+
 function fmt(gabarit: string, valeurs: Record<string, string>): string {
   return gabarit.replace(/\{(\w+)\}/g, (_, cle) => valeurs[cle] ?? '')
 }
@@ -132,11 +139,11 @@ export function OngletParts({ tierId, tierStatut }: { tierId: string; tierStatut
           <ul className="divide-y rounded-md border bg-background text-sm">
             {f.mouvements.map((m, i) => (
               <li
-                key={`${m.created_at}-${i}`}
+                key={`${m.saisi_le}-${i}`}
                 className="flex items-center justify-between gap-2 px-3 py-2"
               >
-                <span>
-                  {new Date(m.created_at).toLocaleDateString('fr-FR')} ·{' '}
+                <span title={P.saisiLe(new Date(m.saisi_le).toLocaleString('fr-FR'))}>
+                  {dateComptable(m.date_comptable)} ·{' '}
                   {P.operations[m.type] ?? m.type}
                   {' · '}
                   {m.shares_count} {m.shares_count > 1 ? 'parts' : 'part'}
