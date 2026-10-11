@@ -19,6 +19,8 @@ import {
   supprimerPiece,
   verifierPiece,
   type Piece,
+  type TypeDeFiche,
+  type TypePiece,
 } from '@/features/tiers/pieces'
 import { listerPays } from '@/features/tiers/referentiels'
 import { LIBELLES } from '@/libelles/fr'
@@ -27,20 +29,26 @@ const P = LIBELLES.tiersPieces
 const SELECT =
   'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs disabled:opacity-50'
 
-export function OngletPieces({ tierId }: { tierId: string }) {
+export function OngletPieces({ tierId, tierType }: { tierId: string; tierType?: TypeDeFiche }) {
   const peutGerer = useAPermission('tiers.update')
   const peutVerifier = useAPermission('tiers.identity.verify')
   const requete = useQuery({
     queryKey: ['tiers', 'pieces', tierId],
     queryFn: () => listerPieces(tierId),
   })
-  const types = useQuery({ queryKey: ['types-pieces'], queryFn: listerTypesPieces })
+  // Le sélecteur ne propose que les types qui s'appliquent à cette fiche. Les pièces DÉJÀ
+  // enregistrées gardent leur libellé : on résout leur nom sur la liste complète.
+  const types = useQuery({
+    queryKey: ['types-pieces', tierType ?? 'tous'],
+    queryFn: () => listerTypesPieces(tierType),
+  })
+  const tousTypes = useQuery({ queryKey: ['types-pieces', 'tous'], queryFn: () => listerTypesPieces() })
   const pays = useQuery({ queryKey: ['pays'], queryFn: listerPays })
 
   const nomType = useMemo(() => {
-    const table = new Map((types.data ?? []).map((t) => [t.id, t.name]))
+    const table = new Map((tousTypes.data ?? []).map((t) => [t.id, t.name]))
     return (id: string) => table.get(id) ?? id
-  }, [types.data])
+  }, [tousTypes.data])
 
   if (requete.isPending) {
     return <p className="py-4 text-sm text-muted-foreground">{P.chargement}</p>
@@ -262,7 +270,7 @@ function FormPiece({
   pays,
 }: {
   tierId: string
-  types: { id: string; name: string; requires_expiry_date: boolean }[]
+  types: TypePiece[]
   typesIndispo: boolean
   pays: { id: string; name: string }[]
 }) {
@@ -279,6 +287,14 @@ function FormPiece({
   const [erreur, setErreur] = useState<string | null>(null)
 
   const typeChoisi = types.find((t) => t.id === typeId)
+  // Ce que le type exige est lu sur le type (le serveur applique la même règle).
+  const autoriteExigee = Boolean(typeChoisi?.requires_issuer)
+  const expirationExigee = Boolean(typeChoisi?.requires_expiry_date)
+  const incomplet =
+    !typeId ||
+    !numero.trim() ||
+    (autoriteExigee && !autorite.trim()) ||
+    (expirationExigee && !expiration)
 
   const fermer = () => {
     setOuvert(false)
@@ -310,7 +326,7 @@ function FormPiece({
     },
     onError: (e) => {
       if (e instanceof ErreurDoublonPiece) setDoublon(e)
-      else setErreur(P.erreurGenerique)
+      else setErreur(e instanceof ErreurPiece ? e.message : P.erreurGenerique)
     },
   })
 
@@ -368,11 +384,13 @@ function FormPiece({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="piece-expiration">
-              {typeChoisi?.requires_expiry_date ? P.dateExpiration : P.dateExpirationFacultative}
+              {expirationExigee ? P.dateExpirationObligatoire : P.dateExpirationFacultative}
             </Label>
             <Input
               id="piece-expiration"
               type="date"
+              required={expirationExigee}
+              aria-required={expirationExigee}
               value={expiration}
               onChange={(e) => setExpiration(e.target.value)}
             />
@@ -380,8 +398,16 @@ function FormPiece({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="piece-autorite">{P.autorite}</Label>
-          <Input id="piece-autorite" value={autorite} onChange={(e) => setAutorite(e.target.value)} />
+          <Label htmlFor="piece-autorite">
+            {autoriteExigee ? P.autoriteObligatoire : P.autorite}
+          </Label>
+          <Input
+            id="piece-autorite"
+            required={autoriteExigee}
+            aria-required={autoriteExigee}
+            value={autorite}
+            onChange={(e) => setAutorite(e.target.value)}
+          />
         </div>
 
         <div className="space-y-1.5">
@@ -425,7 +451,7 @@ function FormPiece({
           <Button
             type="button"
             size="sm"
-            disabled={mutation.isPending || !typeId || !numero.trim()}
+            disabled={mutation.isPending || incomplet}
             onClick={soumettre}
           >
             {mutation.isPending ? P.enCours : P.ajouterBouton}

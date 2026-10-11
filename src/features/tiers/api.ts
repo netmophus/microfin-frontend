@@ -310,12 +310,19 @@ export interface DonneesPersonneMorale extends CommunCreation {
   headquarters_country_id: string
   capital_amount: string | null
   capital_currency_id: string | null
+  commercial_name: string | null
+  rccm_number: string | null
+  nif_number: string | null
+  business_purpose: string | null
 }
 
 export interface DonneesGroupement extends CommunCreation {
   group_name: string
   group_type: string
   constitution_date: string
+  intervention_zone: string | null
+  group_purpose: string | null
+  expected_member_count: number | null
 }
 
 export type EchecCreation =
@@ -473,4 +480,64 @@ function traduireCreation(erreur: unknown): EchecCreation {
     default:
       return { type: 'inattendue' }
   }
+}
+
+// --- modification du profil d'une PM ou d'un groupement -------------------------------
+
+export interface ModificationPersonneMorale {
+  legal_name: string
+  commercial_name: string | null
+  legal_form: string
+  rccm_number: string | null
+  nif_number: string | null
+  constitution_date: string
+  capital_amount: string | null
+  capital_currency_id: string | null
+  business_purpose: string | null
+  headquarters_country_id: string
+}
+
+export interface ModificationGroupement {
+  group_name: string
+  group_type: string
+  constitution_date: string
+  intervention_zone: string | null
+  group_purpose: string | null
+  expected_member_count: number | null
+}
+
+/** Refus de la modification. `detail` est le message du serveur quand il est destiné à l'écran
+ *  (ex. « Ce numéro RCCM est déjà rattaché à une autre fiche. »), sinon nul. */
+export class ErreurModification extends Error {
+  readonly detail: string | null
+
+  constructor(detail: string | null) {
+    super(detail ?? 'modification impossible')
+    this.name = 'ErreurModification'
+    this.detail = detail
+  }
+}
+
+async function modifierProfil<T>(url: string, donnees: T): Promise<FicheTier> {
+  try {
+    const reponse = await api.patch<FicheTier>(url, donnees)
+    return reponse.data
+  } catch (erreur) {
+    const detail =
+      erreur instanceof AxiosError && erreur.response?.status === 422
+        ? (erreur.response.data as { detail?: unknown } | undefined)?.detail
+        : undefined
+    throw new ErreurModification(typeof detail === 'string' ? detail : null)
+  }
+}
+
+export function modifierPersonneMorale(
+  id: string,
+  donnees: ModificationPersonneMorale,
+): Promise<FicheTier> {
+  return modifierProfil(`/tiers/${id}/legal-entity`, donnees)
+}
+
+export function modifierGroupement(id: string, donnees: ModificationGroupement): Promise<FicheTier> {
+  return modifierProfil(`/tiers/${id}/group`, donnees)
 }

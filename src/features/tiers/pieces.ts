@@ -34,11 +34,17 @@ export interface Piece {
   notes: string | null
 }
 
+export type TypeDeFiche = 'individual' | 'legal_entity' | 'group'
+
+/** `requires_*` : le formulaire rend le champ obligatoire (le serveur applique la même règle).
+ *  `applies_to` : types de fiche auxquels le type de pièce s'applique. */
 export interface TypePiece {
   id: string
   code: string
   name: string
   requires_expiry_date: boolean
+  requires_issuer: boolean
+  applies_to: TypeDeFiche[]
 }
 
 export interface DonneesPiece {
@@ -79,8 +85,12 @@ export async function listerPieces(tierId: string): Promise<Piece[]> {
   return reponse.data
 }
 
-export async function listerTypesPieces(): Promise<TypePiece[]> {
-  const reponse = await api.get<TypePiece[]>('/identity-document-types')
+/** Types de pièces. Avec `typeFiche`, seulement ceux qui s'appliquent à ce type de fiche
+ *  (pas de CNI pour une société, pas de RCCM pour une personne physique). */
+export async function listerTypesPieces(typeFiche?: TypeDeFiche): Promise<TypePiece[]> {
+  const reponse = await api.get<TypePiece[]>('/identity-document-types', {
+    params: typeFiche ? { tier_type: typeFiche } : undefined,
+  })
   return reponse.data
 }
 
@@ -102,6 +112,9 @@ export async function ajouterPiece(tierId: string, donnees: DonneesPiece): Promi
           detail.nom ?? null,
         )
       }
+      // Règle métier refusée par le serveur (type inapplicable, autorité ou échéance exigée) :
+      // son message est celui de l'écran, tel quel.
+      if (typeof detail === 'string') throw new ErreurPiece(detail)
     }
     throw erreur
   }

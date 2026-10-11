@@ -8,8 +8,14 @@ import {
   CheckCircle2,
   FilePlus2,
   Landmark,
+  FileText,
+  Globe,
+  Hash,
+  MapPin,
   PauseCircle,
   PencilLine,
+  Users,
+  Wallet,
   Phone,
   PlayCircle,
   RotateCcw,
@@ -22,12 +28,14 @@ import { Link, useParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AvatarInitiales } from '@/components/ui/avatar-initiales'
+import { Button } from '@/components/ui/button'
 import { useAPermission } from '@/features/auth/useProfil'
 import { ActionsTier } from '@/features/tiers/actions-tier'
 import { BadgeSocietariat, BadgeStatut } from '@/features/tiers/badges'
 import { OngletCredit } from '@/features/credit/OngletCredit'
 import { OngletComptesEpargne } from '@/features/epargne/OngletComptesEpargne'
 import { OngletCoordonnees } from '@/features/tiers/OngletCoordonnees'
+import { EditionProfil } from '@/features/tiers/EditionProfil'
 import { OngletKyc } from '@/features/tiers/OngletKyc'
 import { OngletParts } from '@/features/tiers/OngletParts'
 import { OngletPieces } from '@/features/tiers/OngletPieces'
@@ -39,6 +47,8 @@ import {
   type FicheTier,
 } from '@/features/tiers/api'
 import { lireConditionsActivation } from '@/features/tiers/kyc'
+import type { TypeDeFiche } from '@/features/tiers/pieces'
+import { listerDevises, listerPays } from '@/features/tiers/referentiels'
 import { listerAgences } from '@/features/utilisateurs/agences'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -103,6 +113,8 @@ export function PageFicheTier() {
   // donc les actions disponibles) ET la frise se rafraîchissent, la liste aussi.
   const queryClient = useQueryClient()
   const rafraichir = () => void queryClient.invalidateQueries({ queryKey: ['tiers'] })
+  const peutModifier = useAPermission('tiers.update')
+  const [enEdition, setEnEdition] = useState(false)
 
   if (requete.isPending) {
     return <p className="py-8 text-center text-sm text-muted-foreground">{T.chargement}</p>
@@ -158,7 +170,22 @@ export function PageFicheTier() {
       <div className={peutVoirDetail ? 'grid gap-5 lg:grid-cols-3' : ''}>
         <div className="space-y-5 lg:col-span-1">
           <section className="rounded-lg border bg-card p-4">
-            <h2 className="mb-2 text-sm font-semibold">{T.identite}</h2>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold">{T.identite}</h2>
+              {peutModifier &&
+                !enEdition &&
+                fiche.status !== 'desactive' &&
+                (fiche.personne_morale || fiche.groupement) && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setEnEdition(true)}>
+                    <PencilLine />
+                    {T.modifier}
+                  </Button>
+                )}
+            </div>
+            {enEdition && (
+              <EditionProfil fiche={fiche} onTermine={() => setEnEdition(false)} />
+            )}
+            {!enEdition && (
             <dl className="divide-y">
               <Ligne label={T.type} valeur={G.types[fiche.tier_type] ?? fiche.tier_type} icone={Tag} />
               <Ligne label={T.agence} valeur={nomAgence(fiche.primary_agency_id)} icone={Landmark} />
@@ -172,6 +199,7 @@ export function PageFicheTier() {
                 <Ligne label={T.creeLe} valeur={formaterDate(fiche.created_at)} icone={CalendarDays} />
               )}
             </dl>
+            )}
 
             {!aLeDetail && (
               <p className="mt-3 rounded bg-muted/40 p-2 text-xs text-muted-foreground">
@@ -278,7 +306,12 @@ function OngletsDetail({ fiche }: { fiche: FicheTier }) {
       </div>
       <div className="p-4">
         {onglet === 'coordonnees' && <OngletCoordonnees tierId={fiche.id} />}
-        {onglet === 'pieces' && <OngletPieces tierId={fiche.id} />}
+        {onglet === 'pieces' && (
+          <OngletPieces
+            tierId={fiche.id}
+            tierType={fiche.tier_type as TypeDeFiche | undefined}
+          />
+        )}
         {onglet === 'epargne' && (
           <OngletComptesEpargne tierId={fiche.id} tierStatut={fiche.status} />
         )}
@@ -348,19 +381,35 @@ function DetailIndividu({ detail }: { detail: NonNullable<FicheTier['individu']>
   )
 }
 
+/** Pays et devise s'affichent par leur NOM (jamais l'identifiant). Tant que le référentiel n'est
+ *  pas chargé — ou s'il est indisponible — la ligne reste vide plutôt que d'afficher un UUID. */
 function DetailMorale({ detail }: { detail: NonNullable<FicheTier['personne_morale']> }) {
+  const pays = useQuery({ queryKey: ['pays'], queryFn: listerPays })
+  const devises = useQuery({ queryKey: ['devises'], queryFn: listerDevises })
+  const nomPays = pays.data?.find((p) => p.id === detail.headquarters_country_id)?.name
+  const codeDevise = devises.data?.find((d) => d.id === detail.capital_currency_id)?.code
+  const capital =
+    detail.capital_amount === null
+      ? null
+      : `${Number(detail.capital_amount).toLocaleString('fr-FR')}${codeDevise ? ` ${codeDevise}` : ''}`
   return (
     <>
+      <Ligne label={T.nomCommercial} valeur={detail.commercial_name} icone={Building2} />
       <Ligne
         label={T.formeJuridique}
         valeur={LIBELLES.tiersCreation.formesJuridiques[detail.legal_form] ?? detail.legal_form}
         icone={Building2}
       />
+      <Ligne label={T.rccm} valeur={detail.rccm_number} icone={Hash} />
+      <Ligne label={T.nif} valeur={detail.nif_number} icone={Hash} />
       <Ligne
         label={T.dateConstitution}
         valeur={formaterDate(detail.constitution_date)}
         icone={CalendarDays}
       />
+      <Ligne label={T.paysSiege} valeur={nomPays} icone={Globe} />
+      <Ligne label={T.capital} valeur={capital} icone={Wallet} />
+      <Ligne label={T.objetSocial} valeur={detail.business_purpose} icone={FileText} />
     </>
   )
 }
@@ -377,6 +426,17 @@ function DetailGroupement({ detail }: { detail: NonNullable<FicheTier['groupemen
         label={T.dateConstitution}
         valeur={formaterDate(detail.constitution_date)}
         icone={CalendarDays}
+      />
+      <Ligne label={T.zoneIntervention} valeur={detail.intervention_zone} icone={MapPin} />
+      <Ligne label={T.objetGroupement} valeur={detail.group_purpose} icone={FileText} />
+      <Ligne
+        label={T.effectifPrevu}
+        valeur={
+          detail.expected_member_count === null
+            ? null
+            : `${detail.expected_member_count} ${T.membres}`
+        }
+        icone={Users}
       />
     </>
   )

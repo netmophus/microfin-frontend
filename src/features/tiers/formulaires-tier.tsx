@@ -35,6 +35,7 @@ import type { Agence } from '@/features/utilisateurs/agences'
 import { LIBELLES } from '@/libelles/fr'
 
 const T = LIBELLES.tiersCreation
+const F = LIBELLES.tiersFiche
 const SELECT =
   'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs disabled:opacity-50'
 
@@ -257,6 +258,10 @@ export function FormPersonneMorale({ agences, reseau, onCree, onAnnuler }: FormP
       headquarters_country_id: '',
       capital_amount: '',
       capital_currency_id: '',
+      commercial_name: '',
+      rccm_number: '',
+      nif_number: '',
+      business_purpose: '',
       primary_phone: '',
       primary_agency_id: '',
     },
@@ -271,6 +276,10 @@ export function FormPersonneMorale({ agences, reseau, onCree, onAnnuler }: FormP
         headquarters_country_id: c.headquarters_country_id,
         capital_amount: c.capital_amount?.trim() || null,
         capital_currency_id: c.capital_currency_id?.trim() || null,
+        commercial_name: c.commercial_name?.trim() || null,
+        rccm_number: c.rccm_number?.trim() || null,
+        nif_number: c.nif_number?.trim() || null,
+        business_purpose: c.business_purpose?.trim() || null,
         primary_phone: c.primary_phone?.trim() || null,
         primary_agency_id: c.primary_agency_id?.trim() || null,
       }),
@@ -353,6 +362,31 @@ export function FormPersonneMorale({ agences, reseau, onCree, onAnnuler }: FormP
         </Champ>
       </div>
 
+      <Champ
+        id="commercial_name"
+        label={`${F.nomCommercial} (facultatif)`}
+        erreur={errors.commercial_name?.message}
+      >
+        <Input id="commercial_name" {...register('commercial_name')} />
+      </Champ>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Champ id="rccm_number" label={`${F.rccm} (facultatif)`} erreur={errors.rccm_number?.message}>
+          <Input id="rccm_number" {...register('rccm_number')} />
+        </Champ>
+        <Champ id="nif_number" label={`${F.nif} (facultatif)`} erreur={errors.nif_number?.message}>
+          <Input id="nif_number" {...register('nif_number')} />
+        </Champ>
+      </div>
+
+      <Champ
+        id="business_purpose"
+        label={`${F.objetSocial} (facultatif)`}
+        erreur={errors.business_purpose?.message}
+      >
+        <Input id="business_purpose" {...register('business_purpose')} />
+      </Champ>
+
       <ChampsCommuns register={register} errors={errors} reseau={reseau} agences={agences} />
       <Boutons enCours={mutation.isPending} onAnnuler={onAnnuler} />
     </form>
@@ -373,6 +407,9 @@ export function FormGroupement({ agences, reseau, onCree, onAnnuler }: FormProps
       group_name: '',
       group_type: '',
       constitution_date: '',
+      intervention_zone: '',
+      group_purpose: '',
+      expected_member_count: '',
       primary_phone: '',
       primary_agency_id: '',
     },
@@ -384,6 +421,11 @@ export function FormGroupement({ agences, reseau, onCree, onAnnuler }: FormProps
         group_name: c.group_name,
         group_type: c.group_type,
         constitution_date: c.constitution_date,
+        intervention_zone: c.intervention_zone?.trim() || null,
+        group_purpose: c.group_purpose?.trim() || null,
+        expected_member_count: c.expected_member_count?.trim()
+          ? Number(c.expected_member_count)
+          : null,
         primary_phone: c.primary_phone?.trim() || null,
         primary_agency_id: c.primary_agency_id?.trim() || null,
       }),
@@ -427,6 +469,36 @@ export function FormGroupement({ agences, reseau, onCree, onAnnuler }: FormProps
           <Input id="constitution_date" type="date" {...register('constitution_date')} />
         </Champ>
       </div>
+
+      <Champ
+        id="intervention_zone"
+        label={`${F.zoneIntervention} (facultatif)`}
+        erreur={errors.intervention_zone?.message}
+      >
+        <Input id="intervention_zone" {...register('intervention_zone')} />
+      </Champ>
+
+      <Champ
+        id="group_purpose"
+        label={`${F.objetGroupement} (facultatif)`}
+        erreur={errors.group_purpose?.message}
+      >
+        <Input id="group_purpose" {...register('group_purpose')} />
+      </Champ>
+
+      <Champ
+        id="expected_member_count"
+        label={`${F.effectifPrevu} (facultatif)`}
+        erreur={errors.expected_member_count?.message}
+      >
+        <Input
+          id="expected_member_count"
+          type="number"
+          min="1"
+          step="1"
+          {...register('expected_member_count')}
+        />
+      </Champ>
 
       <ChampsCommuns register={register} errors={errors} reseau={reseau} agences={agences} />
       <Boutons enCours={mutation.isPending} onAnnuler={onAnnuler} />

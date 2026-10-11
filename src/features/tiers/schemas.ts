@@ -40,6 +40,10 @@ export const schemaPersonneMorale = z.object({
   headquarters_country_id: z.string().min(1, T.requis),
   capital_amount: z.string().trim().optional(),
   capital_currency_id: z.string().optional(),
+  commercial_name: z.string().trim().max(300, T.trop_long).optional(),
+  rccm_number: z.string().trim().max(50, T.trop_long).optional(),
+  nif_number: z.string().trim().max(50, T.trop_long).optional(),
+  business_purpose: z.string().trim().optional(),
   ...commun,
 })
 
@@ -47,9 +51,46 @@ export const schemaGroupement = z.object({
   group_name: z.string().trim().min(1, T.requis).max(300, T.trop_long),
   group_type: z.string().min(1, T.requis),
   constitution_date: z.string().min(1, T.requis).refine(pasDansLeFutur, T.dateFuture),
+  intervention_zone: z.string().trim().max(200, T.trop_long).optional(),
+  group_purpose: z.string().trim().optional(),
+  expected_member_count: z
+    .string()
+    .trim()
+    .refine((v) => v === '' || (/^\d+$/.test(v) && Number(v) > 0), T.effectifInvalide)
+    .optional(),
   ...commun,
 })
 
 export type ChampsIndividu = z.infer<typeof schemaIndividu>
 export type ChampsPersonneMorale = z.infer<typeof schemaPersonneMorale>
 export type ChampsGroupement = z.infer<typeof schemaGroupement>
+
+// --- édition d'une PM ou d'un groupement (tous les champs du profil) ---------------------
+
+export const schemaEditionPersonneMorale = z.object({
+  legal_name: z.string().trim().min(1, T.requis).max(300, T.trop_long),
+  commercial_name: z.string().trim().max(300, T.trop_long),
+  legal_form: z.string().min(1, T.requis),
+  rccm_number: z.string().trim().max(50, T.trop_long),
+  nif_number: z.string().trim().max(50, T.trop_long),
+  constitution_date: z.string().min(1, T.requis).refine(pasDansLeFutur, T.dateFuture),
+  capital_amount: z.string().trim(),
+  capital_currency_id: z.string(),
+  business_purpose: z.string().trim(),
+  headquarters_country_id: z.string().min(1, T.requis),
+})
+
+export const schemaEditionGroupement = z.object({
+  group_name: z.string().trim().min(1, T.requis).max(300, T.trop_long),
+  group_type: z.string().min(1, T.requis),
+  constitution_date: z.string().min(1, T.requis).refine(pasDansLeFutur, T.dateFuture),
+  intervention_zone: z.string().trim().max(200, T.trop_long),
+  group_purpose: z.string().trim(),
+  expected_member_count: z
+    .string()
+    .trim()
+    .refine((v) => v === '' || (/^\d+$/.test(v) && Number(v) > 0), T.effectifInvalide),
+})
+
+export type ChampsEditionPersonneMorale = z.infer<typeof schemaEditionPersonneMorale>
+export type ChampsEditionGroupement = z.infer<typeof schemaEditionGroupement>
