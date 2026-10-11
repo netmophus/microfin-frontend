@@ -1,10 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { creerGroupement, creerPersonneMorale, type FicheTier } from '@/features/tiers/api'
+import {
+  creerGroupement,
+  creerIndividu,
+  creerPersonneMorale,
+  type FicheTier,
+} from '@/features/tiers/api'
 import { PageCreationTier } from '@/features/tiers/PageCreationTier'
 
 /**
@@ -19,7 +24,7 @@ vi.mock('@/features/auth/useProfil', () => ({
 
 vi.mock('@/features/tiers/api', async () => {
   const reel = await vi.importActual<typeof import('@/features/tiers/api')>('@/features/tiers/api')
-  return { ...reel, creerPersonneMorale: vi.fn(), creerGroupement: vi.fn() }
+  return { ...reel, creerIndividu: vi.fn(), creerPersonneMorale: vi.fn(), creerGroupement: vi.fn() }
 })
 
 vi.mock('@/features/tiers/referentiels', () => ({
@@ -159,5 +164,35 @@ describe('PageCreationTier', () => {
 
     expect(await screen.findByText('Indiquez un nombre entier supérieur à zéro.')).toBeVisible()
     expect(creerGroupement).not.toHaveBeenCalled()
+  })
+
+  it('créée depuis « Personnes liées », la personne ramène à la société, déjà choisie', async () => {
+    const user = userEvent.setup()
+    vi.mocked(creerIndividu).mockResolvedValue({ id: 'p-neuve', tier_type: 'individual' } as FicheTier)
+
+    function Lieu() {
+      const lieu = useLocation()
+      return <p data-testid="lieu">{lieu.pathname + lieu.search}</p>
+    }
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/tiers/nouveau?retour=pm-1']}>
+          <Routes>
+            <Route path="/tiers/nouveau" element={<PageCreationTier />} />
+            <Route path="/tiers/:id" element={<Lieu />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await user.type(screen.getByLabelText('Nom'), 'NEUVE')
+    await user.type(screen.getByLabelText('Prénom'), 'Aïcha')
+    await user.type(screen.getByLabelText('Date de naissance'), '1990-01-01')
+    await user.selectOptions(screen.getByLabelText('Sexe'), 'F')
+    await user.selectOptions(await screen.findByLabelText('Nationalité'), 'pays-ne')
+    await user.click(screen.getByRole('button', { name: 'Créer la fiche' }))
+
+    expect(await screen.findByTestId('lieu')).toHaveTextContent('/tiers/pm-1?lier=p-neuve')
   })
 })

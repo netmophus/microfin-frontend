@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Building2, UserRound, Users, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useAPermission } from '@/features/auth/useProfil'
 import type { FicheTier } from '@/features/tiers/api'
@@ -26,6 +26,9 @@ const CHOIX: { type: TypeTier; libelle: string; aide: string; icone: LucideIcon 
 
 export function PageCreationTier() {
   const naviguer = useNavigate()
+  // `retour` : fiche d'une société/groupement d'où l'on vient créer une personne à lier.
+  const [params] = useSearchParams()
+  const retour = params.get('retour')
   const queryClient = useQueryClient()
   const [type, setType] = useState<TypeTier>('individual')
 
@@ -37,9 +40,13 @@ export function PageCreationTier() {
   const onCree = (fiche: FicheTier) => {
     // La nouvelle fiche doit apparaître dans la liste, et on va droit à sa fiche.
     void queryClient.invalidateQueries({ queryKey: ['tiers'] })
+    if (retour && fiche.tier_type === 'individual') {
+      void naviguer(`/tiers/${retour}?lier=${fiche.id}`, { replace: true })
+      return
+    }
     void naviguer(`/tiers/${fiche.id}`, { replace: true })
   }
-  const onAnnuler = () => void naviguer('/tiers', { replace: true })
+  const onAnnuler = () => void naviguer(retour ? `/tiers/${retour}` : '/tiers', { replace: true })
 
   // Le type est HORS des formulaires. Chaque type monte un composant DIFFÉRENT : changer de
   // type démonte le formulaire précédent et ses valeurs — pas de RCCM resté d'un autre type.

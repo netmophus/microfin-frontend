@@ -24,7 +24,7 @@ import {
   Venus,
 } from 'lucide-react'
 import { useMemo, useState, type ComponentType } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AvatarInitiales } from '@/components/ui/avatar-initiales'
@@ -38,7 +38,9 @@ import { OngletCoordonnees } from '@/features/tiers/OngletCoordonnees'
 import { EditionProfil } from '@/features/tiers/EditionProfil'
 import { OngletKyc } from '@/features/tiers/OngletKyc'
 import { OngletParts } from '@/features/tiers/OngletParts'
+import { OngletPersonnesLiees } from '@/features/tiers/OngletPersonnesLiees'
 import { OngletPieces } from '@/features/tiers/OngletPieces'
+import { OngletRisquePm } from '@/features/tiers/OngletRisquePm'
 import {
   ErreurFiche,
   lireTier,
@@ -93,6 +95,9 @@ function formaterDate(iso: string | null | undefined): string {
 
 export function PageFicheTier() {
   const { id = '' } = useParams()
+  // Retour de la création d'une personne physique depuis « Personnes liées » : elle arrive choisie.
+  const [params] = useSearchParams()
+  const personneALier = params.get('lier')
   const requete = useQuery({ queryKey: ['tiers', 'fiche', id], queryFn: () => lireTier(id) })
 
   // La frise est réservée aux porteurs de tiers.read (un caissier en read.basic aurait un 403).
@@ -213,7 +218,7 @@ export function PageFicheTier() {
 
         {peutVoirDetail && (
           <div className="space-y-5 lg:col-span-2">
-            <OngletsDetail fiche={fiche} />
+            <OngletsDetail fiche={fiche} personneALier={personneALier} />
             <SectionTimeline requete={timeline} />
           </div>
         )}
@@ -266,12 +271,20 @@ function BandeauProspect({ tierId }: { tierId: string }) {
 }
 
 /** Bascule Coordonnées / Pièces / KYC / Épargne / Parts / Crédit. Un seul onglet monté à la fois. */
-function OngletsDetail({ fiche }: { fiche: FicheTier }) {
+function OngletsDetail({
+  fiche,
+  personneALier,
+}: {
+  fiche: FicheTier
+  personneALier: string | null
+}) {
+  // Société ou groupement : personnes liées + risque hérité de celles-ci.
+  const estPersonneMorale = Boolean(fiche.personne_morale || fiche.groupement)
   const [onglet, setOnglet] = useState<
-    'coordonnees' | 'pieces' | 'kyc' | 'epargne' | 'parts' | 'credit'
-  >('coordonnees')
-  // L'onglet KYC détaillé ne concerne que la personne physique (T3c).
-  const kycDispo = Boolean(fiche.individu)
+    'coordonnees' | 'pieces' | 'kyc' | 'liees' | 'epargne' | 'parts' | 'credit'
+  >(personneALier && estPersonneMorale ? 'liees' : 'coordonnees')
+  // L'onglet KYC : personne physique (données KYC) ou société/groupement (risque hérité).
+  const kycDispo = Boolean(fiche.individu) || estPersonneMorale
   // L'onglet Parts sociales n'apparaît que pour qui peut le lire (le chargé de clientèle l'a).
   const partsDispo = useAPermission('tiers.shares.read')
   // L'onglet Crédit n'apparaît que pour qui peut lire des dossiers (chargé, comité, responsable).
@@ -285,6 +298,11 @@ function OngletsDetail({ fiche }: { fiche: FicheTier }) {
         <BoutonOnglet actif={onglet === 'pieces'} onClick={() => setOnglet('pieces')}>
           {O.pieces}
         </BoutonOnglet>
+        {estPersonneMorale && (
+          <BoutonOnglet actif={onglet === 'liees'} onClick={() => setOnglet('liees')}>
+            {O.liees}
+          </BoutonOnglet>
+        )}
         {kycDispo && (
           <BoutonOnglet actif={onglet === 'kyc'} onClick={() => setOnglet('kyc')}>
             {O.kyc}
@@ -317,7 +335,15 @@ function OngletsDetail({ fiche }: { fiche: FicheTier }) {
         )}
         {onglet === 'parts' && <OngletParts tierId={fiche.id} tierStatut={fiche.status} />}
         {onglet === 'credit' && <OngletCredit tierId={fiche.id} tierStatut={fiche.status} />}
-        {onglet === 'kyc' && (
+        {onglet === 'liees' && estPersonneMorale && (
+          <OngletPersonnesLiees
+            tierId={fiche.id}
+            tierType={fiche.tier_type}
+            personneInitiale={personneALier}
+          />
+        )}
+        {onglet === 'kyc' && estPersonneMorale && <OngletRisquePm tierId={fiche.id} />}
+        {onglet === 'kyc' && !estPersonneMorale && (
           <OngletKyc
             tierId={fiche.id}
             individu={fiche.individu}
