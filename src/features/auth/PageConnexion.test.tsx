@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ErreurConnexion, seConnecter } from '@/features/auth/api'
 import { PageConnexion } from '@/features/auth/PageConnexion'
@@ -45,12 +45,53 @@ async function remplirEtValider(identifiant = 'admin', motDePasse = 'MotDePasse!
   await utilisateur.click(screen.getByRole('button', { name: /se connecter/i }))
 }
 
+/**
+ * Stockage en mémoire qui se comporte comme un vrai `Storage`. Les versions récentes de Node
+ * exposent un `localStorage` global expérimental, inutilisable sans `--localstorage-file`, qui
+ * masque celui de jsdom (`localStorage` vaut alors `undefined`). On le remplace ici par un
+ * stockage FONCTIONNEL : si le code écrivait le jeton dans un stockage persistant, le test le verrait.
+ */
+function stockageEnMemoire(): Storage {
+  const donnees = new Map<string, string>()
+  return {
+    get length() {
+      return donnees.size
+    },
+    clear: () => donnees.clear(),
+    getItem: (cle) => donnees.get(cle) ?? null,
+    key: (index) => [...donnees.keys()][index] ?? null,
+    removeItem: (cle) => void donnees.delete(cle),
+    setItem: (cle, valeur) => void donnees.set(cle, String(valeur)),
+  } as Storage
+}
+
+/** Tout le contenu d'un stockage, clés et valeurs, en texte (pour y chercher un jeton). */
+function contenu(stockage: Storage): string {
+  const lignes = Array.from({ length: stockage.length }, (_, i) => {
+    const cle = stockage.key(i) ?? ''
+    return [cle, stockage.getItem(cle)]
+  })
+  return JSON.stringify(lignes)
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.stubGlobal('localStorage', stockageEnMemoire())
+  vi.stubGlobal('sessionStorage', stockageEnMemoire())
   useAuth.setState({ accessToken: null, doitChangerMotDePasse: false, amorcage: 'termine' })
 })
 
+afterEach(() => vi.unstubAllGlobals())
+
 describe('PageConnexion', () => {
+  it('le stockage simulé enregistre vraiment (le garde-fou du jeton n’est pas inerte)', () => {
+    localStorage.setItem('accessToken', 'jeton-abc')
+
+    expect(localStorage.getItem('accessToken')).toBe('jeton-abc')
+    expect(localStorage.length).toBe(1)
+    expect(contenu(localStorage)).toContain('jeton-abc') // le détecteur voit bien ce qui est écrit
+  })
+
   it('ouvre la session sur succès, et garde le jeton EN MÉMOIRE', async () => {
     seConnecterSimule.mockResolvedValue({ accessToken: 'jeton-abc', doitChangerMotDePasse: false })
 
@@ -60,8 +101,8 @@ describe('PageConnexion', () => {
     await waitFor(() => expect(useAuth.getState().accessToken).toBe('jeton-abc'))
     // LA garantie du choix hybride : rien ne doit atterrir dans un stockage persistant.
     expect(localStorage.getItem('accessToken')).toBeNull()
-    expect(JSON.stringify(localStorage)).not.toContain('jeton-abc')
-    expect(JSON.stringify(sessionStorage)).not.toContain('jeton-abc')
+    expect(contenu(localStorage)).not.toContain('jeton-abc')
+    expect(contenu(sessionStorage)).not.toContain('jeton-abc')
   })
 
   it('affiche le message GÉNÉRIQUE sur 401', async () => {
