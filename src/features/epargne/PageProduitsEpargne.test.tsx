@@ -47,6 +47,8 @@ const modifierSimule = vi.mocked(modifierProduit)
 const validerSimule = vi.mocked(validerProduit)
 const activationSimulee = vi.mocked(changerActivationProduit)
 
+const MESSAGE_MONTANT = 'Saisissez un montant en francs entiers, sans décimales'
+
 function produit(partiel: Partial<ProduitEpargneDetail> = {}): ProduitEpargneDetail {
   return {
     id: 'p1',
@@ -244,6 +246,73 @@ describe('PageProduitsEpargne', () => {
       target: { value: '-5' },
     })
     expect(enregistrer).toBeDisabled()
+  })
+
+  it('modification : « 5 000 » est accepté et part au serveur en 5000', async () => {
+    listerSimule.mockResolvedValue([produit()])
+    modifierSimule.mockResolvedValue(produit())
+    afficher()
+    await screen.findByText('Épargne à vue')
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    fireEvent.change(screen.getByLabelText('Solde plancher (F CFA)'), { target: { value: '5 000' } })
+    fireEvent.change(screen.getByLabelText('Dépôt initial minimum (F CFA)'), {
+      target: { value: '10\u00a0000' },
+    })
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), { target: { value: 'Correction' } })
+
+    expect(screen.queryByText(MESSAGE_MONTANT)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(modifierSimule).toHaveBeenCalledWith(
+        'p1',
+        expect.objectContaining({ min_balance: 5000, depot_initial_minimum: 10000 }),
+      ),
+    )
+  })
+
+  it('modification : « 5 000,50 » est refusé avec un message sous le champ', async () => {
+    listerSimule.mockResolvedValue([produit()])
+    afficher()
+    await screen.findByText('Épargne à vue')
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), { target: { value: 'Correction' } })
+
+    const champ = screen.getByLabelText('Solde plancher (F CFA)')
+    fireEvent.change(champ, { target: { value: '5 000,50' } })
+
+    expect(screen.getByText(MESSAGE_MONTANT)).toBeVisible()
+    expect(champ).toHaveAttribute('aria-invalid', 'true')
+    expect(champ).toHaveAccessibleDescription(expect.stringContaining(MESSAGE_MONTANT))
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
+
+    fireEvent.change(champ, { target: { value: '5000' } })
+    expect(screen.queryByText(MESSAGE_MONTANT)).toBeNull()
+    expect(champ).toHaveAttribute('aria-invalid', 'false')
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeEnabled()
+  })
+
+  it('création : « 5 000 » est accepté, « 5 000,50 » est refusé avec un message', async () => {
+    listerSimule.mockResolvedValue([])
+    creerSimule.mockResolvedValue(produit({ code: 'NEW' }))
+    afficher()
+    await screen.findByText(/Aucun produit d’épargne/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un produit' }))
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'NEW' } })
+    fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Nouveau produit' } })
+
+    const champ = screen.getByLabelText('Solde minimum rémunéré (F CFA)')
+    fireEvent.change(champ, { target: { value: '5 000,50' } })
+    expect(screen.getByText(MESSAGE_MONTANT)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
+
+    fireEvent.change(champ, { target: { value: '5 000' } })
+    expect(screen.queryByText(MESSAGE_MONTANT)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(creerSimule).toHaveBeenCalledWith(expect.objectContaining({ solde_minimum_remunere: 5000 })),
+    )
   })
 
   it('ligne provisoire : mention et lien vers le rattachement comptable', async () => {

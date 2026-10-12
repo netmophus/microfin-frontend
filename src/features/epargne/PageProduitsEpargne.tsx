@@ -31,6 +31,7 @@ import {
   type ProduitEpargneDetail,
   type TypeProduit,
 } from '@/features/epargne/api'
+import { parseMontantFrancs } from '@/lib/montants'
 import { LIBELLES } from '@/libelles/fr'
 
 const P = LIBELLES.produitsEpargne
@@ -69,11 +70,6 @@ function pourcentVersBp(saisie: string): number | null {
   return Math.round(nombre * 100)
 }
 
-/** Montant en francs entiers, positif ou nul (0 = aucune contrainte). */
-function montantValide(valeur: number): boolean {
-  return Number.isInteger(valeur) && valeur >= 0
-}
-
 /** Champ de montant en francs avec sa ligne d'aide, reliée au champ pour les lecteurs d'écran. */
 function ChampMontant({
   id,
@@ -88,6 +84,7 @@ function ChampMontant({
   valeur: string
   onChange: (valeur: string) => void
 }) {
+  const invalide = parseMontantFrancs(valeur) === null
   return (
     <div className="space-y-1">
       <Label htmlFor={id}>{libelle}</Label>
@@ -95,12 +92,18 @@ function ChampMontant({
         id={id}
         inputMode="numeric"
         value={valeur}
-        aria-describedby={`${id}-aide`}
+        aria-invalid={invalide}
+        aria-describedby={invalide ? `${id}-aide ${id}-erreur` : `${id}-aide`}
         onChange={(e) => onChange(e.target.value)}
       />
       <p id={`${id}-aide`} className="text-xs text-muted-foreground">
         {aide}
       </p>
+      {invalide && (
+        <p id={`${id}-erreur`} className="text-xs text-destructive">
+          {LIBELLES.montantFrancsInvalide}
+        </p>
+      )}
     </div>
   )
 }
@@ -334,9 +337,9 @@ function LigneEdition({
   const [motif, setMotif] = useState('')
 
   const tauxBp = pourcentVersBp(taux)
-  const soldeMinimumValeur = Number(soldeMinimum)
-  const depotInitialValeur = Number(depotInitial)
-  const plancherValeur = Number(plancher)
+  const soldeMinimumValeur = parseMontantFrancs(soldeMinimum)
+  const depotInitialValeur = parseMontantFrancs(depotInitial)
+  const plancherValeur = parseMontantFrancs(plancher)
   const idBase = `pe-${produit.id}`
 
   const mutation = useMutation({
@@ -349,9 +352,9 @@ function LigneEdition({
         methode_calcul_solde: methode,
         base_jours: baseJours,
         regle_arrondi: arrondi,
-        solde_minimum_remunere: soldeMinimumValeur,
-        min_balance: plancherValeur,
-        depot_initial_minimum: depotInitialValeur,
+        solde_minimum_remunere: soldeMinimumValeur as number,
+        min_balance: plancherValeur as number,
+        depot_initial_minimum: depotInitialValeur as number,
         motif: motif.trim(),
       }),
     onSuccess: onFini,
@@ -362,10 +365,9 @@ function LigneEdition({
     tauxBp !== null &&
     tauxBp >= 0 &&
     tauxBp <= 10000 &&
-    Number.isInteger(soldeMinimumValeur) &&
-    soldeMinimumValeur >= 0 &&
-    montantValide(depotInitialValeur) &&
-    montantValide(plancherValeur) &&
+    soldeMinimumValeur !== null &&
+    depotInitialValeur !== null &&
+    plancherValeur !== null &&
     motif.trim().length >= 3
 
   return (
@@ -595,9 +597,9 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
   const [plancher, setPlancher] = useState('0')
 
   const tauxBp = pourcentVersBp(taux)
-  const soldeMinimumValeur = Number(soldeMinimum)
-  const depotInitialValeur = Number(depotInitial)
-  const plancherValeur = Number(plancher)
+  const soldeMinimumValeur = parseMontantFrancs(soldeMinimum)
+  const depotInitialValeur = parseMontantFrancs(depotInitial)
+  const plancherValeur = parseMontantFrancs(plancher)
   const idBase = 'pe-creation'
 
   const mutation = useMutation({
@@ -612,9 +614,9 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
         methode_calcul_solde: methode,
         base_jours: baseJours,
         regle_arrondi: arrondi,
-        solde_minimum_remunere: soldeMinimumValeur,
-        min_balance: plancherValeur,
-        depot_initial_minimum: depotInitialValeur,
+        solde_minimum_remunere: soldeMinimumValeur as number,
+        min_balance: plancherValeur as number,
+        depot_initial_minimum: depotInitialValeur as number,
       }),
     onSuccess: onFini,
   })
@@ -625,10 +627,9 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
     tauxBp !== null &&
     tauxBp >= 0 &&
     tauxBp <= 10000 &&
-    Number.isInteger(soldeMinimumValeur) &&
-    soldeMinimumValeur >= 0 &&
-    montantValide(depotInitialValeur) &&
-    montantValide(plancherValeur)
+    soldeMinimumValeur !== null &&
+    depotInitialValeur !== null &&
+    plancherValeur !== null
 
   return (
     <div className="space-y-3 rounded-md border p-4">

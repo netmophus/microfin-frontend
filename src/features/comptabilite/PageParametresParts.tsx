@@ -15,6 +15,7 @@ import {
   modifierParametresParts,
   type ParametresParts,
 } from '@/features/comptabilite/api'
+import { parseMontantFrancs } from '@/lib/montants'
 import { LIBELLES } from '@/libelles/fr'
 
 const P = LIBELLES.parametresParts
@@ -158,7 +159,8 @@ function FormulaireEdition({
   )
   const [motif, setMotif] = useState('')
 
-  const unitValueValide = /^\d+$/.test(unitValue.trim())
+  const unitValueValeur = parseMontantFrancs(unitValue)
+  const unitValueValide = unitValueValeur !== null
   const minimumSharesValide = /^\d+$/.test(minimumShares.trim()) && Number(minimumShares) >= 1
   const motifValide = motif.trim().length >= 3
   const valide = unitValueValide && minimumSharesValide && motifValide
@@ -166,7 +168,7 @@ function FormulaireEdition({
   const mutation = useMutation({
     mutationFn: () =>
       modifierParametresParts({
-        unit_value: Number(unitValue),
+        unit_value: unitValueValeur as number,
         minimum_shares: Number(minimumShares),
         is_refundable: isRefundable,
         membership_on: membershipOn,
@@ -192,8 +194,15 @@ function FormulaireEdition({
             id="pp-valeur"
             inputMode="numeric"
             value={unitValue}
+            aria-invalid={!unitValueValide}
+            aria-describedby={unitValueValide ? undefined : 'pp-valeur-erreur'}
             onChange={(e) => setUnitValue(e.target.value)}
           />
+          {!unitValueValide && (
+            <p id="pp-valeur-erreur" className="text-xs text-destructive">
+              {LIBELLES.montantFrancsInvalide}
+            </p>
+          )}
         </div>
         <div className="space-y-1">
           <Label htmlFor="pp-minimum">{P.minimumParts}</Label>

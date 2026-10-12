@@ -21,6 +21,9 @@ export const LIBELLES = {
     sousTitre: 'Système d’information de gestion',
   },
 
+  // Message commun à tous les champs de montant en francs (saisie refusée par parseMontantFrancs).
+  montantFrancsInvalide: 'Saisissez un montant en francs entiers, sans décimales',
+
   connexion: {
     titre: 'Connexion',
     instruction: 'Identifiez-vous pour accéder à votre espace de travail.',

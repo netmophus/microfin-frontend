@@ -16,6 +16,7 @@ import {
 } from '@/features/caisse/api'
 import { messageRefusCompte } from '@/features/comptabilite/api'
 import { formatFcfa } from '@/features/epargne/api'
+import { parseMontantFrancs } from '@/lib/montants'
 import { LIBELLES } from '@/libelles/fr'
 
 const P = LIBELLES.parametresCaisse
@@ -177,14 +178,15 @@ function FormulaireEdition({
   )
   const [motif, setMotif] = useState('')
 
-  const seuilValide = /^\d+$/.test(seuil.trim())
+  const seuilValeur = parseMontantFrancs(seuil)
+  const seuilValide = seuilValeur !== null
   const motifValide = motif.trim().length >= 3
   const valide = seuilValide && motifValide
 
   const mutation = useMutation({
     mutationFn: () =>
       modifierParametresCaisse(
-        Number(seuil),
+        seuilValeur as number,
         compteManquant,
         compteExcedent,
         compteTransit,
@@ -209,8 +211,15 @@ function FormulaireEdition({
           id="pc-seuil"
           inputMode="numeric"
           value={seuil}
+          aria-invalid={!seuilValide}
+          aria-describedby={seuilValide ? undefined : 'pc-seuil-erreur'}
           onChange={(e) => setSeuil(e.target.value)}
         />
+        {!seuilValide && (
+          <p id="pc-seuil-erreur" className="text-xs text-destructive">
+            {LIBELLES.montantFrancsInvalide}
+          </p>
+        )}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
