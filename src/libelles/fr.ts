@@ -1244,16 +1244,30 @@ export const LIBELLES = {
   interets: {
     titre: 'Versement des intérêts',
     intro:
-      'Choisissez une période, prévisualisez, puis versez. Rien n’est versé tant que vous n’avez pas confirmé.',
+      'Choisissez un produit : la période est fixée par sa périodicité. Prévisualisez, puis versez. Rien n’est versé tant que vous n’avez pas confirmé.',
 
     // Réservé à la direction (acte d'institution). Message si on n'a pas le droit — mais la
     // route le garde déjà en amont, ceci est une ceinture supplémentaire.
-    periodeLabel: 'Période (libellé)',
-    periodePlaceholder: 'Ex. : 2026-S1',
+    produitLabel: 'Produit',
+    produitChoisir: 'Choisir un produit…',
+    produitsChargement: 'Chargement des produits…',
+    produitsErreur: 'Impossible de charger les produits d’épargne.',
+    produitsVide:
+      'Aucun produit d’épargne actif : il n’y a pas d’intérêts à verser. Créez ou activez un produit dans Produits d’épargne.',
+    reessayer: 'Réessayer',
+    periodicites: {
+      mensuelle: 'Mensuelle',
+      trimestrielle: 'Trimestrielle',
+      annuelle: 'Annuelle',
+    } as Record<string, string>,
+    periodeTitre: 'Période à verser',
+    // {periodicite}, {periode}, {debut}, {fin}.
+    periodeProposee: '{periodicite} — période {periode}, du {debut} au {fin}',
+    // {journee} injectée.
     periodeAide:
-      'Le libellé identifie la période et empêche un double versement : la même période ne peut être versée deux fois.',
-    debutLabel: 'Du',
-    finLabel: 'Au',
+      'Dernière période close de ce produit, d’après la journée comptable du {journee}. Elle est fixée par la périodicité du produit : elle ne se saisit pas.',
+    periodeChargement: 'Calcul de la période…',
+    periodeErreur: 'Impossible de déterminer la période à verser pour ce produit.',
     previsualiser: 'Prévisualiser',
     previsualisationEnCours: 'Calcul en cours…',
 
@@ -1272,7 +1286,7 @@ export const LIBELLES = {
     raisonSoldes:
       'Les comptes actifs n’ont pas de solde rémunérable sur cette période (soldes insuffisants ou aucun mouvement).',
     // Champs incomplets : le clic ne doit pas rester sans effet.
-    saisieIncomplete: 'Renseignez la période (libellé) et les deux dates avant de prévisualiser.',
+    saisieIncomplete: 'Choisissez le produit avant de prévisualiser.',
     // Provisoire : le barème (taux/méthode) n'est pas validé.
     provisoireBanniere:
       'Barème PROVISOIRE : le taux et la méthode de calcul ne sont pas encore validés par l’expert. Vérifiez le détail ci-dessous avant de verser.',

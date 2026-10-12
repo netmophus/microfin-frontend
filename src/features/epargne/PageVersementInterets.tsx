@@ -1,23 +1,27 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { CalendarClock, Coins } from 'lucide-react'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   formatFcfa,
   formatTaux,
+  listerProduitsInterets,
   messageRefus,
   previsualiserInterets,
+  proposerPeriodeInterets,
   verserInterets,
   type ApercuInterets,
+  type DemandeInterets,
   type RapportInterets,
 } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
 const I = LIBELLES.interets
+const SELECT =
+  'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs disabled:opacity-50'
 
 function fmt(gabarit: string, valeurs: Record<string, string>): string {
   return gabarit.replace(/\{(\w+)\}/g, (_, cle) => valeurs[cle] ?? '')
@@ -56,19 +60,34 @@ function ComptesNonTraites({ comptes }: { comptes: string[] }) {
  * Si la période est déjà versée (anti-double), on le DIT — pas d'échec silencieux.
  */
 export function PageVersementInterets() {
-  const [periode, setPeriode] = useState('')
-  const [debut, setDebut] = useState('')
-  const [fin, setFin] = useState('')
+  const [produitId, setProduitId] = useState('')
   const [apercu, setApercu] = useState<ApercuInterets | null>(null)
   const [confirmation, setConfirmation] = useState(false)
   const [rapport, setRapport] = useState<RapportInterets | null>(null)
   const [saisieErreur, setSaisieErreur] = useState<string | null>(null)
 
-  const demande = { periode: periode.trim(), debut, fin }
-  const complet = periode.trim() !== '' && debut !== '' && fin !== ''
+  const produits = useQuery({ queryKey: ['epargne', 'interets', 'produits'], queryFn: listerProduitsInterets })
+  // La période n'est jamais saisie : le serveur la dérive de la périodicité du produit et de la
+  // journée comptable. Le versement la revérifie de toute façon.
+  const proposition = useQuery({
+    queryKey: ['epargne', 'interets', 'periode', produitId],
+    queryFn: () => proposerPeriodeInterets(produitId),
+    enabled: produitId !== '',
+  })
+  const periodeProposee = proposition.data ?? null
+
+  const demande =
+    periodeProposee === null
+      ? null
+      : {
+          product_id: produitId,
+          periode: periodeProposee.periode,
+          debut: periodeProposee.debut,
+          fin: periodeProposee.fin,
+        }
 
   const previsualisation = useMutation({
-    mutationFn: () => previsualiserInterets(demande),
+    mutationFn: () => previsualiserInterets(demande as DemandeInterets),
     onSuccess: (data) => {
       setApercu(data)
       setConfirmation(false)
@@ -78,7 +97,7 @@ export function PageVersementInterets() {
 
   // Le clic ne reste JAMAIS sans effet : champs incomplets -> message, sinon on lance l'aperçu.
   const soumettre = () => {
-    if (!complet) {
+    if (demande === null) {
       setSaisieErreur(I.saisieIncomplete)
       return
     }
@@ -87,13 +106,23 @@ export function PageVersementInterets() {
   }
 
   const versement = useMutation({
-    mutationFn: () => verserInterets(demande),
+    mutationFn: () => verserInterets(demande as DemandeInterets),
     onSuccess: (data) => {
       setRapport(data)
       setConfirmation(false)
       setApercu(null)
     },
   })
+
+  const choisirProduit = (id: string) => {
+    setProduitId(id)
+    setApercu(null)
+    setRapport(null)
+    setConfirmation(false)
+    setSaisieErreur(null)
+    previsualisation.reset()
+    versement.reset()
+  }
 
   const recommencer = () => {
     setApercu(null)
@@ -131,26 +160,75 @@ export function PageVersementInterets() {
           soumettre()
         }}
       >
-        <div className="space-y-1">
-          <Label htmlFor="periode">{I.periodeLabel}</Label>
-          <Input
-            id="periode"
-            value={periode}
-            onChange={(e) => setPeriode(e.target.value)}
-            placeholder={I.periodePlaceholder}
-          />
-          <p className="text-xs text-muted-foreground">{I.periodeAide}</p>
-        </div>
-        <div className="flex gap-3">
-          <div className="flex-1 space-y-1">
-            <Label htmlFor="debut">{I.debutLabel}</Label>
-            <Input id="debut" type="date" value={debut} onChange={(e) => setDebut(e.target.value)} />
+        {produits.isPending && (
+          <p className="text-sm text-muted-foreground">{I.produitsChargement}</p>
+        )}
+        {produits.isError && (
+          <Alert variant="destructive" role="alert">
+            <AlertDescription className="space-y-2">
+              <p>{I.produitsErreur}</p>
+              <Button type="button" size="sm" variant="outline" onClick={() => void produits.refetch()}>
+                {I.reessayer}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        {produits.isSuccess && produits.data.length === 0 && (
+          <Alert role="status">
+            <AlertDescription>{I.produitsVide}</AlertDescription>
+          </Alert>
+        )}
+        {produits.isSuccess && produits.data.length > 0 && (
+          <div className="space-y-1">
+            <Label htmlFor="produit">{I.produitLabel}</Label>
+            <select
+              id="produit"
+              className={SELECT}
+              value={produitId}
+              onChange={(e) => choisirProduit(e.target.value)}
+            >
+              <option value="">{I.produitChoisir}</option>
+              {produits.data.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({I.periodicites[p.periodicite] ?? p.periodicite})
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="flex-1 space-y-1">
-            <Label htmlFor="fin">{I.finLabel}</Label>
-            <Input id="fin" type="date" value={fin} onChange={(e) => setFin(e.target.value)} />
+        )}
+
+        {/* Période VERROUILLÉE : affichée, jamais saisie. */}
+        {produitId !== '' && proposition.isPending && (
+          <p className="text-sm text-muted-foreground">{I.periodeChargement}</p>
+        )}
+        {produitId !== '' && proposition.isError && (
+          <Alert variant="destructive" role="alert">
+            <AlertDescription className="space-y-2">
+              <p>{messageRefus(proposition.error, I.periodeErreur)}</p>
+              <Button type="button" size="sm" variant="outline" onClick={() => void proposition.refetch()}>
+                {I.reessayer}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        {periodeProposee && (
+          <div className="space-y-1 rounded-md border bg-muted/30 p-3" aria-live="polite">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {I.periodeTitre}
+            </p>
+            <p className="text-sm font-medium">
+              {fmt(I.periodeProposee, {
+                periodicite: I.periodicites[periodeProposee.periodicite] ?? periodeProposee.periodicite,
+                periode: periodeProposee.periode,
+                debut: jjmmaaaa(periodeProposee.debut),
+                fin: jjmmaaaa(periodeProposee.fin),
+              })}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {fmt(I.periodeAide, { journee: jjmmaaaa(periodeProposee.journee_comptable) })}
+            </p>
           </div>
-        </div>
+        )}
         <Button type="submit" disabled={previsualisation.isPending}>
           <CalendarClock className="mr-1 size-4" />
           {previsualisation.isPending ? I.previsualisationEnCours : I.previsualiser}

@@ -126,11 +126,30 @@ export async function fermerCompte(compteId: string): Promise<CompteEpargne> {
 
 // --- Intérêts (F4) : prévisualisation obligatoire, puis versement ----------------------
 
-/** Une période à prévisualiser ou verser : le libellé (clé anti-double) et ses bornes. */
+/** Les intérêts se versent produit par produit, à la périodicité du produit : la période est
+ *  PROPOSÉE par le serveur (`proposerPeriodeInterets`) et revérifiée à l'aperçu comme au versement. */
 export interface DemandeInterets {
+  product_id: string
   periode: string
   debut: string // AAAA-MM-JJ
   fin: string
+}
+
+/** Un produit dont on peut verser les intérêts. */
+export interface ProduitInterets {
+  id: string
+  code: string
+  name: string
+  periodicite: Periodicite
+}
+
+/** Dernière période close du produit, d'après sa périodicité et la journée comptable. */
+export interface PeriodeProposee {
+  periodicite: Periodicite
+  periode: string
+  debut: string // AAAA-MM-JJ
+  fin: string
+  journee_comptable: string // la journée d'après laquelle la période est proposée
 }
 
 /** Un compte de l'échantillon : de quoi vérifier « ça a l'air juste » avant de lancer. */
@@ -172,6 +191,18 @@ export interface LigneRapprochement {
   general: number
   concordant: boolean
   ecart: number
+}
+
+export async function listerProduitsInterets(): Promise<ProduitInterets[]> {
+  const { data } = await api.get<ProduitInterets[]>('/epargne/interets/produits')
+  return data
+}
+
+export async function proposerPeriodeInterets(productId: string): Promise<PeriodeProposee> {
+  const { data } = await api.get<PeriodeProposee>('/epargne/interets/periode', {
+    params: { product_id: productId },
+  })
+  return data
 }
 
 /** Prévisualise (dry-run) : calcule sans rien verser. */
