@@ -67,6 +67,16 @@ const STATUTS: TypePiece = {
   applies_to: ['legal_entity', 'group'],
 }
 
+const TYPE_RCCM = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
+const RCCM: TypePiece = {
+  id: TYPE_RCCM,
+  code: 'RCCM',
+  name: 'RCCM',
+  requires_expiry_date: false,
+  requires_issuer: true,
+  applies_to: ['legal_entity'],
+}
+
 function piece(over: Partial<Piece>): Piece {
   return {
     id: 'p1',
@@ -180,7 +190,7 @@ describe('OngletPieces', () => {
     expect(ajouter).toBeEnabled()
   })
 
-  it('un type sans exigence laisse l’autorité et l’échéance facultatives', async () => {
+  it('un type sans exigence laisse l’autorité facultative et masque l’échéance', async () => {
     listerSimule.mockResolvedValue([])
     typesSimule.mockResolvedValue([STATUTS])
 
@@ -190,8 +200,74 @@ describe('OngletPieces', () => {
     fireEvent.change(screen.getByLabelText('Numéro'), { target: { value: 'S-1' } })
 
     expect(screen.getByLabelText('Autorité de délivrance (facultatif)')).not.toBeRequired()
-    expect(screen.getByLabelText('Date d’expiration (facultatif)')).not.toBeRequired()
+    expect(screen.queryByLabelText(/Date d’expiration/)).toBeNull()
     expect(screen.getByRole('button', { name: 'Ajouter' })).toBeEnabled()
+  })
+
+  it('RCCM : l’échéance est masquée et l’autorité devient obligatoire', async () => {
+    listerSimule.mockResolvedValue([])
+    typesSimule.mockResolvedValue([RCCM])
+
+    afficher('legal_entity')
+    fireEvent.click(await screen.findByRole('button', { name: /Ajouter une pièce/ }))
+    fireEvent.change(screen.getByLabelText('Type de pièce'), { target: { value: TYPE_RCCM } })
+    fireEvent.change(screen.getByLabelText('Numéro'), { target: { value: 'NE-NIA-2024-B-1157' } })
+
+    expect(screen.queryByLabelText(/Date d’expiration/)).toBeNull()
+    expect(screen.getByLabelText('Autorité de délivrance (obligatoire)')).toBeRequired()
+    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeDisabled()
+    expect(screen.getByLabelText('Numéro')).toHaveAttribute('placeholder', 'Ex. NE-NIA-2024-B-1157')
+  })
+
+  it('CNI : l’échéance est affichée et obligatoire', async () => {
+    listerSimule.mockResolvedValue([])
+
+    afficher('individual')
+    fireEvent.click(await screen.findByRole('button', { name: /Ajouter une pièce/ }))
+    fireEvent.change(screen.getByLabelText('Type de pièce'), { target: { value: TYPE } })
+
+    expect(screen.getByLabelText('Date d’expiration (obligatoire)')).toBeRequired()
+    expect(screen.getByLabelText('Numéro')).toHaveAttribute('placeholder', 'Tel qu’il figure sur la pièce')
+  })
+
+  it('RCCM → CNI → STATUTS : l’échéance saisie est vidée, puis réaffichée vide', async () => {
+    listerSimule.mockResolvedValue([])
+    typesSimule.mockResolvedValue([RCCM, CNI, STATUTS])
+
+    afficher('legal_entity')
+    fireEvent.click(await screen.findByRole('button', { name: /Ajouter une pièce/ }))
+    const type = screen.getByLabelText('Type de pièce')
+
+    fireEvent.change(type, { target: { value: TYPE_RCCM } })
+    expect(screen.queryByLabelText(/Date d’expiration/)).toBeNull()
+
+    fireEvent.change(type, { target: { value: TYPE } })
+    fireEvent.change(screen.getByLabelText(/Date d’expiration/), { target: { value: '2035-01-01' } })
+    expect(screen.getByLabelText(/Date d’expiration/)).toHaveValue('2035-01-01')
+
+    fireEvent.change(type, { target: { value: TYPE_STATUTS } })
+    expect(screen.queryByLabelText(/Date d’expiration/)).toBeNull()
+    expect(screen.getByLabelText('Numéro')).toHaveAttribute('placeholder', 'Référence ou date de l’acte')
+
+    fireEvent.change(type, { target: { value: TYPE } })
+    expect(screen.getByLabelText(/Date d’expiration/)).toHaveValue('')
+  })
+
+  it('le libellé de la date suit le type de fiche', async () => {
+    listerSimule.mockResolvedValue([])
+
+    afficher('individual')
+    fireEvent.click(await screen.findByRole('button', { name: /Ajouter une pièce/ }))
+    expect(screen.getByLabelText('Date de délivrance (facultatif)')).toBeVisible()
+  })
+
+  it('PM : la date s’appelle « Date d’établissement »', async () => {
+    listerSimule.mockResolvedValue([])
+    typesSimule.mockResolvedValue([STATUTS])
+
+    afficher('legal_entity')
+    fireEvent.click(await screen.findByRole('button', { name: /Ajouter une pièce/ }))
+    expect(screen.getByLabelText('Date d’établissement (facultatif)')).toBeVisible()
   })
 
   it('un refus métier du serveur s’affiche tel quel', async () => {

@@ -29,6 +29,13 @@ const P = LIBELLES.tiersPieces
 const SELECT =
   'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs disabled:opacity-50'
 
+function placeholderNumero(code: string | undefined): string {
+  if (code === 'RCCM') return P.numeroPlaceholderRccm
+  if (code === 'STATUTS' || code?.startsWith('PV')) return P.numeroPlaceholderActe
+  if (code?.startsWith('RECEPISSE')) return P.numeroPlaceholderRecepisse
+  return P.numeroPlaceholder
+}
+
 export function OngletPieces({ tierId, tierType }: { tierId: string; tierType?: TypeDeFiche }) {
   const peutGerer = useAPermission('tiers.update')
   const peutVerifier = useAPermission('tiers.identity.verify')
@@ -83,6 +90,7 @@ export function OngletPieces({ tierId, tierType }: { tierId: string; tierType?: 
       {peutGerer && (
         <FormPiece
           tierId={tierId}
+          tierType={tierType}
           types={types.data ?? []}
           typesIndispo={types.isError}
           pays={pays.data ?? []}
@@ -265,11 +273,13 @@ function LignePiece({
 
 function FormPiece({
   tierId,
+  tierType,
   types,
   typesIndispo,
   pays,
 }: {
   tierId: string
+  tierType?: TypeDeFiche
   types: TypePiece[]
   typesIndispo: boolean
   pays: { id: string; name: string }[]
@@ -296,6 +306,13 @@ function FormPiece({
     (autoriteExigee && !autorite.trim()) ||
     (expirationExigee && !expiration)
 
+  // Une échéance saisie pour un type qui en exige une ne doit pas survivre à un changement vers
+  // un type sans échéance : le champ disparaît, sa valeur aussi.
+  const choisirType = (id: string) => {
+    setTypeId(id)
+    if (!types.find((t) => t.id === id)?.requires_expiry_date) setExpiration('')
+  }
+
   const fermer = () => {
     setOuvert(false)
     setTypeId('')
@@ -316,7 +333,7 @@ function FormPiece({
         document_number: numero,
         issuing_authority: autorite.trim() || null,
         date_of_issue: emission || null,
-        expiry_date: expiration || null,
+        expiry_date: expirationExigee ? expiration || null : null,
         issuing_country_id: paysId || null,
         is_primary: principal,
       }),
@@ -355,7 +372,7 @@ function FormPiece({
             className={SELECT}
             value={typeId}
             disabled={typesIndispo}
-            onChange={(e) => setTypeId(e.target.value)}
+            onChange={(e) => choisirType(e.target.value)}
           >
             <option value="">{P.typeChoisir}</option>
             {types.map((t) => (
@@ -373,28 +390,31 @@ function FormPiece({
             id="piece-numero"
             value={numero}
             onChange={(e) => setNumero(e.target.value)}
-            placeholder={P.numeroPlaceholder}
+            placeholder={placeholderNumero(typeChoisi?.code)}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="piece-emission">{P.dateEmission}</Label>
+            <Label htmlFor="piece-emission">
+              {tierType === 'individual' || !tierType ? P.dateEmission : P.dateEtablissement}
+            </Label>
             <Input id="piece-emission" type="date" value={emission} onChange={(e) => setEmission(e.target.value)} />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="piece-expiration">
-              {expirationExigee ? P.dateExpirationObligatoire : P.dateExpirationFacultative}
-            </Label>
-            <Input
-              id="piece-expiration"
-              type="date"
-              required={expirationExigee}
-              aria-required={expirationExigee}
-              value={expiration}
-              onChange={(e) => setExpiration(e.target.value)}
-            />
-          </div>
+          {/* Un RCCM, des statuts, un PV ne périment pas : proposer une échéance induirait en erreur. */}
+          {expirationExigee && (
+            <div className="space-y-1.5">
+              <Label htmlFor="piece-expiration">{P.dateExpirationObligatoire}</Label>
+              <Input
+                id="piece-expiration"
+                type="date"
+                required
+                aria-required
+                value={expiration}
+                onChange={(e) => setExpiration(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         <div className="space-y-1.5">
