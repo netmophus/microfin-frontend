@@ -474,3 +474,31 @@ describe('onglets d’une société ou d’un groupement', () => {
     expect(screen.getByRole('tab', { name: 'KYC / Risque' })).toBeVisible()
   })
 })
+
+describe('libellé de l’onglet des pièces selon le type de fiche', () => {
+  it('personne physique : Pièces d’identité', async () => {
+    lireSimule.mockResolvedValue(INDIVIDU)
+    afficher()
+    await screen.findByText('Diallo Amadou')
+
+    expect(screen.getByRole('tab', { name: 'Pièces d’identité' })).toBeVisible()
+    expect(screen.queryByRole('tab', { name: 'Pièces justificatives' })).toBeNull()
+  })
+
+  it('société : Pièces justificatives, jamais « identité »', async () => {
+    lireSimule.mockResolvedValue(SOCIETE)
+    afficher()
+    await screen.findByText('TANDA SERVICES')
+
+    expect(screen.getByRole('tab', { name: 'Pièces justificatives' })).toBeVisible()
+    expect(screen.queryByRole('tab', { name: 'Pièces d’identité' })).toBeNull()
+  })
+
+  it('groupement : Pièces justificatives', async () => {
+    lireSimule.mockResolvedValue(GROUPEMENT)
+    afficher()
+    await screen.findAllByText('HASKE')
+
+    expect(screen.getByRole('tab', { name: 'Pièces justificatives' })).toBeVisible()
+  })
+})

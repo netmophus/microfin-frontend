@@ -815,7 +815,13 @@ export const LIBELLES = {
 
   tiersOnglets: {
     coordonnees: 'Coordonnées',
+    // Une société ou un groupement ne justifie pas une « identité » mais son existence légale.
     pieces: 'Pièces d’identité',
+    piecesParType: {
+      individual: 'Pièces d’identité',
+      legal_entity: 'Pièces justificatives',
+      group: 'Pièces justificatives',
+    } as Record<string, string>,
     kyc: 'KYC / Risque',
     liees: 'Personnes liées',
     epargne: 'Comptes d’épargne',

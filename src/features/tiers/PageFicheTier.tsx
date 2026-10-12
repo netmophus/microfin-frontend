@@ -296,7 +296,7 @@ function OngletsDetail({
           {O.coordonnees}
         </BoutonOnglet>
         <BoutonOnglet actif={onglet === 'pieces'} onClick={() => setOnglet('pieces')}>
-          {O.pieces}
+          {O.piecesParType[fiche.tier_type] ?? O.pieces}
         </BoutonOnglet>
         {estPersonneMorale && (
           <BoutonOnglet actif={onglet === 'liees'} onClick={() => setOnglet('liees')}>
