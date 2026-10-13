@@ -86,7 +86,7 @@ export interface IndividuDetail {
   marital_status: string | null
   dependents_count: number
   profession: string | null
-  monthly_income_estimate: string | null
+  monthly_income_estimate: number | null
   is_literate: boolean
   // Données KYC (T3c) — pré-remplissent le formulaire de l'onglet KYC.
   origine_fonds: string | null

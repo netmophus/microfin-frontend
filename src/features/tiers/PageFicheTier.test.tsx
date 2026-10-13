@@ -100,7 +100,7 @@ const COMPLETE: FicheTier = {
     marital_status: null,
     dependents_count: 0,
     profession: 'Commerçante',
-    monthly_income_estimate: '150000.00',
+    monthly_income_estimate: 150000,
     is_literate: true,
     origine_fonds: null,
     secteur_activite_id: null,
