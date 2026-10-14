@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios'
 
+import type { DocumentRef } from '@/features/documents/api'
 import { api } from '@/lib/api'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -234,6 +235,8 @@ export interface ResultatParts {
   shares_non_liberees: number
   entry_number: string | null
   date_comptable: string // journée comptable de la pièce (AAAA-MM-JJ), jamais l'horloge
+  // Reçu archivé par le serveur (opérations d'espèces) ; null pour une souscription sans paiement.
+  document?: DocumentRef | null
 }
 
 /** Souscription ENGAGEMENT (chargé de clientèle) — sans paiement. */

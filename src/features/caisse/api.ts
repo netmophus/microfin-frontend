@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios'
 
+import type { DocumentRef } from '@/features/documents/api'
 import { api } from '@/lib/api'
 
 /**
@@ -60,6 +61,18 @@ export async function chargerSessionCourante(): Promise<SessionCaisse | null> {
  */
 export async function lireSession(sessionId: string): Promise<SessionCaisse> {
   const { data } = await api.get<SessionCaisse>(`/caisse/sessions/${sessionId}`)
+  return data
+}
+
+/**
+ * La lettre de demande d'explication d'un manquant, en PDF archivé par le serveur : générée à la
+ * première demande, puis RENDUE telle quelle aux suivantes. Le serveur refuse (422) une session
+ * sans manquant.
+ */
+export async function demanderLettreExplication(sessionId: string): Promise<DocumentRef> {
+  const { data } = await api.post<{ id: string; nom: string; statut: 'ok' | 'echec' }>(
+    `/caisse/sessions/${sessionId}/lettre-explication`,
+  )
   return data
 }
 

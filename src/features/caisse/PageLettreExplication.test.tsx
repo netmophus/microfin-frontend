@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { lireSession } from '@/features/caisse/api'
+import { demanderLettreExplication, lireSession } from '@/features/caisse/api'
 import { PageLettreExplication } from '@/features/caisse/PageLettreExplication'
+import { ouvrirPdf, regenererDocument, telechargerDocument } from '@/features/documents/api'
 
 /**
  * Lettre de demande d'explication (manquant de caisse). Points durs : garde-fou — jamais
@@ -13,12 +14,28 @@ import { PageLettreExplication } from '@/features/caisse/PageLettreExplication'
  * le calcul complet, et le texte formel avec le bon montant.
  */
 
+const etat = vi.hoisted(() => ({ permissions: ['documents.read'] as string[] }))
+
+vi.mock('@/features/auth/useProfil', () => ({
+  useAPermission: (p: string) => etat.permissions.includes(p),
+}))
+
 vi.mock('@/features/caisse/api', async () => {
   const reel = await vi.importActual<typeof import('@/features/caisse/api')>('@/features/caisse/api')
-  return { ...reel, lireSession: vi.fn() }
+  return { ...reel, lireSession: vi.fn(), demanderLettreExplication: vi.fn() }
 })
 
+vi.mock('@/features/documents/api', () => ({
+  telechargerDocument: vi.fn(),
+  regenererDocument: vi.fn(),
+  ouvrirPdf: vi.fn(),
+}))
+
 const lectureSimulee = vi.mocked(lireSession)
+const demandeSimulee = vi.mocked(demanderLettreExplication)
+const telechargerSimule = vi.mocked(telechargerDocument)
+const regenererSimule = vi.mocked(regenererDocument)
+const ouvrirSimule = vi.mocked(ouvrirPdf)
 
 function afficher(id = 'ses-1') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -57,10 +74,11 @@ const sessionManquante = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  etat.permissions = ['documents.read']
 })
 
 describe('PageLettreExplication', () => {
-  it('affiche le document avec identité, calcul et texte formel', async () => {
+  it('résume la lettre : identité, calcul et texte formel', async () => {
     lectureSimulee.mockResolvedValue(sessionManquante)
     afficher()
 
@@ -72,7 +90,58 @@ describe('PageLettreExplication', () => {
     expect(screen.getByText('50 000 F')).toBeVisible() // montant compté
     expect(screen.getByText('10 000 F')).toBeVisible() // écart, en valeur absolue
     expect(screen.getByText(/Un manquant de 10 000 F a été constaté/)).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Imprimer' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Télécharger la lettre' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Imprimer' })).toBeNull()
+  })
+
+  it('« Télécharger la lettre » demande le PDF au serveur puis l’ouvre', async () => {
+    lectureSimulee.mockResolvedValue(sessionManquante)
+    const pdf = new Blob(['%PDF'])
+    demandeSimulee.mockResolvedValue({ id: 'l1', nom: 'lettre.pdf', statut: 'ok' })
+    telechargerSimule.mockResolvedValue(pdf)
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Télécharger la lettre' }))
+
+    await waitFor(() => expect(ouvrirSimule).toHaveBeenCalledWith(pdf, 'lettre.pdf'))
+    expect(demandeSimulee).toHaveBeenCalledWith('ses-1')
+    expect(telechargerSimule).toHaveBeenCalledWith('l1')
+  })
+
+  it('génération en échec : message, puis « Régénérer » rend le bouton de téléchargement', async () => {
+    lectureSimulee.mockResolvedValue(sessionManquante)
+    demandeSimulee.mockResolvedValue({ id: 'l1', nom: 'lettre.pdf', statut: 'echec' })
+    regenererSimule.mockResolvedValue({ id: 'l1', nom: 'lettre.pdf', statut: 'ok' })
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Télécharger la lettre' }))
+    expect(await screen.findByText(/n’a pas pu être généré/)).toBeVisible()
+    expect(ouvrirSimule).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Régénérer' }))
+
+    expect(await screen.findByRole('button', { name: 'Télécharger la lettre' })).toBeVisible()
+    expect(regenererSimule).toHaveBeenCalledWith('l1')
+  })
+
+  it('refus du serveur : message affiché, rien n’est ouvert', async () => {
+    lectureSimulee.mockResolvedValue(sessionManquante)
+    demandeSimulee.mockRejectedValue(new Error('réseau'))
+    afficher()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Télécharger la lettre' }))
+
+    expect(await screen.findByRole('alert')).toBeVisible()
+    expect(ouvrirSimule).not.toHaveBeenCalled()
+  })
+
+  it('sans documents.read : pas de bouton, un message explique pourquoi', async () => {
+    etat.permissions = []
+    lectureSimulee.mockResolvedValue(sessionManquante)
+    afficher()
+
+    expect(await screen.findByText(/n’avez pas accès aux documents/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Télécharger la lettre' })).toBeNull()
   })
 
   it('date la lettre de la journée comptable de la session, jamais de l’horloge du poste', async () => {
@@ -86,9 +155,6 @@ describe('PageLettreExplication', () => {
       expect(screen.getByText(/constaté à la fermeture de votre session de caisse du 05\/08\/2026/)).toBeVisible()
       // L'horloge simulée (2031) n'apparaît nulle part sur le document.
       expect(document.body.textContent).not.toContain('2031')
-      // Les horodatages réels d'ouverture / fermeture restent, étiquetés comme tels.
-      expect(screen.getByText('Ouverture de la session (heure réelle)')).toBeVisible()
-      expect(screen.getByText('Fermeture de la session (heure réelle)')).toBeVisible()
     } finally {
       vi.useRealTimers()
     }
@@ -101,7 +167,7 @@ describe('PageLettreExplication', () => {
     expect(
       await screen.findByText(/Cette session n’a pas de manquant/),
     ).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Imprimer' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Télécharger la lettre' })).toBeNull()
   })
 
   it('excédent : refuse de fabriquer une lettre (hors périmètre)', async () => {

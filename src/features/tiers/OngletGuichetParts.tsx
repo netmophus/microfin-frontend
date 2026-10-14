@@ -15,6 +15,8 @@ import {
   type FichePartsSociales,
   type LigneTier,
 } from '@/features/tiers/api'
+import { ActionsDocument } from '@/features/documents/ActionsDocument'
+import type { DocumentRef } from '@/features/documents/api'
 import { RecuCaisse, type PropsRecu } from '@/features/documents/RecuCaisse'
 import { BadgeSocietariat } from '@/features/tiers/badges'
 import { LIBELLES } from '@/libelles/fr'
@@ -197,6 +199,7 @@ function Actions({
   const [confirmation, setConfirmation] = useState(false)
   const [succes, setSucces] = useState<string | null>(null)
   const [recu, setRecu] = useState<PropsRecu | null>(null)
+  const [documentRecu, setDocumentRecu] = useState<DocumentRef | null>(null)
 
   const nbNum = Number.parseInt(nb.replace(/\D/g, ''), 10) || 0
   const total = nbNum * fiche.unit_value
@@ -208,6 +211,7 @@ function Actions({
       void client.invalidateQueries({ queryKey: ['guichet', 'parts', tierId] })
       void client.invalidateQueries({ queryKey: ['tiers', 'parts', tierId] })
       setSucces(res.is_member ? P.succesMembre : P.succesEngagement)
+      setDocumentRecu(res.document ?? null)
       // Pièce justificative : n° de reçu = n° de pièce, date = journée comptable de la pièce.
       setRecu({
         titre: mode === 'comptant' ? DOC.titreSouscriptionComptant : DOC.titreLiberation,
@@ -234,25 +238,34 @@ function Actions({
       <Alert role="status">
         <AlertDescription className="space-y-2">
           <p>{succes}</p>
-          <div className="flex gap-2">
-            {recu && (
-              <Button size="sm" variant="outline" onClick={() => window.print()}>
-                <Printer className="mr-1 size-4" />
-                {DOC.imprimerRecu}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setSucces(null)
-                setRecu(null)
-              }}
-            >
-              {P.autreOperation}
-            </Button>
-          </div>
-          {recu && <RecuCaisse {...recu} />}
+          {recu && (
+            <ActionsDocument
+              reference={documentRecu}
+              objet="recu"
+              repli={(pdfAbsent) =>
+                pdfAbsent ? (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => window.print()}>
+                      <Printer className="mr-1 size-4" />
+                      {DOC.imprimerRecu}
+                    </Button>
+                    <RecuCaisse {...recu} />
+                  </>
+                ) : null
+              }
+            />
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setSucces(null)
+              setRecu(null)
+              setDocumentRecu(null)
+            }}
+          >
+            {P.autreOperation}
+          </Button>
         </AlertDescription>
       </Alert>
     )

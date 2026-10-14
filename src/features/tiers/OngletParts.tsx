@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAPermission } from '@/features/auth/useProfil'
+import { ActionsDocument } from '@/features/documents/ActionsDocument'
+import type { DocumentRef } from '@/features/documents/api'
 import {
   annulerParts,
   chargerParts,
@@ -183,6 +185,10 @@ function ActionsParts({
   const [nb, setNb] = useState('')
   const [confirmation, setConfirmation] = useState(false)
   const [succes, setSucces] = useState<string | null>(null)
+  // Reçu des opérations d'ESPÈCES (comptant, libération, remboursement) ; l'engagement et
+  // l'annulation n'encaissent ni ne décaissent rien : pas de reçu attendu.
+  const [recuAttendu, setRecuAttendu] = useState(false)
+  const [documentRecu, setDocumentRecu] = useState<DocumentRef | null>(null)
 
   const nbNum = Number.parseInt(nb.replace(/\D/g, ''), 10) || 0
   const total = nbNum * fiche.unit_value
@@ -199,6 +205,8 @@ function ActionsParts({
     onSuccess: (res) => {
       // Invalide la fiche (le badge Client/Membre en tête) ET les parts : la bascule est visible.
       void client.invalidateQueries({ queryKey: ['tiers'] })
+      setRecuAttendu(mode === 'comptant' || mode === 'liberation' || mode === 'remboursement')
+      setDocumentRecu(res.document ?? null)
       if (mode === 'remboursement') {
         setSucces(res.is_member ? P.succesRembourse : P.succesRedevientClient)
       } else if (mode === 'annulation') {
@@ -222,7 +230,18 @@ function ActionsParts({
       <Alert role="status">
         <AlertDescription className="space-y-2">
           <p>{succes}</p>
-          <Button size="sm" variant="ghost" onClick={() => setSucces(null)}>
+          {recuAttendu && (
+            <ActionsDocument reference={documentRecu} objet="recu" repli={() => null} />
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setSucces(null)
+              setRecuAttendu(false)
+              setDocumentRecu(null)
+            }}
+          >
             {P.autreOperation}
           </Button>
         </AlertDescription>

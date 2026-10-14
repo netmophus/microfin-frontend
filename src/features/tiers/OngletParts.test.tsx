@@ -6,6 +6,7 @@ import {
   chargerParts,
   rembourserParts,
   souscrireComptant,
+  souscrireParts,
   type FichePartsSociales,
 } from '@/features/tiers/api'
 import { OngletParts } from '@/features/tiers/OngletParts'
@@ -40,6 +41,7 @@ vi.mock('@/features/tiers/api', async () => {
 const partsSimule = vi.mocked(chargerParts)
 const comptantSimule = vi.mocked(souscrireComptant)
 const rembourserSimule = vi.mocked(rembourserParts)
+const engagementSimule = vi.mocked(souscrireParts)
 
 function base(o: Partial<FichePartsSociales> = {}): FichePartsSociales {
   return {
@@ -185,6 +187,74 @@ describe('OngletParts', () => {
 
     await waitFor(() => expect(rembourserSimule).toHaveBeenCalledWith('t1', 10))
     expect(await screen.findByText(/a quitté le sociétariat/)).toBeVisible()
+  })
+
+  it('remboursement : le reçu PDF archivé se télécharge (décaissement d’espèces)', async () => {
+    etat.permissions = ['tiers.shares.read', 'tiers.shares.refund', 'documents.read']
+    partsSimule.mockResolvedValue(base())
+    rembourserSimule.mockResolvedValue({
+      is_member: false,
+      shares_liberees: 0,
+      shares_non_liberees: 0,
+      entry_number: 'CA-2026-000009',
+      date_comptable: '2026-10-14',
+      document: { id: 'd1', nom: 'recu_parts_remboursement.pdf', statut: 'ok' },
+    })
+    afficher('actif')
+
+    fireEvent.click(await screen.findByRole('button', { name: /Rembourser des parts/ }))
+    fireEvent.change(screen.getByLabelText('Nombre de parts'), { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
+
+    expect(
+      await screen.findByRole('button', { name: 'Télécharger / Imprimer le reçu' }),
+    ).toBeVisible()
+  })
+
+  it('remboursement dont le reçu a échoué : message et « Régénérer »', async () => {
+    etat.permissions = ['tiers.shares.read', 'tiers.shares.refund', 'documents.read']
+    partsSimule.mockResolvedValue(base())
+    rembourserSimule.mockResolvedValue({
+      is_member: false,
+      shares_liberees: 0,
+      shares_non_liberees: 0,
+      entry_number: 'CA-2026-000009',
+      date_comptable: '2026-10-14',
+      document: { id: 'd1', nom: 'recu_parts_remboursement.pdf', statut: 'echec' },
+    })
+    afficher('actif')
+
+    fireEvent.click(await screen.findByRole('button', { name: /Rembourser des parts/ }))
+    fireEvent.change(screen.getByLabelText('Nombre de parts'), { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
+
+    expect(await screen.findByRole('button', { name: 'Régénérer' })).toBeVisible()
+  })
+
+  it('souscription sans paiement : aucun reçu attendu, aucun message de document absent', async () => {
+    etat.permissions = ['tiers.shares.read', 'tiers.shares.subscribe', 'documents.read']
+    partsSimule.mockResolvedValue(base({ is_member: false, shares_liberees: 0, capital_libere: 0 }))
+    engagementSimule.mockResolvedValue({
+      is_member: false,
+      shares_liberees: 0,
+      shares_non_liberees: 3,
+      entry_number: 'OD-2026-000002',
+      date_comptable: '2026-10-14',
+      document: null,
+    })
+    afficher('actif')
+
+    fireEvent.click(await screen.findByRole('button', { name: /Souscrire/ }))
+    fireEvent.change(screen.getByLabelText('Nombre de parts'), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
+
+    await waitFor(() => expect(engagementSimule).toHaveBeenCalledWith('t1', 3))
+    expect(await screen.findByRole('button', { name: 'Nouvelle opération' })).toBeVisible()
+    expect(screen.queryByText(/PDF/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /Télécharger/ })).toBeNull()
   })
 
   it('le chargé ne voit PAS le bouton Rembourser (réservé responsable)', async () => {

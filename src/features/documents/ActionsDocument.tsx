@@ -29,8 +29,8 @@ export function ActionsDocument({
   repli,
 }: {
   reference: DocumentRef | null | undefined
-  /** « recu » ou « bon » : libellé du bouton. */
-  objet: 'recu' | 'bon'
+  /** « recu », « bon » ou « lettre » : libellé du bouton. */
+  objet: 'recu' | 'bon' | 'lettre'
   /** Rend le repli navigateur ; reçoit `true` quand le PDF serveur est absent ou en échec. */
   repli: (pdfAbsent: boolean) => ReactNode
 }) {
@@ -50,7 +50,13 @@ export function ActionsDocument({
     onSuccess: (nouvelle) => setRegeneree(nouvelle),
   })
 
-  const libelle = objet === 'bon' ? D.telechargerImprimerBon : D.telechargerImprimerRecu
+  const libelle = {
+    recu: D.telechargerImprimerRecu,
+    bon: D.telechargerImprimerBon,
+    lettre: D.telechargerLettre,
+  }[objet]
+  // La lettre n'a aucun repli navigateur : les messages ne le promettent pas.
+  const avecRepli = objet !== 'lettre'
 
   if (courante && courante.statut === 'ok' && peutLire) {
     return (
@@ -70,10 +76,17 @@ export function ActionsDocument({
   }
 
   const enEchec = courante !== null && courante.statut === 'echec' && peutLire
+  const message = enEchec
+    ? avecRepli
+      ? D.generationEchec
+      : D.generationEchecSansRepli
+    : avecRepli
+      ? D.documentAbsent
+      : D.documentAbsentSansRepli
   return (
     <div className="space-y-2">
       <Alert role="status">
-        <AlertDescription>{enEchec ? D.generationEchec : D.documentAbsent}</AlertDescription>
+        <AlertDescription>{message}</AlertDescription>
       </Alert>
       {enEchec && (
         <Button

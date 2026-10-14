@@ -19,7 +19,10 @@ import { OngletGuichetParts } from '@/features/tiers/OngletGuichetParts'
  * client peut devenir sociétaire EN UNE VISITE (souscription au comptant).
  */
 
+const etat = vi.hoisted(() => ({ permissions: [] as string[] }))
+
 vi.mock('@/features/auth/useProfil', () => ({
+  useAPermission: (p: string) => etat.permissions.includes(p),
   useProfil: () => ({
     data: {
       username: 'caissier1',
@@ -93,7 +96,10 @@ async function chercherEtSelectionner(resultat = ligne()) {
   fireEvent.click(await screen.findByRole('button', { name: /Traoré Fatoumata/ }))
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  etat.permissions = []
+})
 
 describe('OngletGuichetParts', () => {
   it('recherche sans résultat : message clair', async () => {
@@ -242,6 +248,32 @@ describe('OngletGuichetParts — reçu imprimable', () => {
     expect(texte).toContain('50 000 F')
     expect(texte).toContain('cinquante mille francs CFA')
     expect(texte).toContain('Signature du client (facultative)')
+  })
+
+  it('souscription avec référence PDF : bouton « Télécharger / Imprimer », pas de repli v1', async () => {
+    etat.permissions = ['documents.read']
+    partsSimule.mockResolvedValue(parts({ is_member: false }))
+    comptantSimule.mockResolvedValue({
+      is_member: true,
+      shares_liberees: 10,
+      shares_non_liberees: 0,
+      entry_number: 'CA-2026-000042',
+      date_comptable: '2026-10-14',
+      document: { id: 'd1', nom: 'recu_parts_souscription.pdf', statut: 'ok' },
+    })
+    afficher()
+    await chercherEtSelectionner()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Souscrire au comptant/ }))
+    fireEvent.change(screen.getByLabelText('Nombre de parts'), { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
+
+    expect(
+      await screen.findByRole('button', { name: 'Télécharger / Imprimer le reçu' }),
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
+    expect(zone(document.body)).toBeNull()
   })
 
   it('libération : reçu intitulé « libération »', async () => {

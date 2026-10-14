@@ -35,7 +35,7 @@ const uneRef = (o: Partial<DocumentRef> = {}): DocumentRef => ({
   ...o,
 })
 
-function afficher(reference: DocumentRef | null | undefined, objet: 'recu' | 'bon' = 'recu') {
+function afficher(reference: DocumentRef | null | undefined, objet: 'recu' | 'bon' | 'lettre' = 'recu') {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
@@ -70,6 +70,17 @@ describe('ActionsDocument', () => {
     afficher(uneRef({ nom: 'bon_dat_DAT-1.pdf' }), 'bon')
 
     expect(screen.getByRole('button', { name: 'Télécharger / Imprimer le bon' })).toBeVisible()
+  })
+
+  it('la lettre : son libellé, et ses messages ne promettent aucun repli navigateur', () => {
+    const { unmount } = afficher(uneRef({ nom: 'lettre.pdf' }), 'lettre')
+    expect(screen.getByRole('button', { name: 'Télécharger la lettre' })).toBeVisible()
+    unmount()
+
+    afficher(uneRef({ statut: 'echec' }), 'lettre')
+
+    expect(screen.getByRole('status')).not.toHaveTextContent(/navigateur/)
+    expect(screen.getByRole('button', { name: 'Régénérer' })).toBeVisible()
   })
 
   it('échec d’ouverture : message affiché, rien n’est ouvert', async () => {

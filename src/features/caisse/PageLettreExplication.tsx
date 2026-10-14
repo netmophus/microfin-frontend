@@ -1,27 +1,21 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Printer } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { lireSession } from '@/features/caisse/api'
-import { formatFcfa, formatJour } from '@/features/epargne/api'
+import { useAPermission } from '@/features/auth/useProfil'
+import { demanderLettreExplication, lireSession } from '@/features/caisse/api'
+import { ActionsDocument } from '@/features/documents/ActionsDocument'
+import { ouvrirPdf, telechargerDocument, type DocumentRef } from '@/features/documents/api'
+import { formatFcfa, formatJour, messageRefus } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
 const L = LIBELLES.lettreExplication
 
 function fmt(gabarit: string, valeurs: Record<string, string>): string {
   return gabarit.replace(/\{(\w+)\}/g, (_, cle) => valeurs[cle] ?? '')
-}
-
-function dateHeure(iso: string): string {
-  return new Date(iso).toLocaleString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 function Champ({ label, valeur }: { label: string; valeur: string }) {
@@ -45,21 +39,33 @@ function RetourManquants() {
 }
 
 /**
- * Lettre de demande d'explication (manquant de caisse) — document IMPRIMABLE, régénérable à
- * tout moment : source unique de vérité = la session fermée elle-même (`lireSession`), rien
- * n'est stocké côté lettre. Jamais fabriquée pour un écart nul ou un excédent (garde-fou,
- * même en accédant directement par l'URL) — l'excédent est explicitement hors périmètre.
+ * Lettre de demande d'explication (manquant de caisse) : le document est le PDF généré et archivé
+ * par le serveur (une seule fois par session, les demandes suivantes rendent l'archive). Cet écran
+ * en résume le contenu et propose « Télécharger la lettre ».
  *
- * IMPRESSION : même patron que l'aperçu d'échéancier crédit — `.zone-impression` (index.css)
- * isole le document du reste de la page ; l'en-tête et le bloc réponse/signatures sont
- * `hidden` à l'écran, `print:block`/`print:grid` sur le papier.
+ * Jamais proposée pour un écart nul ou un excédent (garde-fou, même en accédant directement par
+ * l'URL — le serveur refuse aussi) : l'excédent est explicitement hors périmètre.
  */
 export function PageLettreExplication() {
   const { id = '' } = useParams()
+  const peutLireDocuments = useAPermission('documents.read')
+  // Seule une génération en ÉCHEC garde sa référence : elle ouvre « Régénérer ».
+  const [enEchec, setEnEchec] = useState<DocumentRef | null>(null)
 
   const requete = useQuery({
     queryKey: ['caisse', 'session', id],
     queryFn: () => lireSession(id),
+  })
+
+  const lettre = useMutation({
+    mutationFn: async () => {
+      const reference = await demanderLettreExplication(id)
+      if (reference.statut === 'ok') {
+        ouvrirPdf(await telechargerDocument(reference.id), reference.nom)
+      }
+      return reference
+    },
+    onSuccess: (reference) => setEnEchec(reference.statut === 'echec' ? reference : null),
   })
 
   if (requete.isPending) {
@@ -107,21 +113,28 @@ export function PageLettreExplication() {
           <h1 className="text-xl font-semibold">{L.titre}</h1>
           <p className="text-sm text-muted-foreground">{L.intro}</p>
         </div>
-        <Button variant="outline" onClick={() => window.print()}>
-          <Printer className="mr-1 size-4" />
-          {L.imprimer}
-        </Button>
+        {peutLireDocuments && !enEchec && (
+          <Button variant="outline" disabled={lettre.isPending} onClick={() => lettre.mutate()}>
+            <Printer className="mr-1 size-4" />
+            {lettre.isPending ? L.preparation : L.telecharger}
+          </Button>
+        )}
       </header>
 
-      <div role="note" className="rounded-md border border-warning/50 bg-warning-subtle/40 px-3 py-2 text-sm">
-        {L.provisoireBanniere}
-      </div>
+      {lettre.isError && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>{messageRefus(lettre.error, L.lettreEchec)}</AlertDescription>
+        </Alert>
+      )}
+      {enEchec && <ActionsDocument reference={enEchec} objet="lettre" repli={() => null} />}
+      {!peutLireDocuments && (
+        <Alert role="status">
+          <AlertDescription>{L.accesDocumentsRefuse}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="zone-impression space-y-4 rounded-md border p-6">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">{L.nomInstitution}</h2>
-          <p className="text-sm text-muted-foreground">{fmt(L.journeeSession, { date: journeeSession })}</p>
-        </div>
+      <div className="space-y-4 rounded-md border p-6">
+        <p className="text-sm text-muted-foreground">{fmt(L.journeeSession, { date: journeeSession })}</p>
 
         <p className="font-medium">{L.objet}</p>
 
@@ -129,8 +142,6 @@ export function PageLettreExplication() {
           <Champ label={L.caissierLabel} valeur={session.caissier_nom} />
           <Champ label={L.agenceLabel} valeur={session.agency_nom} />
           <Champ label={L.compteLabel} valeur={session.compte_caisse_number} />
-          <Champ label={L.ouvertureLabel} valeur={dateHeure(session.opened_at)} />
-          <Champ label={L.fermetureLabel} valeur={session.closed_at ? dateHeure(session.closed_at) : '—'} />
         </dl>
 
         <div>
@@ -139,14 +150,8 @@ export function PageLettreExplication() {
           </p>
           <dl className="space-y-1 text-sm">
             <Champ label={L.fondsInitialLabel} valeur={formatFcfa(session.fonds_initial)} />
-            <Champ
-              label={L.soldeTheoriqueLabel}
-              valeur={formatFcfa(session.solde_theorique_cloture ?? 0)}
-            />
-            <Champ
-              label={L.montantCompteLabel}
-              valeur={formatFcfa(session.montant_reel_cloture ?? 0)}
-            />
+            <Champ label={L.soldeTheoriqueLabel} valeur={formatFcfa(session.solde_theorique_cloture ?? 0)} />
+            <Champ label={L.montantCompteLabel} valeur={formatFcfa(session.montant_reel_cloture ?? 0)} />
             <div className="flex justify-between gap-4 border-t pt-1 text-base">
               <dt className="font-semibold">{L.ecartLabel}</dt>
               <dd className="text-right font-semibold text-danger">{montantManquant}</dd>
@@ -154,27 +159,7 @@ export function PageLettreExplication() {
           </dl>
         </div>
 
-        <p className="text-sm">
-          {fmt(L.texteFormel, { montant: montantManquant, date: journeeSession })}
-        </p>
-
-        <div className="hidden print:block">
-          <p className="text-sm font-medium">{L.reponseTitre}</p>
-          <div className="mt-2 h-32 rounded-md border" />
-        </div>
-
-        <div className="hidden print:grid print:grid-cols-2 print:gap-8 print:pt-10 print:text-sm">
-          <div>
-            <p>{L.signatureCaissier}</p>
-            <div className="mt-10 border-t border-foreground" />
-            <p className="mt-1 text-xs text-muted-foreground">{L.dateSignature}</p>
-          </div>
-          <div>
-            <p>{L.signatureResponsable}</p>
-            <div className="mt-10 border-t border-foreground" />
-            <p className="mt-1 text-xs text-muted-foreground">{L.dateSignature}</p>
-          </div>
-        </div>
+        <p className="text-sm">{fmt(L.texteFormel, { montant: montantManquant, date: journeeSession })}</p>
       </div>
     </div>
   )

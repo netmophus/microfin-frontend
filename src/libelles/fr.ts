@@ -1591,8 +1591,11 @@ export const LIBELLES = {
 
   lettreExplication: {
     titre: 'Lettre de demande d’explication',
-    intro: 'Document imprimable, à remettre au caissier concerné.',
-    imprimer: 'Imprimer',
+    intro: 'Document PDF archivé, à remettre au caissier concerné.',
+    telecharger: 'Télécharger la lettre',
+    preparation: 'Préparation de la lettre…',
+    lettreEchec: 'Impossible de préparer la lettre. Réessayez.',
+    accesDocumentsRefuse: 'Vous n’avez pas accès aux documents : la lettre ne peut pas être téléchargée.',
     chargement: 'Chargement…',
     erreur: 'Impossible de charger cette session.',
     reessayer: 'Réessayer',
@@ -1600,20 +1603,13 @@ export const LIBELLES = {
     // excédent ou un écart nul, même en accédant directement par l'URL).
     nonApplicable:
       'Cette session n’a pas de manquant : aucune lettre de demande d’explication ne s’applique.',
-    // Provisoires, signalés à l'écran seulement — jamais imprimés tels quels sur le document
-    // lui-même (un document remis à un caissier n'affiche pas ses propres réserves internes).
-    provisoireBanniere:
-      'Nom de l’institution et délai de réponse : valeurs provisoires, à valider avant déploiement.',
 
-    // Le document lui-même (zone imprimable).
-    nomInstitution: 'Nom de l’institution',
+    // Résumé affiché à l'écran (le document lui-même est le PDF du serveur).
     journeeSession: 'Journée comptable de la session : {date}',
     objet: 'Objet : demande d’explication — écart de caisse',
     caissierLabel: 'Caissier concerné',
     agenceLabel: 'Agence',
     compteLabel: 'Compte de caisse',
-    ouvertureLabel: 'Ouverture de la session (heure réelle)',
-    fermetureLabel: 'Fermeture de la session (heure réelle)',
     calculTitre: 'Calcul de l’écart',
     fondsInitialLabel: 'Fonds initial',
     soldeTheoriqueLabel: 'Solde théorique de clôture',
@@ -1623,10 +1619,6 @@ export const LIBELLES = {
     // ajustable — pas une règle validée.
     texteFormel:
       'Un manquant de {montant} a été constaté à la fermeture de votre session de caisse du {date}. Nous vous demandons de bien vouloir fournir une explication écrite dans un délai de 48 heures à compter de la remise de la présente lettre.',
-    reponseTitre: 'Réponse du caissier',
-    signatureCaissier: 'Signature du caissier',
-    signatureResponsable: 'Signature et cachet du responsable',
-    dateSignature: 'Date',
   },
 
   sessionsManquantes: {
@@ -3019,12 +3011,15 @@ export const LIBELLES = {
     // PDF archivé par le serveur : « Télécharger / Imprimer » ouvre ce fichier-là, pas une copie.
     telechargerImprimerRecu: 'Télécharger / Imprimer le reçu',
     telechargerImprimerBon: 'Télécharger / Imprimer le bon',
+    telechargerLettre: 'Télécharger la lettre',
     preparation: 'Préparation du document…',
     ouvertureEchec: 'Impossible de récupérer le document. Réessayez.',
     documentAbsent:
       'Le document PDF n’a pas pu être archivé : l’opération est bien enregistrée. Vous pouvez l’imprimer depuis le navigateur.',
     generationEchec:
       'Le document n’a pas pu être généré : l’opération est bien enregistrée. Régénérez-le, ou imprimez-le depuis le navigateur.',
+    generationEchecSansRepli: 'Le document n’a pas pu être généré. Régénérez-le.',
+    documentAbsentSansRepli: 'Le document PDF n’est pas disponible pour le moment.',
     regenerer: 'Régénérer',
     regenerationEnCours: 'Régénération…',
     regenerationEchec: 'La régénération a échoué. Réessayez.',
