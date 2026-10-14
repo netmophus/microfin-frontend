@@ -1607,13 +1607,13 @@ export const LIBELLES = {
 
     // Le document lui-même (zone imprimable).
     nomInstitution: 'Nom de l’institution',
-    emiseLe: 'Émise le {date}',
+    journeeSession: 'Journée comptable de la session : {date}',
     objet: 'Objet : demande d’explication — écart de caisse',
     caissierLabel: 'Caissier concerné',
     agenceLabel: 'Agence',
     compteLabel: 'Compte de caisse',
-    ouvertureLabel: 'Ouverture de la session',
-    fermetureLabel: 'Fermeture de la session',
+    ouvertureLabel: 'Ouverture de la session (heure réelle)',
+    fermetureLabel: 'Fermeture de la session (heure réelle)',
     calculTitre: 'Calcul de l’écart',
     fondsInitialLabel: 'Fonds initial',
     soldeTheoriqueLabel: 'Solde théorique de clôture',

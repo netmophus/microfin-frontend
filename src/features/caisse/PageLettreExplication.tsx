@@ -5,7 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { lireSession } from '@/features/caisse/api'
-import { formatFcfa } from '@/features/epargne/api'
+import { formatFcfa, formatJour } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
 const L = LIBELLES.lettreExplication
@@ -21,14 +21,6 @@ function dateHeure(iso: string): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  })
-}
-
-function dateDuJour(): string {
-  return new Date().toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
   })
 }
 
@@ -102,7 +94,8 @@ export function PageLettreExplication() {
     )
   }
 
-  const emiseLe = dateDuJour()
+  // Journée comptable de la SESSION (dérivée côté serveur) : jamais l'horloge du poste.
+  const journeeSession = formatJour(session.journee_comptable)
   const montantManquant = formatFcfa(Math.abs(session.ecart ?? 0))
 
   return (
@@ -127,7 +120,7 @@ export function PageLettreExplication() {
       <div className="zone-impression space-y-4 rounded-md border p-6">
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">{L.nomInstitution}</h2>
-          <p className="text-sm text-muted-foreground">{fmt(L.emiseLe, { date: emiseLe })}</p>
+          <p className="text-sm text-muted-foreground">{fmt(L.journeeSession, { date: journeeSession })}</p>
         </div>
 
         <p className="font-medium">{L.objet}</p>
@@ -162,7 +155,7 @@ export function PageLettreExplication() {
         </div>
 
         <p className="text-sm">
-          {fmt(L.texteFormel, { montant: montantManquant, date: emiseLe })}
+          {fmt(L.texteFormel, { montant: montantManquant, date: journeeSession })}
         </p>
 
         <div className="hidden print:block">

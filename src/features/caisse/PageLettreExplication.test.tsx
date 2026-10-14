@@ -43,7 +43,7 @@ const sessionManquante = {
   fonds_initial: 40_000,
   opened_at: '2026-08-07T08:00:00Z',
   closed_at: '2026-08-07T18:00:00Z',
-  journee_comptable: null,
+  journee_comptable: '2026-08-07',
   solde_theorique_actuel: null,
   montant_reel_cloture: 50_000,
   solde_theorique_cloture: 60_000,
@@ -73,6 +73,25 @@ describe('PageLettreExplication', () => {
     expect(screen.getByText('10 000 F')).toBeVisible() // écart, en valeur absolue
     expect(screen.getByText(/Un manquant de 10 000 F a été constaté/)).toBeVisible()
     expect(screen.getByRole('button', { name: 'Imprimer' })).toBeVisible()
+  })
+
+  it('date la lettre de la journée comptable de la session, jamais de l’horloge du poste', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2031-03-09T10:00:00Z'))
+    lectureSimulee.mockResolvedValue({ ...sessionManquante, journee_comptable: '2026-08-05' })
+    try {
+      afficher()
+
+      expect(await screen.findByText('Journée comptable de la session : 05/08/2026')).toBeVisible()
+      expect(screen.getByText(/constaté à la fermeture de votre session de caisse du 05\/08\/2026/)).toBeVisible()
+      // L'horloge simulée (2031) n'apparaît nulle part sur le document.
+      expect(document.body.textContent).not.toContain('2031')
+      // Les horodatages réels d'ouverture / fermeture restent, étiquetés comme tels.
+      expect(screen.getByText('Ouverture de la session (heure réelle)')).toBeVisible()
+      expect(screen.getByText('Fermeture de la session (heure réelle)')).toBeVisible()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('écart nul : refuse de fabriquer une lettre', async () => {
