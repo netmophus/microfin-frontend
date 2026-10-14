@@ -637,6 +637,27 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
     expect(document.querySelectorAll('[data-document="recu"] section[aria-label]')).toHaveLength(2)
   })
 
+  it('versement avec référence PDF : bouton « Télécharger / Imprimer », pas de repli v1', async () => {
+    etat.permissions = ['documents.read']
+    depotSimule.mockResolvedValue({
+      account_number: 'EP-2026-0000001',
+      nouveau_solde: 17000,
+      entry_number: 'CA-2026-000123',
+      date_comptable: '2026-10-14',
+      document: { id: 'd1', nom: 'recu_versement.pdf', statut: 'ok' },
+    })
+    afficher()
+    await chercherEtSelectionner()
+
+    await deposer('10000')
+
+    expect(
+      await screen.findByRole('button', { name: 'Télécharger / Imprimer le reçu' }),
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
+    expect(zone(document.body)).toBeNull()
+  })
+
   it('retrait : la signature du client est obligatoire sur le reçu', async () => {
     retraitSimule.mockResolvedValue({
       account_number: 'EP-2026-0000001',

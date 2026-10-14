@@ -17,6 +17,8 @@ import {
   type ResultatOperation,
 } from '@/features/epargne/api'
 import { BadgeProvisoire, BadgeStatutCompte } from '@/features/epargne/badges'
+import { ActionsDocument } from '@/features/documents/ActionsDocument'
+import type { DocumentRef } from '@/features/documents/api'
 import { RecuCaisse, type PropsRecu } from '@/features/documents/RecuCaisse'
 import { OuvertureDepotATermeGuichet, PanneauDepotATermeGuichet } from '@/features/epargne/DepotATerme'
 import { useDebounce } from '@/lib/useDebounce'
@@ -158,6 +160,7 @@ function Operations({
   const [confirmation, setConfirmation] = useState(false)
   const [succes, setSucces] = useState<string | null>(null)
   const [recu, setRecu] = useState<PropsRecu | null>(null)
+  const [documentRecu, setDocumentRecu] = useState<DocumentRef | null>(null)
 
   const montantNum = Number.parseInt(montant.replace(/\D/g, ''), 10) || 0
 
@@ -170,6 +173,7 @@ function Operations({
       onSolde(res.nouveau_solde)
       const modele = sens === 'depot' ? G.succesDepot : G.succesRetrait
       // Pièce justificative : n° de reçu = n° de pièce, date = journée comptable de la pièce.
+      setDocumentRecu(res.document ?? null)
       setRecu({
         titre: sens === 'depot' ? DOC.titreVersement : DOC.titreRetrait,
         numeroPiece: res.entry_number,
@@ -232,25 +236,34 @@ function Operations({
         <Alert role="status">
           <AlertDescription className="space-y-2">
             <p>{succes}</p>
-            <div className="flex gap-2">
-              {recu && (
-                <Button size="sm" variant="outline" onClick={() => window.print()}>
-                  <Printer className="mr-1 size-4" />
-                  {DOC.imprimerRecu}
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setSucces(null)
-                  setRecu(null)
-                }}
-              >
-                {G.autreOperation}
-              </Button>
-            </div>
-            {recu && <RecuCaisse {...recu} />}
+            {recu && (
+              <ActionsDocument
+                reference={documentRecu}
+                objet="recu"
+                repli={(pdfAbsent) =>
+                  pdfAbsent ? (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => window.print()}>
+                        <Printer className="mr-1 size-4" />
+                        {DOC.imprimerRecu}
+                      </Button>
+                      <RecuCaisse {...recu} />
+                    </>
+                  ) : null
+                }
+              />
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setSucces(null)
+                setRecu(null)
+                setDocumentRecu(null)
+              }}
+            >
+              {G.autreOperation}
+            </Button>
           </AlertDescription>
         </Alert>
       ) : (

@@ -3016,6 +3016,18 @@ export const LIBELLES = {
     // Trait entre l'exemplaire client et l'exemplaire souche, visible seulement sur le papier.
     decouperIci: '✂ découper ici',
     imprimerRecu: 'Imprimer le reçu',
+    // PDF archivé par le serveur : « Télécharger / Imprimer » ouvre ce fichier-là, pas une copie.
+    telechargerImprimerRecu: 'Télécharger / Imprimer le reçu',
+    telechargerImprimerBon: 'Télécharger / Imprimer le bon',
+    preparation: 'Préparation du document…',
+    ouvertureEchec: 'Impossible de récupérer le document. Réessayez.',
+    documentAbsent:
+      'Le document PDF n’a pas pu être archivé : l’opération est bien enregistrée. Vous pouvez l’imprimer depuis le navigateur.',
+    generationEchec:
+      'Le document n’a pas pu être généré : l’opération est bien enregistrée. Régénérez-le, ou imprimez-le depuis le navigateur.',
+    regenerer: 'Régénérer',
+    regenerationEnCours: 'Régénération…',
+    regenerationEchec: 'La régénération a échoué. Réessayez.',
 
     titreVersement: 'Reçu de versement',
     titreRetrait: 'Reçu de retrait',

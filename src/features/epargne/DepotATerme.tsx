@@ -25,6 +25,7 @@ import {
   type ResultatOuvertureDepotATerme,
 } from '@/features/epargne/api'
 import { listerTiers, type LigneTier } from '@/features/tiers/api'
+import { ActionsDocument } from '@/features/documents/ActionsDocument'
 import { CertificatDepotATerme } from '@/features/documents/CertificatDepotATerme'
 import { RecuCaisse, type LigneRecu } from '@/features/documents/RecuCaisse'
 import { parseMontantFrancs } from '@/lib/montants'
@@ -334,20 +335,32 @@ export function PanneauDepotATermeGuichet({
               })}
             </AlertDescription>
           </Alert>
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="mr-1 size-4" />
-            {DOC.imprimerRecu}
-          </Button>
-          <RecuCaisse
-            titre={resultat.mode === 'echeance' ? DOC.titreDenouement : DOC.titreRetraitAnticipe}
-            numeroPiece={resultat.entry_number}
-            dateComptable={resultat.date_comptable}
-            membre={compte.membre_nom}
-            compte={compte.account_number}
-            libelleMontant={DOC.totalRemis}
-            montantPrincipal={resultat.total_paye}
-            lignes={lignesDenouement(resultat)}
-            signatureClientRequise
+          <ActionsDocument
+            reference={resultat.document}
+            objet="recu"
+            repli={(pdfAbsent) =>
+              pdfAbsent ? (
+                <>
+                  <Button variant="outline" onClick={() => window.print()}>
+                    <Printer className="mr-1 size-4" />
+                    {DOC.imprimerRecu}
+                  </Button>
+                  <RecuCaisse
+                    titre={
+                      resultat.mode === 'echeance' ? DOC.titreDenouement : DOC.titreRetraitAnticipe
+                    }
+                    numeroPiece={resultat.entry_number}
+                    dateComptable={resultat.date_comptable}
+                    membre={compte.membre_nom}
+                    compte={compte.account_number}
+                    libelleMontant={DOC.totalRemis}
+                    montantPrincipal={resultat.total_paye}
+                    lignes={lignesDenouement(resultat)}
+                    signatureClientRequise
+                  />
+                </>
+              ) : null
+            }
           />
         </div>
       ) : apercu.isPending ? (
@@ -430,64 +443,87 @@ export function OuvertureDepotATermeGuichet({ onQuitter }: { onQuitter: () => vo
         <Alert role="status">
           <AlertDescription>{fait.message}</AlertDescription>
         </Alert>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              flushSync(() => setCible('recu'))
-              window.print()
-            }}
-          >
-            <Printer className="mr-1 size-4" />
-            {DOC.imprimerRecu}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              flushSync(() => setCible('bon'))
-              window.print()
-            }}
-          >
-            <Printer className="mr-1 size-4" />
-            {DOC.imprimerBon}
-          </Button>
-          <Button variant="ghost" onClick={onQuitter}>
-            {D.retour}
-          </Button>
-        </div>
-        <CertificatDepotATerme
-          numeroCompte={fait.resultat.compte.account_number}
-          membre={membre?.display_name ?? ''}
-          capital={fait.resultat.compte.principal ?? fait.resultat.compte.balance}
-          depart={fait.resultat.compte.term_start_date ?? fait.resultat.date_comptable}
-          echeance={fait.resultat.compte.maturity_date ?? ''}
-          dureeMois={fait.resultat.compte.term_months ?? 0}
-          tauxBp={fait.resultat.compte.taux_bp_contrat ?? 0}
-          interetsAttendus={fait.resultat.interets_a_l_echeance}
-          penaliteBp={fait.resultat.compte.penalite_bp_contrat ?? 0}
-          actif={cible === 'bon'}
+        <Button variant="ghost" onClick={onQuitter}>
+          {D.retour}
+        </Button>
+        <ActionsDocument
+          reference={fait.resultat.document}
+          objet="recu"
+          repli={(pdfAbsent) =>
+            pdfAbsent ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    flushSync(() => setCible('recu'))
+                    window.print()
+                  }}
+                >
+                  <Printer className="mr-1 size-4" />
+                  {DOC.imprimerRecu}
+                </Button>
+                <RecuCaisse
+                  actif={cible === 'recu'}
+                  titre={DOC.titrePlacement}
+                  numeroPiece={fait.resultat.entry_number}
+                  dateComptable={fait.resultat.date_comptable}
+                  membre={membre?.display_name ?? ''}
+                  compte={fait.resultat.compte.account_number}
+                  libelleMontant={DOC.capitalEncaisse}
+                  montantPrincipal={fait.resultat.compte.principal ?? fait.resultat.compte.balance}
+                  lignes={[
+                    {
+                      libelle: DOC.duree,
+                      valeur: fmt(DOC.dureeValeur, {
+                        mois: String(fait.resultat.compte.term_months ?? ''),
+                      }),
+                    },
+                    {
+                      libelle: DOC.echeance,
+                      valeur: formatJour(fait.resultat.compte.maturity_date),
+                    },
+                    {
+                      libelle: DOC.interetsAttendus,
+                      valeur: formatFcfa(fait.resultat.interets_a_l_echeance),
+                    },
+                  ]}
+                  signatureClientRequise={false}
+                />
+              </>
+            ) : null
+          }
         />
-        <RecuCaisse
-          actif={cible === 'recu'}
-          titre={DOC.titrePlacement}
-          numeroPiece={fait.resultat.entry_number}
-          dateComptable={fait.resultat.date_comptable}
-          membre={membre?.display_name ?? ''}
-          compte={fait.resultat.compte.account_number}
-          libelleMontant={DOC.capitalEncaisse}
-          montantPrincipal={fait.resultat.compte.principal ?? fait.resultat.compte.balance}
-          lignes={[
-            {
-              libelle: DOC.duree,
-              valeur: fmt(DOC.dureeValeur, { mois: String(fait.resultat.compte.term_months ?? '') }),
-            },
-            { libelle: DOC.echeance, valeur: formatJour(fait.resultat.compte.maturity_date) },
-            {
-              libelle: DOC.interetsAttendus,
-              valeur: formatFcfa(fait.resultat.interets_a_l_echeance),
-            },
-          ]}
-          signatureClientRequise={false}
+        <ActionsDocument
+          reference={fait.resultat.bon}
+          objet="bon"
+          repli={(pdfAbsent) =>
+            pdfAbsent ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    flushSync(() => setCible('bon'))
+                    window.print()
+                  }}
+                >
+                  <Printer className="mr-1 size-4" />
+                  {DOC.imprimerBon}
+                </Button>
+                <CertificatDepotATerme
+                  numeroCompte={fait.resultat.compte.account_number}
+                  membre={membre?.display_name ?? ''}
+                  capital={fait.resultat.compte.principal ?? fait.resultat.compte.balance}
+                  depart={fait.resultat.compte.term_start_date ?? fait.resultat.date_comptable}
+                  echeance={fait.resultat.compte.maturity_date ?? ''}
+                  dureeMois={fait.resultat.compte.term_months ?? 0}
+                  tauxBp={fait.resultat.compte.taux_bp_contrat ?? 0}
+                  interetsAttendus={fait.resultat.interets_a_l_echeance}
+                  penaliteBp={fait.resultat.compte.penalite_bp_contrat ?? 0}
+                  actif={cible === 'bon'}
+                />
+              </>
+            ) : null
+          }
         />
       </div>
     )

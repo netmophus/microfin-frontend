@@ -1,6 +1,7 @@
 import { AxiosError } from 'axios'
 
 import type { BaseJours, MethodeCalculSolde, RegleArrondi } from '@/features/comptabilite/api'
+import type { DocumentRef } from '@/features/documents/api'
 import { api } from '@/lib/api'
 
 /**
@@ -105,6 +106,8 @@ export interface ResultatOperation {
   nouveau_solde: number
   entry_number: string | null
   date_comptable: string // journée comptable de la pièce (AAAA-MM-JJ), jamais l'horloge
+  // Le reçu archivé par le serveur (PDF) ; absent / null si rien n'a pu être tracé.
+  document?: DocumentRef | null
 }
 
 /** Recherche partielle (guichet) — numéro OU nom du titulaire, jusqu'à 20 résultats, cloisonnés
@@ -165,6 +168,8 @@ export interface ResultatOuvertureDepotATerme {
   entry_number: string | null
   date_comptable: string
   interets_a_l_echeance: number
+  document?: DocumentRef | null // le reçu du capital encaissé
+  bon?: DocumentRef | null // le bon (contrat) de dépôt à terme
 }
 
 /** Ce que recevrait le client en soldant son dépôt à terme maintenant. */
@@ -183,6 +188,7 @@ export interface ResultatDenouement extends Omit<ApercuDenouement, 'jours'> {
   account_number: string
   entry_number: string | null
   date_comptable: string // pièce de SORTIE de caisse
+  document?: DocumentRef | null
 }
 
 export async function simulerDepotATerme(demande: DemandeDepotATerme): Promise<SimulationDepotATerme> {
