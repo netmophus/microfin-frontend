@@ -3049,88 +3049,18 @@ export const LIBELLES = {
   // Pièces justificatives imprimables (reçus de caisse, bon de dépôt à terme). En-tête et
   // mentions sont des PLACEHOLDERS PROVISOIRES : à valider avant déploiement.
   documents: {
-    exemplaireClient: 'Exemplaire client',
-    exemplaireSouche: 'Exemplaire souche',
-    bandeauProvisoire: 'Document provisoire — en-tête et mentions à valider avant déploiement.',
-    institutionAbsente: 'Nom de l’institution (à renseigner)',
-    journeeComptable: 'Journée comptable : {date}',
-    agence: 'Agence : {agence}',
-    telephone: 'Tél. : {telephone}',
-    agrement: 'Agrément n° {numero}',
-    numeroRecu: 'Reçu n° {numero}',
-    numeroAbsent: '—',
-    caissier: 'Caissier',
-    membre: 'Membre',
-    compte: 'Compte',
-    soldeApres: 'Nouveau solde',
-    enLettres: 'Arrêté à la somme de : {lettres}.',
-    mentionRecu:
-      'Conservez ce reçu : il atteste de l’opération. Mention légale à valider avant déploiement.',
-    signatureClientObligatoire: 'Signature du client (obligatoire)',
-    signatureClientFacultative: 'Signature du client (facultative)',
-    signatureCaissier: 'Signature du caissier',
-    duplicata: 'DUPLICATA',
-    // Trait entre l'exemplaire client et l'exemplaire souche, visible seulement sur le papier.
-    decouperIci: '✂ découper ici',
-    imprimerRecu: 'Imprimer le reçu',
     // PDF archivé par le serveur : « Télécharger / Imprimer » ouvre ce fichier-là, pas une copie.
     telechargerImprimerRecu: 'Télécharger / Imprimer le reçu',
     telechargerImprimerBon: 'Télécharger / Imprimer le bon',
     telechargerLettre: 'Télécharger la lettre',
     preparation: 'Préparation du document…',
     ouvertureEchec: 'Impossible de récupérer le document. Réessayez.',
-    documentAbsent:
-      'Le document PDF n’a pas pu être archivé : l’opération est bien enregistrée. Vous pouvez l’imprimer depuis le navigateur.',
+    documentAbsent: 'Le document PDF n’est pas disponible pour le moment.',
     generationEchec:
-      'Le document n’a pas pu être généré : l’opération est bien enregistrée. Régénérez-le, ou imprimez-le depuis le navigateur.',
-    generationEchecSansRepli: 'Le document n’a pas pu être généré. Régénérez-le.',
-    documentAbsentSansRepli: 'Le document PDF n’est pas disponible pour le moment.',
+      'Le document n’a pas pu être généré : l’opération est bien enregistrée. Régénérez-le.',
     regenerer: 'Régénérer',
     regenerationEnCours: 'Régénération…',
     regenerationEchec: 'La régénération a échoué. Réessayez.',
-
-    titreVersement: 'Reçu de versement',
-    titreRetrait: 'Reçu de retrait',
-    titrePlacement: 'Reçu de placement — dépôt à terme',
-    titreDenouement: 'Reçu de dénouement — dépôt à terme',
-    titreRetraitAnticipe: 'Reçu de retrait anticipé — dépôt à terme',
-    montantVerse: 'Montant versé',
-    montantRetire: 'Montant retiré',
-    capitalEncaisse: 'Capital encaissé',
-    totalRemis: 'Total remis au client',
-    capital: 'Capital',
-    duree: 'Durée',
-    dureeValeur: '{mois} mois',
-    echeance: 'Échéance',
-    interetsAttendus: 'Intérêts attendus à l’échéance',
-    interets: 'Intérêts',
-    interetsCourus: 'Intérêts courus',
-    penalite: 'Pénalité de retrait anticipé',
-    interetsNets: 'Intérêts versés',
-
-    // Parts sociales.
-    titreSouscriptionComptant: 'Reçu de souscription de parts sociales (au comptant)',
-    titreLiberation: 'Reçu de libération de parts sociales',
-    montantEncaisse: 'Montant encaissé',
-    nombreParts: 'Nombre de parts',
-    valeurPart: 'Valeur d’une part',
-    comptePartsSociales: 'Parts sociales — {numero}',
-
-    // Bon (certificat) de dépôt à terme.
-    titreBon: 'Bon de dépôt à terme',
-    numeroBon: 'Bon n° {numero}',
-    titulaire: 'Titulaire',
-    depart: 'Départ',
-    tauxAnnuel: 'Taux annuel',
-    penaliteValeur: '{pourcent} des intérêts courus',
-    capitalPlace: 'Capital placé',
-    clauseEcheance:
-      'À l’échéance, le capital et les intérêts sont remis au titulaire. Les intérêts cessent de courir à l’échéance.',
-    clauseRetraitAnticipe:
-      'En cas de retrait avant l’échéance, {pourcent} des intérêts courus est retenu à titre de pénalité ; le capital est toujours restitué en totalité. Clause à valider avant déploiement.',
-    mentionBon:
-      'Ce bon n’est ni négociable ni cessible. Mentions légales à valider avant déploiement.',
-    imprimerBon: 'Imprimer le bon',
   },
 
   // Dépôt à terme (DAT) : ouverture avec mise de fonds, puis dénouement ou retrait anticipé.

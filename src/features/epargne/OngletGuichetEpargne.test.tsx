@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError } from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   apercuDenouement,
@@ -17,6 +17,7 @@ import {
   type CompteGuichet,
 } from '@/features/epargne/api'
 import { OngletGuichetEpargne } from '@/features/epargne/OngletGuichetEpargne'
+import { ouvrirPdf, regenererDocument, telechargerDocument } from '@/features/documents/api'
 import { listerTiers } from '@/features/tiers/api'
 
 /**
@@ -28,20 +29,10 @@ import { listerTiers } from '@/features/tiers/api'
 
 const etat = vi.hoisted(() => ({
   permissions: [] as string[],
-  institution: { nom: 'IMCEC Test', adresse: '', telephone: '', numero_agrement: '' },
 }))
 
 vi.mock('@/features/auth/useProfil', () => ({
   useAPermission: (p: string) => etat.permissions.includes(p),
-  useProfil: () => ({
-    data: {
-      username: 'caissier1',
-      last_name: 'Souley',
-      first_name: 'Awa',
-      agence_courante: { id: 'a1', code: 'AG-001', name: 'Siège' },
-      institution: etat.institution,
-    },
-  }),
 }))
 
 vi.mock('@/features/epargne/api', async () => {
@@ -62,6 +53,12 @@ vi.mock('@/features/epargne/api', async () => {
   }
 })
 
+vi.mock('@/features/documents/api', () => ({
+  telechargerDocument: vi.fn(),
+  regenererDocument: vi.fn(),
+  ouvrirPdf: vi.fn(),
+}))
+
 vi.mock('@/features/tiers/api', async () => {
   const reel = await vi.importActual<typeof import('@/features/tiers/api')>('@/features/tiers/api')
   return { ...reel, listerTiers: vi.fn() }
@@ -77,6 +74,9 @@ const produitsSimules = vi.mocked(listerProduits)
 const placementSimule = vi.mocked(ouvrirDepotATerme)
 const simulationSimulee = vi.mocked(simulerDepotATerme)
 const tiersSimules = vi.mocked(listerTiers)
+const telechargerSimule = vi.mocked(telechargerDocument)
+const regenererSimule = vi.mocked(regenererDocument)
+const ouvrirSimule = vi.mocked(ouvrirPdf)
 
 function unCompte(o: Partial<CompteGuichet> = {}): CompteGuichet {
   return {
@@ -95,11 +95,6 @@ function unCompte(o: Partial<CompteGuichet> = {}): CompteGuichet {
     principal: null,
     ...o,
   }
-}
-
-/** Texte d'un élément, espaces (dont l'insécable des milliers) ramenés à une espace simple. */
-function texteDe(element: HTMLElement): string {
-  return element.innerHTML.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
 }
 
 function afficher() {
@@ -585,15 +580,14 @@ describe('OngletGuichetEpargne — ouverture d’un dépôt à terme', () => {
   })
 })
 
-describe('OngletGuichetEpargne — impression des reçus', () => {
-  const zone = (conteneur: HTMLElement) =>
-    conteneur.querySelector('[data-document="recu"]') as HTMLElement
+const BOUTON_RECU = 'Télécharger / Imprimer le reçu'
+const BOUTON_BON = 'Télécharger / Imprimer le bon'
+const DOC_OK = { id: 'd1', nom: 'recu.pdf', statut: 'ok' as const }
 
+describe('OngletGuichetEpargne — reçus de caisse (PDF du serveur)', () => {
   beforeEach(() => {
-    vi.spyOn(window, 'print').mockImplementation(() => undefined)
+    etat.permissions = ['documents.read']
   })
-
-  afterEach(() => vi.restoreAllMocks())
 
   async function deposer(montant: string) {
     fireEvent.click(screen.getByRole('button', { name: 'Dépôt' }))
@@ -602,69 +596,31 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
   }
 
-  it('versement : pas de reçu avant le succès ; après, le bouton imprime un document complet', async () => {
-    depotSimule.mockResolvedValue({
-      account_number: 'EP-2026-0000001',
-      nouveau_solde: 17000,
-      entry_number: 'CA-2026-000123',
-      date_comptable: '2026-10-14',
-    })
-    afficher()
-    await chercherEtSelectionner()
-    expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
-    expect(zone(document.body)).toBeNull()
-
-    await deposer('10000')
-
-    const bouton = await screen.findByRole('button', { name: 'Imprimer le reçu' })
-    fireEvent.click(bouton)
-    expect(window.print).toHaveBeenCalledTimes(1)
-    const recu = zone(document.body)
-    expect(recu).toHaveClass('zone-impression', 'hidden', 'print:block')
-    const texte = texteDe(recu)
-    expect(texte).toContain('Reçu de versement')
-    expect(texte).toContain('Reçu n° CA-2026-000123')
-    expect(texte).toContain('Journée comptable : 14/10/2026')
-    expect(texte).toContain('Siège (AG-001)')
-    expect(texte).toContain('IMCEC Test')
-    expect(texte).toContain('Souley Awa')
-    expect(texte).toContain('Traoré Fatoumata')
-    expect(texte).toContain('EP-2026-0000001')
-    expect(texte).toContain('10 000 F')
-    expect(texte).toContain('17 000 F')
-    expect(texte).toContain('dix mille francs CFA')
-    expect(texte).toContain('Signature du client (facultative)')
-    expect(document.querySelectorAll('[data-document="recu"] section[aria-label]')).toHaveLength(2)
+  const resultat = (o: Record<string, unknown> = {}) => ({
+    account_number: 'EP-2026-0000001',
+    nouveau_solde: 17000,
+    entry_number: 'CA-2026-000123',
+    date_comptable: '2026-10-14',
+    ...o,
   })
 
-  it('versement avec référence PDF : bouton « Télécharger / Imprimer », pas de repli v1', async () => {
-    etat.permissions = ['documents.read']
-    depotSimule.mockResolvedValue({
-      account_number: 'EP-2026-0000001',
-      nouveau_solde: 17000,
-      entry_number: 'CA-2026-000123',
-      date_comptable: '2026-10-14',
-      document: { id: 'd1', nom: 'recu_versement.pdf', statut: 'ok' },
-    })
+  it('versement : pas de bouton avant le succès ; après, le PDF se récupère puis s’ouvre', async () => {
+    const pdf = new Blob(['%PDF'])
+    depotSimule.mockResolvedValue(resultat({ document: DOC_OK }))
+    telechargerSimule.mockResolvedValue(pdf)
     afficher()
     await chercherEtSelectionner()
+    expect(screen.queryByRole('button', { name: BOUTON_RECU })).toBeNull()
 
     await deposer('10000')
+    fireEvent.click(await screen.findByRole('button', { name: BOUTON_RECU }))
 
-    expect(
-      await screen.findByRole('button', { name: 'Télécharger / Imprimer le reçu' }),
-    ).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
-    expect(zone(document.body)).toBeNull()
+    await waitFor(() => expect(ouvrirSimule).toHaveBeenCalledWith(pdf, 'recu.pdf'))
+    expect(telechargerSimule).toHaveBeenCalledWith('d1')
   })
 
-  it('retrait : la signature du client est obligatoire sur le reçu', async () => {
-    retraitSimule.mockResolvedValue({
-      account_number: 'EP-2026-0000001',
-      nouveau_solde: 4000,
-      entry_number: 'CA-2026-000124',
-      date_comptable: '2026-10-14',
-    })
+  it('retrait : le reçu PDF se télécharge aussi', async () => {
+    retraitSimule.mockResolvedValue(resultat({ nouveau_solde: 4000, document: DOC_OK }))
     afficher()
     await chercherEtSelectionner()
 
@@ -673,15 +629,10 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
     fireEvent.click(screen.getByRole('button', { name: /Continuer/ }))
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
 
-    await screen.findByRole('button', { name: 'Imprimer le reçu' })
-    const texte = texteDe(zone(document.body))
-    expect(texte).toContain('Reçu de retrait')
-    expect(texte).toContain('Montant retiré')
-    expect(texte).toContain('trois mille francs CFA')
-    expect(texte).toContain('Signature du client (obligatoire)')
+    expect(await screen.findByRole('button', { name: BOUTON_RECU })).toBeVisible()
   })
 
-  it('un refus du serveur ne produit ni bouton ni document', async () => {
+  it('un refus du serveur ne produit ni bouton ni message de document', async () => {
     depotSimule.mockRejectedValue(
       new AxiosError('rejet', undefined, undefined, undefined, {
         status: 422,
@@ -694,57 +645,65 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
     await deposer('10000')
 
     expect(await screen.findByText('Aucune session de caisse ouverte pour vous.')).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
-    expect(zone(document.body)).toBeNull()
+    expect(screen.queryByRole('button', { name: BOUTON_RECU })).toBeNull()
+    expect(screen.queryByText(/document PDF/)).toBeNull()
   })
 
-  it('l’institution non configurée : bandeau provisoire sur le document imprimé', async () => {
-    etat.institution = { nom: '', adresse: '', telephone: '', numero_agrement: '' }
-    depotSimule.mockResolvedValue({
-      account_number: 'EP-2026-0000001',
-      nouveau_solde: 17000,
-      entry_number: 'CA-2026-000123',
-      date_comptable: '2026-10-14',
-    })
+  it('génération en échec : message, « Régénérer », puis le bouton de téléchargement', async () => {
+    depotSimule.mockResolvedValue(resultat({ document: { ...DOC_OK, statut: 'echec' } }))
+    regenererSimule.mockResolvedValue(DOC_OK)
+    afficher()
+    await chercherEtSelectionner()
+
+    await deposer('10000')
+    expect(await screen.findByText(/n’a pas pu être généré/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: BOUTON_RECU })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Régénérer' }))
+
+    expect(await screen.findByRole('button', { name: BOUTON_RECU })).toBeVisible()
+    expect(regenererSimule).toHaveBeenCalledWith('d1')
+  })
+
+  it('aucune référence : le dépôt reste réussi, un message le dit, aucun bouton', async () => {
+    depotSimule.mockResolvedValue(resultat({ document: null }))
     afficher()
     await chercherEtSelectionner()
 
     await deposer('10000')
 
-    await screen.findByRole('button', { name: 'Imprimer le reçu' })
-    expect(texteDe(zone(document.body))).toContain('Document provisoire')
-    etat.institution = { nom: 'IMCEC Test', adresse: '', telephone: '', numero_agrement: '' }
+    expect(await screen.findByText(/document PDF n’est pas disponible/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: BOUTON_RECU })).toBeNull()
+  })
+
+  it('sans documents.read : pas de bouton PDF', async () => {
+    etat.permissions = []
+    depotSimule.mockResolvedValue(resultat({ document: DOC_OK }))
+    afficher()
+    await chercherEtSelectionner()
+
+    await deposer('10000')
+
+    expect(await screen.findByText(/document PDF n’est pas disponible/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: BOUTON_RECU })).toBeNull()
   })
 
   it('« Nouvelle opération » retire le reçu', async () => {
-    depotSimule.mockResolvedValue({
-      account_number: 'EP-2026-0000001',
-      nouveau_solde: 17000,
-      entry_number: 'CA-2026-000123',
-      date_comptable: '2026-10-14',
-    })
+    depotSimule.mockResolvedValue(resultat({ document: DOC_OK }))
     afficher()
     await chercherEtSelectionner()
     await deposer('10000')
-    await screen.findByRole('button', { name: 'Imprimer le reçu' })
+    await screen.findByRole('button', { name: BOUTON_RECU })
 
     fireEvent.click(screen.getByRole('button', { name: 'Nouvelle opération' }))
 
-    expect(zone(document.body)).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
+    expect(screen.queryByRole('button', { name: BOUTON_RECU })).toBeNull()
   })
 })
 
-describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
-  const zone = (conteneur: HTMLElement) =>
-    conteneur.querySelector('[data-document="recu"]') as HTMLElement
-
+describe('OngletGuichetEpargne — reçus du dépôt à terme (PDF du serveur)', () => {
   beforeEach(() => {
-    vi.spyOn(window, 'print').mockImplementation(() => undefined)
-    etat.permissions = ['epargne.dat.retrait_anticipe']
+    etat.permissions = ['documents.read', 'epargne.dat.retrait_anticipe']
   })
-
-  afterEach(() => vi.restoreAllMocks())
 
   const dat = () =>
     unCompte({
@@ -757,28 +716,24 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
       principal: 1000000,
     })
 
-  it('retrait anticipé : reçu avec capital, intérêts courus, pénalité, total en lettres', async () => {
-    apercuSimule.mockResolvedValue({
-      mode: 'anticipe',
-      jours: 42,
-      capital: 1000000,
-      interets_courus: 18000,
-      penalite: 9000,
-      interets_nets: 9000,
-      total_paye: 1009000,
-      message: 'Retrait anticipé : capital 1 000 000 F + intérêts courus 18 000 F.',
-    })
+  const detail = (mode: 'echeance' | 'anticipe') => ({
+    mode,
+    capital: 1000000,
+    interets_courus: 18000,
+    penalite: mode === 'anticipe' ? 9000 : 0,
+    interets_nets: mode === 'anticipe' ? 9000 : 18000,
+    total_paye: mode === 'anticipe' ? 1009000 : 1018000,
+    message: 'Détail du calcul.',
+  })
+
+  it('retrait anticipé : le reçu PDF se télécharge', async () => {
+    apercuSimule.mockResolvedValue({ ...detail('anticipe'), jours: 42 })
     retraitAnticipeSimule.mockResolvedValue({
-      mode: 'anticipe',
-      capital: 1000000,
-      interets_courus: 18000,
-      penalite: 9000,
-      interets_nets: 9000,
-      total_paye: 1009000,
-      message: 'Retrait anticipé : capital 1 000 000 F + intérêts courus 18 000 F.',
+      ...detail('anticipe'),
       account_number: 'DT-2026-0000001',
       entry_number: 'CA-0042',
       date_comptable: '2026-10-14',
+      document: DOC_OK,
     })
     afficher()
     await chercherEtSelectionner(dat())
@@ -786,42 +741,35 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Retrait anticipé' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer le retrait anticipé' }))
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Imprimer le reçu' }))
-    expect(window.print).toHaveBeenCalledTimes(1)
-    const texte = texteDe(zone(document.body))
-    expect(texte).toContain('Reçu de retrait anticipé — dépôt à terme')
-    expect(texte).toContain('Reçu n° CA-0042')
-    expect(texte).toContain('Journée comptable : 14/10/2026')
-    expect(texte).toContain('Pénalité de retrait anticipé')
-    expect(texte).toContain('9 000 F')
-    expect(texte).toContain('1 009 000 F')
-    expect(texte).toContain('un million neuf mille francs CFA')
-    expect(texte).toContain('Signature du client (obligatoire)')
+    expect(await screen.findByRole('button', { name: BOUTON_RECU })).toBeVisible()
   })
 
-  it('dénouement à l’échéance : reçu sans pénalité, signature du client obligatoire', async () => {
-    etat.permissions = []
-    apercuSimule.mockResolvedValue({
-      mode: 'echeance',
-      jours: 182,
-      capital: 1000000,
-      interets_courus: 24932,
-      penalite: 0,
-      interets_nets: 24932,
-      total_paye: 1024932,
-      message: 'Dénouement à l’échéance : capital 1 000 000 F + intérêts 24 932 F.',
+  it('retrait anticipé dont le reçu a échoué : « Régénérer »', async () => {
+    apercuSimule.mockResolvedValue({ ...detail('anticipe'), jours: 42 })
+    retraitAnticipeSimule.mockResolvedValue({
+      ...detail('anticipe'),
+      account_number: 'DT-2026-0000001',
+      entry_number: 'CA-0042',
+      date_comptable: '2026-10-14',
+      document: { ...DOC_OK, statut: 'echec' },
     })
+    afficher()
+    await chercherEtSelectionner(dat())
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Retrait anticipé' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le retrait anticipé' }))
+
+    expect(await screen.findByRole('button', { name: 'Régénérer' })).toBeVisible()
+  })
+
+  it('dénouement à l’échéance : le reçu PDF se télécharge', async () => {
+    apercuSimule.mockResolvedValue({ ...detail('echeance'), jours: 182 })
     denouementSimule.mockResolvedValue({
-      mode: 'echeance',
-      capital: 1000000,
-      interets_courus: 24932,
-      penalite: 0,
-      interets_nets: 24932,
-      total_paye: 1024932,
-      message: 'Dénouement à l’échéance : capital 1 000 000 F + intérêts 24 932 F.',
+      ...detail('echeance'),
       account_number: 'DT-2026-0000001',
       entry_number: 'CA-0043',
       date_comptable: '2027-04-14',
+      document: DOC_OK,
     })
     afficher()
     await chercherEtSelectionner(dat())
@@ -829,17 +777,11 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Dénouer à l’échéance' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer le dénouement' }))
 
-    await screen.findByRole('button', { name: 'Imprimer le reçu' })
-    const texte = texteDe(zone(document.body))
-    expect(texte).toContain('Reçu de dénouement — dépôt à terme')
-    expect(texte).toContain('Journée comptable : 14/04/2027')
-    expect(texte).not.toContain('Pénalité de retrait anticipé')
-    expect(texte).toContain('1 024 932 F')
-    expect(texte).toContain('Signature du client (obligatoire)')
+    expect(await screen.findByRole('button', { name: BOUTON_RECU })).toBeVisible()
   })
 
-  it('placement : reçu avec capital encaissé, durée, échéance et intérêts attendus', async () => {
-    etat.permissions = ['epargne.dat.open']
+  async function placer(resultatPlacement: Record<string, unknown>) {
+    etat.permissions = ['documents.read', 'epargne.dat.open']
     produitsSimules.mockResolvedValue([
       {
         id: 'dat',
@@ -889,6 +831,7 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
       entry_number: 'CA-0100',
       date_comptable: '2026-10-14',
       interets_a_l_echeance: 50000,
+      ...resultatPlacement,
     } as never)
     afficher()
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir un dépôt à terme' }))
@@ -904,114 +847,38 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
     await screen.findByText('1 050 000 F')
     fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer le placement' }))
+  }
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Imprimer le reçu' }))
-    expect(window.print).toHaveBeenCalledTimes(1)
-    const texte = texteDe(zone(document.body))
-    expect(texte).toContain('Reçu de placement — dépôt à terme')
-    expect(texte).toContain('Reçu n° CA-0100')
-    expect(texte).toContain('Diallo Amadou')
-    expect(texte).toContain('DT-2026-0000007')
-    expect(texte).toContain('12 mois')
-    expect(texte).toContain('14/10/2027')
-    expect(texte).toContain('50 000 F')
-    expect(texte).toContain('un million de francs CFA')
-    expect(texte).toContain('Signature du client (facultative)')
+  it('placement : le reçu ET le bon sont deux documents PDF distincts', async () => {
+    const recu = new Blob(['recu'])
+    const bon = new Blob(['bon'])
+    telechargerSimule.mockImplementation(async (id) => (id === 'd-recu' ? recu : bon))
+    await placer({
+      document: { id: 'd-recu', nom: 'recu_placement.pdf', statut: 'ok' },
+      bon: { id: 'd-bon', nom: 'bon_dat.pdf', statut: 'ok' },
+    })
+
+    fireEvent.click(await screen.findByRole('button', { name: BOUTON_RECU }))
+    await waitFor(() => expect(ouvrirSimule).toHaveBeenCalledWith(recu, 'recu_placement.pdf'))
+    fireEvent.click(screen.getByRole('button', { name: BOUTON_BON }))
+    await waitFor(() => expect(ouvrirSimule).toHaveBeenCalledWith(bon, 'bon_dat.pdf'))
+    expect(telechargerSimule).toHaveBeenCalledWith('d-recu')
+    expect(telechargerSimule).toHaveBeenCalledWith('d-bon')
   })
 
-  it('placement : « Imprimer le bon » imprime le certificat, un seul document part à la fois', async () => {
-    etat.permissions = ['epargne.dat.open']
-    produitsSimules.mockResolvedValue([
-      {
-        id: 'dat',
-        code: 'DAT',
-        name: 'Dépôt à terme',
-        type: 'terme',
-        is_provisional: false,
-        duree_min_mois: 3,
-        duree_max_mois: 24,
-      },
-    ] as never)
-    tiersSimules.mockResolvedValue({
-      lignes: [
-        {
-          id: 't9',
-          tier_number: 'M-2026-0000009',
-          tier_type: 'individual',
-          display_name: 'Diallo Amadou',
-          status: 'actif',
-          is_member: true,
-          primary_agency_id: 'a1',
-        },
-      ],
-      total: 1,
-      page: 1,
-      taille: 25,
-    } as never)
-    simulationSimulee.mockResolvedValue({
-      journee_comptable: '2026-10-14',
-      maturity_date: '2027-10-14',
-      jours: 365,
-      interets_a_l_echeance: 50000,
-      total_a_l_echeance: 1050000,
-      taux_bp: 500,
-      penalite_anticipee_bp: 5000,
-      duree_min_mois: 3,
-      duree_max_mois: 24,
+  it('placement : un bon en échec se régénère sans toucher au reçu', async () => {
+    regenererSimule.mockResolvedValue({ id: 'd-bon', nom: 'bon_dat.pdf', statut: 'ok' })
+    await placer({
+      document: { id: 'd-recu', nom: 'recu_placement.pdf', statut: 'ok' },
+      bon: { id: 'd-bon', nom: 'bon_dat.pdf', statut: 'echec' },
     })
-    placementSimule.mockResolvedValue({
-      compte: {
-        ...unCompte({
-          account_number: 'DT-2026-0000007',
-          term_months: 12,
-          maturity_date: '2027-10-14',
-          principal: 1000000,
-          balance: 1000000,
-        }),
-        // Conditions figées au contrat, exposées par le résumé du compte DAT.
-        term_start_date: '2026-10-14',
-        taux_bp_contrat: 500,
-        penalite_bp_contrat: 5000,
-      },
-      entry_number: 'CA-0100',
-      date_comptable: '2026-10-14',
-      interets_a_l_echeance: 50000,
-    } as never)
-    afficher()
-    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir un dépôt à terme' }))
-    fireEvent.change(screen.getByLabelText('Numéro ou nom du membre'), { target: { value: 'D' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }))
-    fireEvent.click(await screen.findByRole('button', { name: /Diallo Amadou/ }))
-    await screen.findByRole('option', { name: 'Dépôt à terme' })
-    fireEvent.change(screen.getByLabelText('Produit à terme'), { target: { value: 'dat' } })
-    fireEvent.click(await screen.findByRole('button', { name: '12 mois' }))
-    fireEvent.change(screen.getByLabelText('Capital à placer (F CFA)'), {
-      target: { value: '1000000' },
-    })
-    await screen.findByText('1 050 000 F')
-    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le placement' }))
 
-    await screen.findByRole('button', { name: 'Imprimer le bon' })
-    const recu = document.querySelector('[data-document="recu"]') as HTMLElement
-    const bon = document.querySelector('[data-document="bon"]') as HTMLElement
-    // Au départ, c'est le reçu qui est destiné au papier.
-    expect(recu).toHaveClass('print:block')
-    expect(bon).not.toHaveClass('print:block')
+    expect(await screen.findByRole('button', { name: BOUTON_RECU })).toBeVisible()
+    expect(screen.queryByRole('button', { name: BOUTON_BON })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Régénérer' }))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Imprimer le bon' }))
-
-    expect(window.print).toHaveBeenCalledTimes(1)
-    expect(bon).toHaveClass('zone-impression', 'hidden', 'print:block')
-    expect(recu).not.toHaveClass('print:block')
-    const texte = texteDe(bon)
-    expect(texte).toContain('Bon de dépôt à terme')
-    expect(texte).toContain('Bon n° DT-2026-0000007')
-    expect(texte).toContain('Diallo Amadou')
-    expect(texte).toContain('Départ 14/10/2026')
-    expect(texte).toContain('Échéance 14/10/2027')
-    expect(texte).toContain('Taux annuel 5 %')
-    expect(texte).toContain('Intérêts attendus à l’échéance 50 000 F')
-    expect(texte).toContain('Signature du client (obligatoire)')
+    expect(await screen.findByRole('button', { name: BOUTON_BON })).toBeVisible()
+    expect(regenererSimule).toHaveBeenCalledWith('d-bon')
+    expect(screen.getByRole('button', { name: BOUTON_RECU })).toBeVisible()
   })
 })

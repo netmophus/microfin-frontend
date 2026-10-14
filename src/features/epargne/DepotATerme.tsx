@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Printer } from 'lucide-react'
 import { useState } from 'react'
-import { flushSync } from 'react-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -26,13 +24,10 @@ import {
 } from '@/features/epargne/api'
 import { listerTiers, type LigneTier } from '@/features/tiers/api'
 import { ActionsDocument } from '@/features/documents/ActionsDocument'
-import { CertificatDepotATerme } from '@/features/documents/CertificatDepotATerme'
-import { RecuCaisse, type LigneRecu } from '@/features/documents/RecuCaisse'
 import { parseMontantFrancs } from '@/lib/montants'
 import { LIBELLES } from '@/libelles/fr'
 
 const D = LIBELLES.depotATerme
-const DOC = LIBELLES.documents
 
 const RACCOURCIS_MOIS = [3, 6, 12, 24] as const
 
@@ -263,19 +258,6 @@ export function FormulaireDepotATerme({
   )
 }
 
-/** Lignes du reçu d'un dénouement (échéance) ou d'un retrait anticipé : le détail du calcul. */
-function lignesDenouement(r: ResultatDenouement): { libelle: string; valeur: string }[] {
-  const lignes: LigneRecu[] = [{ libelle: DOC.capital, valeur: formatFcfa(r.capital) }]
-  if (r.mode === 'echeance') {
-    lignes.push({ libelle: DOC.interets, valeur: formatFcfa(r.interets_nets) })
-    return lignes
-  }
-  lignes.push({ libelle: DOC.interetsCourus, valeur: formatFcfa(r.interets_courus) })
-  if (r.penalite > 0) lignes.push({ libelle: DOC.penalite, valeur: formatFcfa(r.penalite) })
-  lignes.push({ libelle: DOC.interetsNets, valeur: formatFcfa(r.interets_nets) })
-  return lignes
-}
-
 /**
  * Guichet : le panneau d'un compte à terme. Dépôt et retrait ordinaires sont bloqués (le serveur
  * refuse, l'écran ne les propose pas). Selon la journée comptable, UNE seule issue est offerte :
@@ -335,33 +317,7 @@ export function PanneauDepotATermeGuichet({
               })}
             </AlertDescription>
           </Alert>
-          <ActionsDocument
-            reference={resultat.document}
-            objet="recu"
-            repli={(pdfAbsent) =>
-              pdfAbsent ? (
-                <>
-                  <Button variant="outline" onClick={() => window.print()}>
-                    <Printer className="mr-1 size-4" />
-                    {DOC.imprimerRecu}
-                  </Button>
-                  <RecuCaisse
-                    titre={
-                      resultat.mode === 'echeance' ? DOC.titreDenouement : DOC.titreRetraitAnticipe
-                    }
-                    numeroPiece={resultat.entry_number}
-                    dateComptable={resultat.date_comptable}
-                    membre={compte.membre_nom}
-                    compte={compte.account_number}
-                    libelleMontant={DOC.totalRemis}
-                    montantPrincipal={resultat.total_paye}
-                    lignes={lignesDenouement(resultat)}
-                    signatureClientRequise
-                  />
-                </>
-              ) : null
-            }
-          />
+          <ActionsDocument reference={resultat.document} objet="recu" />
         </div>
       ) : apercu.isPending ? (
         <p className="text-sm text-muted-foreground">{D.apercuChargement}</p>
@@ -429,8 +385,6 @@ export function OuvertureDepotATermeGuichet({ onQuitter }: { onQuitter: () => vo
     resultat: ResultatOuvertureDepotATerme
   } | null>(null)
   const [q, setQ] = useState('')
-  // Deux documents sur l'écran du placement (reçu et bon) : un seul part au papier.
-  const [cible, setCible] = useState<'recu' | 'bon'>('recu')
 
   const recherche = useMutation({ mutationFn: () => listerTiers({ q: q.trim() }) })
   const produits = useQuery({ queryKey: ['epargne', 'produits'], queryFn: listerProduits })
@@ -446,85 +400,8 @@ export function OuvertureDepotATermeGuichet({ onQuitter }: { onQuitter: () => vo
         <Button variant="ghost" onClick={onQuitter}>
           {D.retour}
         </Button>
-        <ActionsDocument
-          reference={fait.resultat.document}
-          objet="recu"
-          repli={(pdfAbsent) =>
-            pdfAbsent ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    flushSync(() => setCible('recu'))
-                    window.print()
-                  }}
-                >
-                  <Printer className="mr-1 size-4" />
-                  {DOC.imprimerRecu}
-                </Button>
-                <RecuCaisse
-                  actif={cible === 'recu'}
-                  titre={DOC.titrePlacement}
-                  numeroPiece={fait.resultat.entry_number}
-                  dateComptable={fait.resultat.date_comptable}
-                  membre={membre?.display_name ?? ''}
-                  compte={fait.resultat.compte.account_number}
-                  libelleMontant={DOC.capitalEncaisse}
-                  montantPrincipal={fait.resultat.compte.principal ?? fait.resultat.compte.balance}
-                  lignes={[
-                    {
-                      libelle: DOC.duree,
-                      valeur: fmt(DOC.dureeValeur, {
-                        mois: String(fait.resultat.compte.term_months ?? ''),
-                      }),
-                    },
-                    {
-                      libelle: DOC.echeance,
-                      valeur: formatJour(fait.resultat.compte.maturity_date),
-                    },
-                    {
-                      libelle: DOC.interetsAttendus,
-                      valeur: formatFcfa(fait.resultat.interets_a_l_echeance),
-                    },
-                  ]}
-                  signatureClientRequise={false}
-                />
-              </>
-            ) : null
-          }
-        />
-        <ActionsDocument
-          reference={fait.resultat.bon}
-          objet="bon"
-          repli={(pdfAbsent) =>
-            pdfAbsent ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    flushSync(() => setCible('bon'))
-                    window.print()
-                  }}
-                >
-                  <Printer className="mr-1 size-4" />
-                  {DOC.imprimerBon}
-                </Button>
-                <CertificatDepotATerme
-                  numeroCompte={fait.resultat.compte.account_number}
-                  membre={membre?.display_name ?? ''}
-                  capital={fait.resultat.compte.principal ?? fait.resultat.compte.balance}
-                  depart={fait.resultat.compte.term_start_date ?? fait.resultat.date_comptable}
-                  echeance={fait.resultat.compte.maturity_date ?? ''}
-                  dureeMois={fait.resultat.compte.term_months ?? 0}
-                  tauxBp={fait.resultat.compte.taux_bp_contrat ?? 0}
-                  interetsAttendus={fait.resultat.interets_a_l_echeance}
-                  penaliteBp={fait.resultat.compte.penalite_bp_contrat ?? 0}
-                  actif={cible === 'bon'}
-                />
-              </>
-            ) : null
-          }
-        />
+        <ActionsDocument reference={fait.resultat.document} objet="recu" />
+        <ActionsDocument reference={fait.resultat.bon} objet="bon" />
       </div>
     )
   }

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { Printer } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -18,22 +18,15 @@ const D = LIBELLES.documents
  *
  *  - référence `ok` et droit `documents.read` : « Télécharger / Imprimer » ;
  *  - référence `echec` : message + « Régénérer » (l'opération est enregistrée, jamais bloquée) ;
- *  - référence absente ou droit manquant : message, et l'impression navigateur v1 en REPLI
- *    (transitoire : ces composants seront retirés quand le PDF serveur aura fait ses preuves).
- *
- * Le repli n'apparaît QUE lorsque le PDF est absent ou indisponible : `repli(visible)` est
- * appelé avec ce drapeau pour que l'appelant ne monte le document v1 que dans ce cas.
+ *  - référence absente ou droit manquant : message seul — le PDF du serveur est la seule pièce.
  */
 export function ActionsDocument({
   reference,
   objet,
-  repli,
 }: {
   reference: DocumentRef | null | undefined
   /** « recu », « bon » ou « lettre » : libellé du bouton. */
   objet: 'recu' | 'bon' | 'lettre'
-  /** Rend le repli navigateur ; reçoit `true` quand le PDF serveur est absent ou en échec. */
-  repli: (pdfAbsent: boolean) => ReactNode
 }) {
   const peutLire = useAPermission('documents.read')
   // La référence peut être remplacée par une régénération réussie.
@@ -56,8 +49,6 @@ export function ActionsDocument({
     bon: D.telechargerImprimerBon,
     lettre: D.telechargerLettre,
   }[objet]
-  // La lettre n'a aucun repli navigateur : les messages ne le promettent pas.
-  const avecRepli = objet !== 'lettre'
 
   if (courante && courante.statut === 'ok' && peutLire) {
     return (
@@ -71,19 +62,12 @@ export function ActionsDocument({
             <AlertDescription>{messageDocument(ouverture.error, D.ouvertureEchec)}</AlertDescription>
           </Alert>
         )}
-        {repli(false)}
       </div>
     )
   }
 
   const enEchec = courante !== null && courante.statut === 'echec' && peutLire
-  const message = enEchec
-    ? avecRepli
-      ? D.generationEchec
-      : D.generationEchecSansRepli
-    : avecRepli
-      ? D.documentAbsent
-      : D.documentAbsentSansRepli
+  const message = enEchec ? D.generationEchec : D.documentAbsent
   return (
     <div className="space-y-2">
       <Alert role="status">
@@ -103,7 +87,6 @@ export function ActionsDocument({
           <AlertDescription>{messageRefus(regeneration.error, D.regenerationEchec)}</AlertDescription>
         </Alert>
       )}
-      {repli(true)}
     </div>
   )
 }

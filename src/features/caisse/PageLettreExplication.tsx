@@ -126,7 +126,7 @@ export function PageLettreExplication() {
           <AlertDescription>{messageRefus(lettre.error, L.lettreEchec)}</AlertDescription>
         </Alert>
       )}
-      {enEchec && <ActionsDocument reference={enEchec} objet="lettre" repli={() => null} />}
+      {enEchec && <ActionsDocument reference={enEchec} objet="lettre" />}
       {!peutLireDocuments && (
         <Alert role="status">
           <AlertDescription>{L.accesDocumentsRefuse}</AlertDescription>

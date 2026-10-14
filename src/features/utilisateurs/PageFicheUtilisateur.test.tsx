@@ -68,7 +68,6 @@ function profil(id: string, permissions: string[]) {
     roles: [],
     permissions,
     agence_courante: null,
-    institution: { nom: '', adresse: '', telephone: '', numero_agrement: '' },
     must_change_password: false,
   })
 }

@@ -231,7 +231,7 @@ function ActionsParts({
         <AlertDescription className="space-y-2">
           <p>{succes}</p>
           {recuAttendu && (
-            <ActionsDocument reference={documentRecu} objet="recu" repli={() => null} />
+            <ActionsDocument reference={documentRecu} objet="recu" />
           )}
           <Button
             size="sm"

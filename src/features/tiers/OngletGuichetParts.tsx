@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Coins, Printer, Search } from 'lucide-react'
+import { Coins, Search } from 'lucide-react'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -17,13 +17,11 @@ import {
 } from '@/features/tiers/api'
 import { ActionsDocument } from '@/features/documents/ActionsDocument'
 import type { DocumentRef } from '@/features/documents/api'
-import { RecuCaisse, type PropsRecu } from '@/features/documents/RecuCaisse'
 import { BadgeSocietariat } from '@/features/tiers/badges'
 import { LIBELLES } from '@/libelles/fr'
 
 const G = LIBELLES.guichetParts
 const P = LIBELLES.tiersParts
-const DOC = LIBELLES.documents
 
 function fcfa(montant: number): string {
   return `${montant.toLocaleString('fr-FR')} F`
@@ -166,7 +164,6 @@ function FicheGuichet({
             <Actions
               tierId={tier.id}
               nom={tier.display_name}
-              numeroMembre={tier.tier_number}
               fiche={requete.data}
             />
           )}
@@ -185,12 +182,10 @@ type Mode = 'comptant' | 'liberation'
 function Actions({
   tierId,
   nom,
-  numeroMembre,
   fiche,
 }: {
   tierId: string
   nom: string
-  numeroMembre: string
   fiche: FichePartsSociales
 }) {
   const client = useQueryClient()
@@ -198,7 +193,6 @@ function Actions({
   const [nb, setNb] = useState('')
   const [confirmation, setConfirmation] = useState(false)
   const [succes, setSucces] = useState<string | null>(null)
-  const [recu, setRecu] = useState<PropsRecu | null>(null)
   const [documentRecu, setDocumentRecu] = useState<DocumentRef | null>(null)
 
   const nbNum = Number.parseInt(nb.replace(/\D/g, ''), 10) || 0
@@ -212,21 +206,7 @@ function Actions({
       void client.invalidateQueries({ queryKey: ['tiers', 'parts', tierId] })
       setSucces(res.is_member ? P.succesMembre : P.succesEngagement)
       setDocumentRecu(res.document ?? null)
-      // Pièce justificative : n° de reçu = n° de pièce, date = journée comptable de la pièce.
-      setRecu({
-        titre: mode === 'comptant' ? DOC.titreSouscriptionComptant : DOC.titreLiberation,
-        numeroPiece: res.entry_number,
-        dateComptable: res.date_comptable,
-        membre: nom,
-        compte: fmt(DOC.comptePartsSociales, { numero: numeroMembre }),
-        libelleMontant: DOC.montantEncaisse,
-        montantPrincipal: total,
-        lignes: [
-          { libelle: DOC.nombreParts, valeur: String(nbNum) },
-          { libelle: DOC.valeurPart, valeur: fcfa(fiche.unit_value) },
-        ],
-        signatureClientRequise: false,
-      })
+      // Le reçu est le PDF archivé par le serveur : on garde sa référence.
       setMode(null)
       setNb('')
       setConfirmation(false)
@@ -238,29 +218,12 @@ function Actions({
       <Alert role="status">
         <AlertDescription className="space-y-2">
           <p>{succes}</p>
-          {recu && (
-            <ActionsDocument
-              reference={documentRecu}
-              objet="recu"
-              repli={(pdfAbsent) =>
-                pdfAbsent ? (
-                  <>
-                    <Button size="sm" variant="outline" onClick={() => window.print()}>
-                      <Printer className="mr-1 size-4" />
-                      {DOC.imprimerRecu}
-                    </Button>
-                    <RecuCaisse {...recu} />
-                  </>
-                ) : null
-              }
-            />
-          )}
+          <ActionsDocument reference={documentRecu} objet="recu" />
           <Button
             size="sm"
             variant="ghost"
             onClick={() => {
               setSucces(null)
-              setRecu(null)
               setDocumentRecu(null)
             }}
           >

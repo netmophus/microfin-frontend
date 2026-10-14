@@ -7,7 +7,7 @@ import { ouvrirPdf, regenererDocument, telechargerDocument, type DocumentRef } f
 
 /**
  * Actions sur le document d'une opération réussie : le PDF du serveur est récupéré puis ouvert ;
- * l'impression navigateur v1 n'apparaît qu'en REPLI, quand le PDF est absent ou sans droit.
+ * sans référence ou sans droit de lecture, seul un message le dit (le PDF du serveur est la seule pièce).
  */
 
 const etat = vi.hoisted(() => ({ permissions: [] as string[] }))
@@ -26,8 +26,6 @@ const telechargerSimule = vi.mocked(telechargerDocument)
 const regenererSimule = vi.mocked(regenererDocument)
 const ouvrirSimule = vi.mocked(ouvrirPdf)
 
-const REPLI = 'Repli navigateur'
-
 const uneRef = (o: Partial<DocumentRef> = {}): DocumentRef => ({
   id: 'd1',
   nom: 'recu_versement_EP-1_CA-1.pdf',
@@ -39,11 +37,7 @@ function afficher(reference: DocumentRef | null | undefined, objet: 'recu' | 'bo
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <ActionsDocument
-        reference={reference}
-        objet={objet}
-        repli={(pdfAbsent) => (pdfAbsent ? <p>{REPLI}</p> : null)}
-      />
+      <ActionsDocument reference={reference} objet={objet} />
     </QueryClientProvider>,
   )
 }
@@ -54,7 +48,7 @@ beforeEach(() => {
 })
 
 describe('ActionsDocument', () => {
-  it('référence ok : le bouton récupère le PDF puis l’ouvre, sans repli', async () => {
+  it('référence ok : le bouton récupère le PDF puis l’ouvre', async () => {
     const pdf = new Blob(['%PDF'])
     telechargerSimule.mockResolvedValue(pdf)
     afficher(uneRef())
@@ -63,7 +57,6 @@ describe('ActionsDocument', () => {
 
     await waitFor(() => expect(ouvrirSimule).toHaveBeenCalledWith(pdf, 'recu_versement_EP-1_CA-1.pdf'))
     expect(telechargerSimule).toHaveBeenCalledWith('d1')
-    expect(screen.queryByText(REPLI)).toBeNull()
   })
 
   it('le bon porte son propre libellé', () => {
@@ -72,15 +65,10 @@ describe('ActionsDocument', () => {
     expect(screen.getByRole('button', { name: 'Télécharger / Imprimer le bon' })).toBeVisible()
   })
 
-  it('la lettre : son libellé, et ses messages ne promettent aucun repli navigateur', () => {
-    const { unmount } = afficher(uneRef({ nom: 'lettre.pdf' }), 'lettre')
+  it('la lettre a son propre libellé', () => {
+    afficher(uneRef({ nom: 'lettre.pdf' }), 'lettre')
+
     expect(screen.getByRole('button', { name: 'Télécharger la lettre' })).toBeVisible()
-    unmount()
-
-    afficher(uneRef({ statut: 'echec' }), 'lettre')
-
-    expect(screen.getByRole('status')).not.toHaveTextContent(/navigateur/)
-    expect(screen.getByRole('button', { name: 'Régénérer' })).toBeVisible()
   })
 
   it('échec d’ouverture : message affiché, rien n’est ouvert', async () => {
@@ -115,20 +103,19 @@ describe('ActionsDocument', () => {
     expect(screen.getByRole('button', { name: 'Régénérer' })).toBeVisible()
   })
 
-  it('référence absente : message et repli navigateur, aucun appel serveur', () => {
+  it('référence absente : un message, aucun bouton, aucun appel serveur', () => {
     afficher(null)
 
     expect(screen.getByRole('status')).toBeVisible()
-    expect(screen.getByText(REPLI)).toBeVisible()
     expect(screen.queryByRole('button', { name: /Télécharger|Régénérer/ })).toBeNull()
     expect(telechargerSimule).not.toHaveBeenCalled()
   })
 
-  it('sans documents.read : pas de bouton PDF ni de Régénérer, repli navigateur', () => {
+  it('sans documents.read : pas de bouton PDF ni de Régénérer, un message', () => {
     etat.permissions = []
     afficher(uneRef({ statut: 'echec' }))
 
     expect(screen.queryByRole('button', { name: /Télécharger|Régénérer/ })).toBeNull()
-    expect(screen.getByText(REPLI)).toBeVisible()
+    expect(screen.getByRole('status')).toBeVisible()
   })
 })

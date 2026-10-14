@@ -194,25 +194,3 @@
   size: A4;
   margin: 12mm;
 }
-
-/* Pièces justificatives (reçus, bon de dépôt à terme) : DEUX exemplaires sur UNE A4.
-   Le document est monté hors de #root (portail dans <body>, voir PieceImprimable) et, tant qu'une
-   pièce est active, l'application (#root) est retirée de la mise en page à l'impression : la
-   technique « visibility » ci-dessus masque le reste mais en CONSERVE la hauteur, d'où des pages
-   blanches ; ici la pièce est en flux normal, la hauteur du papier est celle de la pièce seule.
-   `.piece-imprimable` neutralise donc le positionnement absolu de `.zone-impression`. */
-@media print {
-  html.impression-piece #root {
-    display: none;
-  }
-  .zone-impression.piece-imprimable {
-    position: static;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
-  .piece-imprimable .exemplaire {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}

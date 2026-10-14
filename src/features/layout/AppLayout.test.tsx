@@ -44,7 +44,6 @@ describe('AppLayout', () => {
       ],
       permissions: [],
       agence_courante: { id: 'a1', code: 'AG-001', name: 'Siège' },
-      institution: { nom: '', adresse: '', telephone: '', numero_agrement: '' },
       must_change_password: false,
     })
 

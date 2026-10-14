@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { AxiosError } from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   chargerParts,
@@ -11,6 +11,7 @@ import {
   type FichePartsSociales,
 } from '@/features/tiers/api'
 import { OngletGuichetParts } from '@/features/tiers/OngletGuichetParts'
+import { ouvrirPdf, regenererDocument, telechargerDocument } from '@/features/documents/api'
 
 /**
  * Onglet Parts sociales du guichet — l'encaissement du caissier. Points durs : le NOM est
@@ -23,15 +24,12 @@ const etat = vi.hoisted(() => ({ permissions: [] as string[] }))
 
 vi.mock('@/features/auth/useProfil', () => ({
   useAPermission: (p: string) => etat.permissions.includes(p),
-  useProfil: () => ({
-    data: {
-      username: 'caissier1',
-      last_name: 'Souley',
-      first_name: 'Awa',
-      agence_courante: { id: 'a1', code: 'AG-001', name: 'Siège' },
-      institution: { nom: 'IMCEC Test', adresse: '', telephone: '', numero_agrement: '' },
-    },
-  }),
+}))
+
+vi.mock('@/features/documents/api', () => ({
+  telechargerDocument: vi.fn(),
+  regenererDocument: vi.fn(),
+  ouvrirPdf: vi.fn(),
 }))
 
 vi.mock('@/features/tiers/api', async () => {
@@ -49,6 +47,9 @@ const rechercheSimule = vi.mocked(listerTiers)
 const partsSimule = vi.mocked(chargerParts)
 const comptantSimule = vi.mocked(souscrireComptant)
 const libererSimule = vi.mocked(libererParts)
+const telechargerSimule = vi.mocked(telechargerDocument)
+const regenererSimule = vi.mocked(regenererDocument)
+const ouvrirSimule = vi.mocked(ouvrirPdf)
 
 function ligne(o: Partial<{ id: string; tier_number: string; display_name: string; status: string; is_member: boolean }> = {}) {
   return {
@@ -203,88 +204,49 @@ describe('OngletGuichetParts', () => {
   })
 })
 
-describe('OngletGuichetParts — reçu imprimable', () => {
-  const zone = (conteneur: HTMLElement) =>
-    conteneur.querySelector('[data-document="recu"]') as HTMLElement
-  const texteDe = (element: HTMLElement) => element.innerHTML.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+describe('OngletGuichetParts — reçu PDF du serveur', () => {
+  const BOUTON_RECU = 'Télécharger / Imprimer le reçu'
+  const DOC_OK = { id: 'd1', nom: 'recu_parts.pdf', statut: 'ok' as const }
 
   beforeEach(() => {
-    vi.spyOn(window, 'print').mockImplementation(() => undefined)
-  })
-
-  afterEach(() => vi.restoreAllMocks())
-
-  it('souscription au comptant : reçu avec parts, valeur, montant en lettres, date comptable', async () => {
-    partsSimule.mockResolvedValue(parts({ is_member: false }))
-    comptantSimule.mockResolvedValue({
-      is_member: true,
-      shares_liberees: 10,
-      shares_non_liberees: 0,
-      entry_number: 'CA-2026-000042',
-      date_comptable: '2026-10-14',
-    })
-    afficher()
-    await chercherEtSelectionner()
-    expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
-
-    fireEvent.click(await screen.findByRole('button', { name: /Souscrire au comptant/ }))
-    fireEvent.change(screen.getByLabelText('Nombre de parts'), { target: { value: '10' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Imprimer le reçu' }))
-    expect(window.print).toHaveBeenCalledTimes(1)
-    const recu = zone(document.body)
-    expect(recu).toHaveClass('zone-impression', 'hidden', 'print:block')
-    const texte = texteDe(recu)
-    expect(texte).toContain('Reçu de souscription de parts sociales (au comptant)')
-    expect(texte).toContain('Reçu n° CA-2026-000042')
-    expect(texte).toContain('Journée comptable : 14/10/2026')
-    expect(texte).toContain('Souley Awa')
-    expect(texte).toContain('Traoré Fatoumata')
-    expect(texte).toContain('Parts sociales — M-2026-0000005')
-    expect(texte).toContain('Nombre de parts 10')
-    expect(texte).toContain('Valeur d’une part 5 000 F')
-    expect(texte).toContain('50 000 F')
-    expect(texte).toContain('cinquante mille francs CFA')
-    expect(texte).toContain('Signature du client (facultative)')
-  })
-
-  it('souscription avec référence PDF : bouton « Télécharger / Imprimer », pas de repli v1', async () => {
     etat.permissions = ['documents.read']
-    partsSimule.mockResolvedValue(parts({ is_member: false }))
-    comptantSimule.mockResolvedValue({
-      is_member: true,
-      shares_liberees: 10,
-      shares_non_liberees: 0,
-      entry_number: 'CA-2026-000042',
-      date_comptable: '2026-10-14',
-      document: { id: 'd1', nom: 'recu_parts_souscription.pdf', statut: 'ok' },
-    })
-    afficher()
-    await chercherEtSelectionner()
+  })
 
+  const resultat = (o: Record<string, unknown> = {}) => ({
+    is_member: true,
+    shares_liberees: 10,
+    shares_non_liberees: 0,
+    entry_number: 'CA-2026-000042',
+    date_comptable: '2026-10-14',
+    ...o,
+  })
+
+  async function souscrireComptantDix() {
     fireEvent.click(await screen.findByRole('button', { name: /Souscrire au comptant/ }))
     fireEvent.change(screen.getByLabelText('Nombre de parts'), { target: { value: '10' } })
     fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
+  }
 
-    expect(
-      await screen.findByRole('button', { name: 'Télécharger / Imprimer le reçu' }),
-    ).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
-    expect(zone(document.body)).toBeNull()
+  it('souscription au comptant : pas de bouton avant le succès ; après, le PDF se récupère puis s’ouvre', async () => {
+    const pdf = new Blob(['%PDF'])
+    partsSimule.mockResolvedValue(parts({ is_member: false }))
+    comptantSimule.mockResolvedValue(resultat({ document: DOC_OK }))
+    telechargerSimule.mockResolvedValue(pdf)
+    afficher()
+    await chercherEtSelectionner()
+    expect(screen.queryByRole('button', { name: BOUTON_RECU })).toBeNull()
+
+    await souscrireComptantDix()
+    fireEvent.click(await screen.findByRole('button', { name: BOUTON_RECU }))
+
+    await waitFor(() => expect(ouvrirSimule).toHaveBeenCalledWith(pdf, 'recu_parts.pdf'))
+    expect(telechargerSimule).toHaveBeenCalledWith('d1')
   })
 
-  it('libération : reçu intitulé « libération »', async () => {
+  it('libération : le reçu PDF se télécharge', async () => {
     partsSimule.mockResolvedValue(parts({ shares_non_liberees: 4, unit_value: 5000 }))
-    libererSimule.mockResolvedValue({
-      is_member: true,
-      shares_liberees: 4,
-      shares_non_liberees: 0,
-      entry_number: 'CA-2026-000099',
-      date_comptable: '2026-10-14',
-    })
+    libererSimule.mockResolvedValue(resultat({ document: DOC_OK }))
     afficher()
     await chercherEtSelectionner()
 
@@ -293,15 +255,38 @@ describe('OngletGuichetParts — reçu imprimable', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
 
-    await screen.findByRole('button', { name: 'Imprimer le reçu' })
-    const texte = texteDe(zone(document.body))
-    expect(texte).toContain('Reçu de libération de parts sociales')
-    expect(texte).toContain('Reçu n° CA-2026-000099')
-    expect(texte).toContain('20 000 F')
-    expect(texte).toContain('vingt mille francs CFA')
+    expect(await screen.findByRole('button', { name: BOUTON_RECU })).toBeVisible()
   })
 
-  it('un refus du serveur ne produit ni bouton ni document', async () => {
+  it('génération en échec : message, « Régénérer », puis le bouton de téléchargement', async () => {
+    partsSimule.mockResolvedValue(parts({ is_member: false }))
+    comptantSimule.mockResolvedValue(resultat({ document: { ...DOC_OK, statut: 'echec' } }))
+    regenererSimule.mockResolvedValue(DOC_OK)
+    afficher()
+    await chercherEtSelectionner()
+
+    await souscrireComptantDix()
+    expect(await screen.findByText(/n’a pas pu être généré/)).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Régénérer' }))
+
+    expect(await screen.findByRole('button', { name: BOUTON_RECU })).toBeVisible()
+    expect(regenererSimule).toHaveBeenCalledWith('d1')
+  })
+
+  it('sans documents.read : pas de bouton PDF, un message', async () => {
+    etat.permissions = []
+    partsSimule.mockResolvedValue(parts({ is_member: false }))
+    comptantSimule.mockResolvedValue(resultat({ document: DOC_OK }))
+    afficher()
+    await chercherEtSelectionner()
+
+    await souscrireComptantDix()
+
+    expect(await screen.findByText(/document PDF n’est pas disponible/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: BOUTON_RECU })).toBeNull()
+  })
+
+  it('un refus du serveur ne produit ni bouton ni message de document', async () => {
     partsSimule.mockResolvedValue(parts({ is_member: false }))
     comptantSimule.mockRejectedValue(
       new AxiosError('rejet', undefined, undefined, undefined, {
@@ -312,13 +297,10 @@ describe('OngletGuichetParts — reçu imprimable', () => {
     afficher()
     await chercherEtSelectionner()
 
-    fireEvent.click(await screen.findByRole('button', { name: /Souscrire au comptant/ }))
-    fireEvent.change(screen.getByLabelText('Nombre de parts'), { target: { value: '10' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
+    await souscrireComptantDix()
 
     expect(await screen.findByText('Aucune session de caisse ouverte pour vous.')).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
-    expect(zone(document.body)).toBeNull()
+    expect(screen.queryByRole('button', { name: BOUTON_RECU })).toBeNull()
+    expect(screen.queryByText(/document PDF/)).toBeNull()
   })
 })
