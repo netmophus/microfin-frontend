@@ -26,9 +26,9 @@ export interface SessionCaisse {
   fonds_initial: number
   opened_at: string // heure RÉELLE d'ouverture (audit), pas la date métier
   closed_at: string | null
-  // Journée comptable dans laquelle le caissier opère (AAAA-MM-JJ) : la journée ouverte, tant
-  // que la session est ouverte ; null une fois fermée.
-  journee_comptable: string | null
+  // Journée comptable de la session (AAAA-MM-JJ) : STOCKÉE à l'ouverture, immuable. C'est elle —
+  // et non `opened_at`, heure réelle — qui date les opérations et la lettre d'explication.
+  journee_comptable: string
   // EN DIRECT (recalculé à chaque lecture) tant que la session est ouverte ; null une fois
   // fermée — le chiffre figé est solde_theorique_cloture, pas la peine de répéter le même
   // nombre sous deux noms.
