@@ -60,6 +60,9 @@ function base() {
     term_months: null as number | null,
     maturity_date: null as string | null,
     principal: null as number | null,
+    term_start_date: null as string | null,
+    taux_bp_contrat: null as number | null,
+    penalite_bp_contrat: null as number | null,
   }
 }
 

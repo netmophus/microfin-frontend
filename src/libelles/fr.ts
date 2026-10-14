@@ -2989,6 +2989,52 @@ export const LIBELLES = {
     deconnexion: 'Se déconnecter',
   },
 
+  // Pièces justificatives imprimables (reçus de caisse, bon de dépôt à terme). En-tête et
+  // mentions sont des PLACEHOLDERS PROVISOIRES : à valider avant déploiement.
+  documents: {
+    exemplaireClient: 'Exemplaire client',
+    exemplaireSouche: 'Exemplaire souche',
+    bandeauProvisoire: 'Document provisoire — en-tête et mentions à valider avant déploiement.',
+    institutionAbsente: 'Nom de l’institution (à renseigner)',
+    journeeComptable: 'Journée comptable : {date}',
+    agence: 'Agence : {agence}',
+    telephone: 'Tél. : {telephone}',
+    agrement: 'Agrément n° {numero}',
+    numeroRecu: 'Reçu n° {numero}',
+    numeroAbsent: '—',
+    caissier: 'Caissier',
+    membre: 'Membre',
+    compte: 'Compte',
+    soldeApres: 'Nouveau solde',
+    enLettres: 'Arrêté à la somme de : {lettres}.',
+    mentionRecu:
+      'Conservez ce reçu : il atteste de l’opération. Mention légale à valider avant déploiement.',
+    signatureClientObligatoire: 'Signature du client (obligatoire)',
+    signatureClientFacultative: 'Signature du client (facultative)',
+    signatureCaissier: 'Signature du caissier',
+    duplicata: 'DUPLICATA',
+    imprimerRecu: 'Imprimer le reçu',
+
+    titreVersement: 'Reçu de versement',
+    titreRetrait: 'Reçu de retrait',
+    titrePlacement: 'Reçu de placement — dépôt à terme',
+    titreDenouement: 'Reçu de dénouement — dépôt à terme',
+    titreRetraitAnticipe: 'Reçu de retrait anticipé — dépôt à terme',
+    montantVerse: 'Montant versé',
+    montantRetire: 'Montant retiré',
+    capitalEncaisse: 'Capital encaissé',
+    totalRemis: 'Total remis au client',
+    capital: 'Capital',
+    duree: 'Durée',
+    dureeValeur: '{mois} mois',
+    echeance: 'Échéance',
+    interetsAttendus: 'Intérêts attendus à l’échéance',
+    interets: 'Intérêts',
+    interetsCourus: 'Intérêts courus',
+    penalite: 'Pénalité de retrait anticipé',
+    interetsNets: 'Intérêts versés',
+  },
+
   // Dépôt à terme (DAT) : ouverture avec mise de fonds, puis dénouement ou retrait anticipé.
   depotATerme: {
     ouvrir: 'Placer un dépôt à terme',

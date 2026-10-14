@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Printer } from 'lucide-react'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -20,12 +21,15 @@ import {
   type CompteGuichet,
   type ProduitEpargne,
   type ResultatDenouement,
+  type ResultatOuvertureDepotATerme,
 } from '@/features/epargne/api'
 import { listerTiers, type LigneTier } from '@/features/tiers/api'
+import { RecuCaisse, type LigneRecu } from '@/features/documents/RecuCaisse'
 import { parseMontantFrancs } from '@/lib/montants'
 import { LIBELLES } from '@/libelles/fr'
 
 const D = LIBELLES.depotATerme
+const DOC = LIBELLES.documents
 
 const RACCOURCIS_MOIS = [3, 6, 12, 24] as const
 
@@ -57,7 +61,7 @@ export function FormulaireDepotATerme({
   tierId: string
   membreNom: string
   produit: ProduitEpargne
-  onFini: (message: string) => void
+  onFini: (message: string, resultat: ResultatOuvertureDepotATerme) => void
   onAnnuler: () => void
 }) {
   const client = useQueryClient()
@@ -94,6 +98,7 @@ export function FormulaireDepotATerme({
           numero: resultat.compte.account_number,
           echeance: formatJour(resultat.compte.maturity_date),
         }),
+        resultat,
       )
     },
   })
@@ -255,6 +260,19 @@ export function FormulaireDepotATerme({
   )
 }
 
+/** Lignes du reçu d'un dénouement (échéance) ou d'un retrait anticipé : le détail du calcul. */
+function lignesDenouement(r: ResultatDenouement): { libelle: string; valeur: string }[] {
+  const lignes: LigneRecu[] = [{ libelle: DOC.capital, valeur: formatFcfa(r.capital) }]
+  if (r.mode === 'echeance') {
+    lignes.push({ libelle: DOC.interets, valeur: formatFcfa(r.interets_nets) })
+    return lignes
+  }
+  lignes.push({ libelle: DOC.interetsCourus, valeur: formatFcfa(r.interets_courus) })
+  if (r.penalite > 0) lignes.push({ libelle: DOC.penalite, valeur: formatFcfa(r.penalite) })
+  lignes.push({ libelle: DOC.interetsNets, valeur: formatFcfa(r.interets_nets) })
+  return lignes
+}
+
 /**
  * Guichet : le panneau d'un compte à terme. Dépôt et retrait ordinaires sont bloqués (le serveur
  * refuse, l'écran ne les propose pas). Selon la journée comptable, UNE seule issue est offerte :
@@ -305,14 +323,31 @@ export function PanneauDepotATermeGuichet({
       </div>
 
       {resultat ? (
-        <Alert role="status">
-          <AlertDescription>
-            {fmt(D.succes, {
-              message: resultat.message,
-              piece: resultat.entry_number ?? '—',
-            })}
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-3">
+          <Alert role="status">
+            <AlertDescription>
+              {fmt(D.succes, {
+                message: resultat.message,
+                piece: resultat.entry_number ?? '—',
+              })}
+            </AlertDescription>
+          </Alert>
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="mr-1 size-4" />
+            {DOC.imprimerRecu}
+          </Button>
+          <RecuCaisse
+            titre={resultat.mode === 'echeance' ? DOC.titreDenouement : DOC.titreRetraitAnticipe}
+            numeroPiece={resultat.entry_number}
+            dateComptable={resultat.date_comptable}
+            membre={compte.membre_nom}
+            compte={compte.account_number}
+            libelleMontant={DOC.totalRemis}
+            montantPrincipal={resultat.total_paye}
+            lignes={lignesDenouement(resultat)}
+            signatureClientRequise
+          />
+        </div>
       ) : apercu.isPending ? (
         <p className="text-sm text-muted-foreground">{D.apercuChargement}</p>
       ) : apercu.isError ? (
@@ -374,7 +409,10 @@ export function PanneauDepotATermeGuichet({
 export function OuvertureDepotATermeGuichet({ onQuitter }: { onQuitter: () => void }) {
   const [membre, setMembre] = useState<LigneTier | null>(null)
   const [produitId, setProduitId] = useState('')
-  const [fait, setFait] = useState<string | null>(null)
+  const [fait, setFait] = useState<{
+    message: string
+    resultat: ResultatOuvertureDepotATerme
+  } | null>(null)
   const [q, setQ] = useState('')
 
   const recherche = useMutation({ mutationFn: () => listerTiers({ q: q.trim() }) })
@@ -386,11 +424,38 @@ export function OuvertureDepotATermeGuichet({ onQuitter }: { onQuitter: () => vo
     return (
       <div className="space-y-3">
         <Alert role="status">
-          <AlertDescription>{fait}</AlertDescription>
+          <AlertDescription>{fait.message}</AlertDescription>
         </Alert>
-        <Button variant="ghost" onClick={onQuitter}>
-          {D.retour}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="mr-1 size-4" />
+            {DOC.imprimerRecu}
+          </Button>
+          <Button variant="ghost" onClick={onQuitter}>
+            {D.retour}
+          </Button>
+        </div>
+        <RecuCaisse
+          titre={DOC.titrePlacement}
+          numeroPiece={fait.resultat.entry_number}
+          dateComptable={fait.resultat.date_comptable}
+          membre={membre?.display_name ?? ''}
+          compte={fait.resultat.compte.account_number}
+          libelleMontant={DOC.capitalEncaisse}
+          montantPrincipal={fait.resultat.compte.principal ?? fait.resultat.compte.balance}
+          lignes={[
+            {
+              libelle: DOC.duree,
+              valeur: fmt(DOC.dureeValeur, { mois: String(fait.resultat.compte.term_months ?? '') }),
+            },
+            { libelle: DOC.echeance, valeur: formatJour(fait.resultat.compte.maturity_date) },
+            {
+              libelle: DOC.interetsAttendus,
+              valeur: formatFcfa(fait.resultat.interets_a_l_echeance),
+            },
+          ]}
+          signatureClientRequise={false}
+        />
       </div>
     )
   }
@@ -493,7 +558,7 @@ export function OuvertureDepotATermeGuichet({ onQuitter }: { onQuitter: () => vo
                   tierId={membre.id}
                   membreNom={membre.display_name}
                   produit={produit}
-                  onFini={setFait}
+                  onFini={(message, resultat) => setFait({ message, resultat })}
                   onAnnuler={onQuitter}
                 />
               )}

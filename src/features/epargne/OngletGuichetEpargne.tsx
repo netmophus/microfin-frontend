@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { PiggyBank, Search } from 'lucide-react'
+import { PiggyBank, Printer, Search } from 'lucide-react'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -17,11 +17,13 @@ import {
   type ResultatOperation,
 } from '@/features/epargne/api'
 import { BadgeProvisoire, BadgeStatutCompte } from '@/features/epargne/badges'
+import { RecuCaisse, type PropsRecu } from '@/features/documents/RecuCaisse'
 import { OuvertureDepotATermeGuichet, PanneauDepotATermeGuichet } from '@/features/epargne/DepotATerme'
 import { useDebounce } from '@/lib/useDebounce'
 import { LIBELLES } from '@/libelles/fr'
 
 const G = LIBELLES.guichet
+const DOC = LIBELLES.documents
 
 function fmt(gabarit: string, valeurs: Record<string, string>): string {
   return gabarit.replace(/\{(\w+)\}/g, (_, cle) => valeurs[cle] ?? '')
@@ -155,6 +157,7 @@ function Operations({
   const [montant, setMontant] = useState('')
   const [confirmation, setConfirmation] = useState(false)
   const [succes, setSucces] = useState<string | null>(null)
+  const [recu, setRecu] = useState<PropsRecu | null>(null)
 
   const montantNum = Number.parseInt(montant.replace(/\D/g, ''), 10) || 0
 
@@ -166,6 +169,18 @@ function Operations({
     onSuccess: (res) => {
       onSolde(res.nouveau_solde)
       const modele = sens === 'depot' ? G.succesDepot : G.succesRetrait
+      // Pièce justificative : n° de reçu = n° de pièce, date = journée comptable de la pièce.
+      setRecu({
+        titre: sens === 'depot' ? DOC.titreVersement : DOC.titreRetrait,
+        numeroPiece: res.entry_number,
+        dateComptable: res.date_comptable,
+        membre: compte.membre_nom,
+        compte: res.account_number,
+        libelleMontant: sens === 'depot' ? DOC.montantVerse : DOC.montantRetire,
+        montantPrincipal: montantNum,
+        soldeApres: res.nouveau_solde,
+        signatureClientRequise: sens === 'retrait',
+      })
       setSucces(
         fmt(modele, {
           montant: formatFcfa(montantNum),
@@ -217,9 +232,25 @@ function Operations({
         <Alert role="status">
           <AlertDescription className="space-y-2">
             <p>{succes}</p>
-            <Button size="sm" variant="ghost" onClick={() => setSucces(null)}>
-              {G.autreOperation}
-            </Button>
+            <div className="flex gap-2">
+              {recu && (
+                <Button size="sm" variant="outline" onClick={() => window.print()}>
+                  <Printer className="mr-1 size-4" />
+                  {DOC.imprimerRecu}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setSucces(null)
+                  setRecu(null)
+                }}
+              >
+                {G.autreOperation}
+              </Button>
+            </div>
+            {recu && <RecuCaisse {...recu} />}
           </AlertDescription>
         </Alert>
       ) : (

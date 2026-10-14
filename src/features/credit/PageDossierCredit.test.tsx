@@ -311,6 +311,9 @@ describe('PageDossierCredit', () => {
       term_months: null,
       maturity_date: null,
       principal: null,
+      term_start_date: null,
+      taux_bp_contrat: null,
+      penalite_bp_contrat: null,
     }
   }
 

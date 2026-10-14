@@ -18,6 +18,15 @@ export interface AgenceProfil {
   name: string
 }
 
+/** Identité de l'institution (config du déploiement) : en-tête des documents imprimés. Chaînes
+ *  vides tant qu'elle n'est pas configurée — les documents portent alors un bandeau provisoire. */
+export interface InstitutionProfil {
+  nom: string
+  adresse: string
+  telephone: string
+  numero_agrement: string
+}
+
 export interface RoleProfil {
   code: string
   name: string
@@ -31,6 +40,7 @@ export interface Profil {
   roles: RoleProfil[]
   permissions: string[]
   agence_courante: AgenceProfil | null
+  institution: InstitutionProfil
   must_change_password: boolean
 }
 

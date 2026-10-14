@@ -35,6 +35,10 @@ export interface CompteEpargne {
   term_months: number | null
   maturity_date: string | null // AAAA-MM-JJ, journée comptable
   principal: number | null
+  // Conditions figées au contrat (bon de dépôt à terme) ; null hors terme.
+  term_start_date: string | null
+  taux_bp_contrat: number | null
+  penalite_bp_contrat: number | null
 }
 
 export interface MouvementEpargne {
@@ -100,6 +104,7 @@ export interface ResultatOperation {
   account_number: string
   nouveau_solde: number
   entry_number: string | null
+  date_comptable: string // journée comptable de la pièce (AAAA-MM-JJ), jamais l'horloge
 }
 
 /** Recherche partielle (guichet) — numéro OU nom du titulaire, jusqu'à 20 résultats, cloisonnés
@@ -158,6 +163,7 @@ export interface SimulationDepotATerme {
 export interface ResultatOuvertureDepotATerme {
   compte: CompteEpargne
   entry_number: string | null
+  date_comptable: string
   interets_a_l_echeance: number
 }
 
@@ -176,6 +182,7 @@ export interface ApercuDenouement {
 export interface ResultatDenouement extends Omit<ApercuDenouement, 'jours'> {
   account_number: string
   entry_number: string | null
+  date_comptable: string // pièce de SORTIE de caisse
 }
 
 export async function simulerDepotATerme(demande: DemandeDepotATerme): Promise<SimulationDepotATerme> {
