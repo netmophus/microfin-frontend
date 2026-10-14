@@ -3033,6 +3033,30 @@ export const LIBELLES = {
     interetsCourus: 'Intérêts courus',
     penalite: 'Pénalité de retrait anticipé',
     interetsNets: 'Intérêts versés',
+
+    // Parts sociales.
+    titreSouscriptionComptant: 'Reçu de souscription de parts sociales (au comptant)',
+    titreLiberation: 'Reçu de libération de parts sociales',
+    montantEncaisse: 'Montant encaissé',
+    nombreParts: 'Nombre de parts',
+    valeurPart: 'Valeur d’une part',
+    comptePartsSociales: 'Parts sociales — {numero}',
+
+    // Bon (certificat) de dépôt à terme.
+    titreBon: 'Bon de dépôt à terme',
+    numeroBon: 'Bon n° {numero}',
+    titulaire: 'Titulaire',
+    depart: 'Départ',
+    tauxAnnuel: 'Taux annuel',
+    penaliteValeur: '{pourcent} des intérêts courus',
+    capitalPlace: 'Capital placé',
+    clauseEcheance:
+      'À l’échéance, le capital et les intérêts sont remis au titulaire. Les intérêts cessent de courir à l’échéance.',
+    clauseRetraitAnticipe:
+      'En cas de retrait avant l’échéance, {pourcent} des intérêts courus est retenu à titre de pénalité ; le capital est toujours restitué en totalité. Clause à valider avant déploiement.',
+    mentionBon:
+      'Ce bon n’est ni négociable ni cessible. Mentions légales à valider avant déploiement.',
+    imprimerBon: 'Imprimer le bon',
   },
 
   // Dépôt à terme (DAT) : ouverture avec mise de fonds, puis dénouement ou retrait anticipé.

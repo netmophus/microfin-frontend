@@ -136,6 +136,7 @@ describe('OngletParts', () => {
       shares_liberees: 10,
       shares_non_liberees: 0,
       entry_number: 'OD-2026-000001',
+      date_comptable: '2026-10-14',
     })
     afficher('actif')
 
@@ -169,6 +170,7 @@ describe('OngletParts', () => {
       shares_liberees: 0,
       shares_non_liberees: 0,
       entry_number: 'CA-2026-000009',
+      date_comptable: '2026-10-14',
     })
     afficher('actif')
 

@@ -233,6 +233,7 @@ export interface ResultatParts {
   shares_liberees: number
   shares_non_liberees: number
   entry_number: string | null
+  date_comptable: string // journée comptable de la pièce (AAAA-MM-JJ), jamais l'horloge
 }
 
 /** Souscription ENGAGEMENT (chargé de clientèle) — sans paiement. */

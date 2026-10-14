@@ -99,7 +99,7 @@ function unCompte(o: Partial<CompteGuichet> = {}): CompteGuichet {
 
 /** Texte d'un élément, espaces (dont l'insécable des milliers) ramenés à une espace simple. */
 function texteDe(element: HTMLElement): string {
-  return (element.textContent ?? '').replace(/\s+/g, ' ')
+  return element.innerHTML.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
 }
 
 function afficher() {
@@ -896,5 +896,101 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
     expect(texte).toContain('50 000 F')
     expect(texte).toContain('un million de francs CFA')
     expect(texte).toContain('Signature du client (facultative)')
+  })
+
+  it('placement : « Imprimer le bon » imprime le certificat, un seul document part à la fois', async () => {
+    etat.permissions = ['epargne.dat.open']
+    produitsSimules.mockResolvedValue([
+      {
+        id: 'dat',
+        code: 'DAT',
+        name: 'Dépôt à terme',
+        type: 'terme',
+        is_provisional: false,
+        duree_min_mois: 3,
+        duree_max_mois: 24,
+      },
+    ] as never)
+    tiersSimules.mockResolvedValue({
+      lignes: [
+        {
+          id: 't9',
+          tier_number: 'M-2026-0000009',
+          tier_type: 'individual',
+          display_name: 'Diallo Amadou',
+          status: 'actif',
+          is_member: true,
+          primary_agency_id: 'a1',
+        },
+      ],
+      total: 1,
+      page: 1,
+      taille: 25,
+    } as never)
+    simulationSimulee.mockResolvedValue({
+      journee_comptable: '2026-10-14',
+      maturity_date: '2027-10-14',
+      jours: 365,
+      interets_a_l_echeance: 50000,
+      total_a_l_echeance: 1050000,
+      taux_bp: 500,
+      penalite_anticipee_bp: 5000,
+      duree_min_mois: 3,
+      duree_max_mois: 24,
+    })
+    placementSimule.mockResolvedValue({
+      compte: {
+        ...unCompte({
+          account_number: 'DT-2026-0000007',
+          term_months: 12,
+          maturity_date: '2027-10-14',
+          principal: 1000000,
+          balance: 1000000,
+        }),
+        // Conditions figées au contrat, exposées par le résumé du compte DAT.
+        term_start_date: '2026-10-14',
+        taux_bp_contrat: 500,
+        penalite_bp_contrat: 5000,
+      },
+      entry_number: 'CA-0100',
+      date_comptable: '2026-10-14',
+      interets_a_l_echeance: 50000,
+    } as never)
+    const { container } = afficher()
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir un dépôt à terme' }))
+    fireEvent.change(screen.getByLabelText('Numéro ou nom du membre'), { target: { value: 'D' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }))
+    fireEvent.click(await screen.findByRole('button', { name: /Diallo Amadou/ }))
+    await screen.findByRole('option', { name: 'Dépôt à terme' })
+    fireEvent.change(screen.getByLabelText('Produit à terme'), { target: { value: 'dat' } })
+    fireEvent.click(await screen.findByRole('button', { name: '12 mois' }))
+    fireEvent.change(screen.getByLabelText('Capital à placer (F CFA)'), {
+      target: { value: '1000000' },
+    })
+    await screen.findByText('1 050 000 F')
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le placement' }))
+
+    await screen.findByRole('button', { name: 'Imprimer le bon' })
+    const recu = container.querySelector('[data-document="recu"]') as HTMLElement
+    const bon = container.querySelector('[data-document="bon"]') as HTMLElement
+    // Au départ, c'est le reçu qui est destiné au papier.
+    expect(recu).toHaveClass('print:block')
+    expect(bon).not.toHaveClass('print:block')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimer le bon' }))
+
+    expect(window.print).toHaveBeenCalledTimes(1)
+    expect(bon).toHaveClass('zone-impression', 'hidden', 'print:block')
+    expect(recu).not.toHaveClass('print:block')
+    const texte = texteDe(bon)
+    expect(texte).toContain('Bon de dépôt à terme')
+    expect(texte).toContain('Bon n° DT-2026-0000007')
+    expect(texte).toContain('Diallo Amadou')
+    expect(texte).toContain('Départ 14/10/2026')
+    expect(texte).toContain('Échéance 14/10/2027')
+    expect(texte).toContain('Taux annuel 5 %')
+    expect(texte).toContain('Intérêts attendus à l’échéance 50 000 F')
+    expect(texte).toContain('Signature du client (obligatoire)')
   })
 })

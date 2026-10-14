@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Printer } from 'lucide-react'
 import { useState } from 'react'
+import { flushSync } from 'react-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import {
   type ResultatOuvertureDepotATerme,
 } from '@/features/epargne/api'
 import { listerTiers, type LigneTier } from '@/features/tiers/api'
+import { CertificatDepotATerme } from '@/features/documents/CertificatDepotATerme'
 import { RecuCaisse, type LigneRecu } from '@/features/documents/RecuCaisse'
 import { parseMontantFrancs } from '@/lib/montants'
 import { LIBELLES } from '@/libelles/fr'
@@ -414,6 +416,8 @@ export function OuvertureDepotATermeGuichet({ onQuitter }: { onQuitter: () => vo
     resultat: ResultatOuvertureDepotATerme
   } | null>(null)
   const [q, setQ] = useState('')
+  // Deux documents sur l'écran du placement (reçu et bon) : un seul part au papier.
+  const [cible, setCible] = useState<'recu' | 'bon'>('recu')
 
   const recherche = useMutation({ mutationFn: () => listerTiers({ q: q.trim() }) })
   const produits = useQuery({ queryKey: ['epargne', 'produits'], queryFn: listerProduits })
@@ -427,15 +431,44 @@ export function OuvertureDepotATermeGuichet({ onQuitter }: { onQuitter: () => vo
           <AlertDescription>{fait.message}</AlertDescription>
         </Alert>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.print()}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              flushSync(() => setCible('recu'))
+              window.print()
+            }}
+          >
             <Printer className="mr-1 size-4" />
             {DOC.imprimerRecu}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              flushSync(() => setCible('bon'))
+              window.print()
+            }}
+          >
+            <Printer className="mr-1 size-4" />
+            {DOC.imprimerBon}
           </Button>
           <Button variant="ghost" onClick={onQuitter}>
             {D.retour}
           </Button>
         </div>
+        <CertificatDepotATerme
+          numeroCompte={fait.resultat.compte.account_number}
+          membre={membre?.display_name ?? ''}
+          capital={fait.resultat.compte.principal ?? fait.resultat.compte.balance}
+          depart={fait.resultat.compte.term_start_date ?? fait.resultat.date_comptable}
+          echeance={fait.resultat.compte.maturity_date ?? ''}
+          dureeMois={fait.resultat.compte.term_months ?? 0}
+          tauxBp={fait.resultat.compte.taux_bp_contrat ?? 0}
+          interetsAttendus={fait.resultat.interets_a_l_echeance}
+          penaliteBp={fait.resultat.compte.penalite_bp_contrat ?? 0}
+          actif={cible === 'bon'}
+        />
         <RecuCaisse
+          actif={cible === 'recu'}
           titre={DOC.titrePlacement}
           numeroPiece={fait.resultat.entry_number}
           dateComptable={fait.resultat.date_comptable}
