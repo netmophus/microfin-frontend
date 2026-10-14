@@ -3013,6 +3013,8 @@ export const LIBELLES = {
     signatureClientFacultative: 'Signature du client (facultative)',
     signatureCaissier: 'Signature du caissier',
     duplicata: 'DUPLICATA',
+    // Trait entre l'exemplaire client et l'exemplaire souche, visible seulement sur le papier.
+    decouperIci: '✂ découper ici',
     imprimerRecu: 'Imprimer le reçu',
 
     titreVersement: 'Reçu de versement',

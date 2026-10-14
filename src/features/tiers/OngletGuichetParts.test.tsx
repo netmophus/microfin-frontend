@@ -217,7 +217,7 @@ describe('OngletGuichetParts — reçu imprimable', () => {
       entry_number: 'CA-2026-000042',
       date_comptable: '2026-10-14',
     })
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner()
     expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
 
@@ -228,7 +228,7 @@ describe('OngletGuichetParts — reçu imprimable', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Imprimer le reçu' }))
     expect(window.print).toHaveBeenCalledTimes(1)
-    const recu = zone(container)
+    const recu = zone(document.body)
     expect(recu).toHaveClass('zone-impression', 'hidden', 'print:block')
     const texte = texteDe(recu)
     expect(texte).toContain('Reçu de souscription de parts sociales (au comptant)')
@@ -253,7 +253,7 @@ describe('OngletGuichetParts — reçu imprimable', () => {
       entry_number: 'CA-2026-000099',
       date_comptable: '2026-10-14',
     })
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner()
 
     fireEvent.click(await screen.findByRole('button', { name: /Libérer des parts/ }))
@@ -262,7 +262,7 @@ describe('OngletGuichetParts — reçu imprimable', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
 
     await screen.findByRole('button', { name: 'Imprimer le reçu' })
-    const texte = texteDe(zone(container))
+    const texte = texteDe(zone(document.body))
     expect(texte).toContain('Reçu de libération de parts sociales')
     expect(texte).toContain('Reçu n° CA-2026-000099')
     expect(texte).toContain('20 000 F')
@@ -277,7 +277,7 @@ describe('OngletGuichetParts — reçu imprimable', () => {
         data: { detail: 'Aucune session de caisse ouverte pour vous.' },
       } as never),
     )
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner()
 
     fireEvent.click(await screen.findByRole('button', { name: /Souscrire au comptant/ }))
@@ -287,6 +287,6 @@ describe('OngletGuichetParts — reçu imprimable', () => {
 
     expect(await screen.findByText('Aucune session de caisse ouverte pour vous.')).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
-    expect(zone(container)).toBeNull()
+    expect(zone(document.body)).toBeNull()
   })
 })

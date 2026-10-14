@@ -60,8 +60,8 @@ const texteDe = (element: HTMLElement) => element.innerHTML.replace(/<[^>]+>/g, 
 
 describe('CertificatDepotATerme', () => {
   it('contient le contrat : capital, départ, échéance, durée, taux, intérêts, pénalité, clause', () => {
-    const { container } = render(<CertificatDepotATerme {...bon()} />)
-    const client = exemplaires(container)[0]!
+    render(<CertificatDepotATerme {...bon()} />)
+    const client = exemplaires(document.body)[0]!
     const u = within(client)
 
     expect(u.getByText('Bon de dépôt à terme')).toBeInTheDocument()
@@ -86,33 +86,33 @@ describe('CertificatDepotATerme', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2031-03-09T10:00:00Z'))
 
-    const { container } = render(<CertificatDepotATerme {...bon()} />)
+    render(<CertificatDepotATerme {...bon()} />)
 
-    expect(container.textContent).toContain('14/10/2026')
-    expect(container.textContent).not.toContain('2031')
+    expect(document.body.textContent).toContain('14/10/2026')
+    expect(document.body.textContent).not.toContain('2031')
   })
 
   it('deux exemplaires, signature du client OBLIGATOIRE, document masqué à l’écran', () => {
-    const { container } = render(<CertificatDepotATerme {...bon()} />)
+    render(<CertificatDepotATerme {...bon()} />)
 
-    expect(exemplaires(container)).toHaveLength(2)
-    expect(container.textContent).toContain('Signature du client (obligatoire)')
-    expect(container.textContent).not.toContain('(facultative)')
-    const zone = container.querySelector('[data-document="bon"]')!
+    expect(exemplaires(document.body)).toHaveLength(2)
+    expect(document.body.textContent).toContain('Signature du client (obligatoire)')
+    expect(document.body.textContent).not.toContain('(facultative)')
+    const zone = document.querySelector('[data-document="bon"]')!
     expect(zone).toHaveClass('zone-impression', 'hidden', 'print:block')
   })
 
   it('inactif : jamais imprimé ; bandeau provisoire sans institution ; duplicata off par défaut', () => {
     etat.institution = { nom: '', adresse: '', telephone: '', numero_agrement: '' }
-    const { container, rerender } = render(<CertificatDepotATerme {...bon({ actif: false })} />)
+    const { rerender } = render(<CertificatDepotATerme {...bon({ actif: false })} />)
 
-    const zone = container.querySelector('[data-document="bon"]')!
+    const zone = document.querySelector('[data-document="bon"]')!
     expect(zone).toHaveClass('hidden')
     expect(zone).not.toHaveClass('print:block')
-    expect(container.textContent).toContain('Document provisoire')
-    expect(container.textContent).not.toContain('DUPLICATA')
+    expect(document.body.textContent).toContain('Document provisoire')
+    expect(document.body.textContent).not.toContain('DUPLICATA')
 
     rerender(<CertificatDepotATerme {...bon({ duplicata: true })} />)
-    expect(container.textContent).toContain('DUPLICATA')
+    expect(document.body.textContent).toContain('DUPLICATA')
   })
 })

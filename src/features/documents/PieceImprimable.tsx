@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { Fragment, useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 import { nomAffiche } from '@/features/auth/profil'
 import { useProfil } from '@/features/auth/useProfil'
@@ -7,6 +8,10 @@ import { cn } from '@/lib/utils'
 import { LIBELLES } from '@/libelles/fr'
 
 const D = LIBELLES.documents
+
+/** Classe posée sur <html> tant qu'une pièce est imprimable : l'application est alors retirée de
+ * la mise en page à l'impression (voir index.css), pour qu'il ne reste que la pièce sur le papier. */
+const CLASSE_IMPRESSION_PIECE = 'impression-piece'
 
 export interface PropsPieceImprimable {
   /** « recu » ou « bon » : repère le document (impression, tests). */
@@ -29,8 +34,13 @@ export interface PropsPieceImprimable {
 /**
  * Socle commun des pièces imprimables (reçus de caisse, bon de dépôt à terme) : même patron que
  * la lettre d'explication — `.zone-impression` isole le document du reste de la page, il est
- * `hidden` à l'écran et `print:block` sur le papier. DEUX exemplaires par impression (client et
- * souche), chacun avec l'en-tête institution, le titre, le corps et les blocs de signature.
+ * `hidden` à l'écran et `print:block` sur le papier.
+ *
+ * DEUX exemplaires (client et souche) sur UNE A4, séparés par un trait de découpe visible
+ * seulement à l'impression (ni avant le premier, ni après le second). Le document est monté dans
+ * un portail sous <body> : en flux normal et hors de l'application, il ne laisse aucune hauteur
+ * résiduelle — donc aucune page blanche. Espacements et corps de texte sont resserrés au
+ * papier pour que chaque exemplaire tienne dans la moitié de la hauteur imprimable.
  */
 export function PieceImprimable({
   nature,
@@ -45,46 +55,60 @@ export function PieceImprimable({
   const profil = useProfil().data
   const caissier = profil ? nomAffiche(profil) : '—'
 
-  return (
+  useEffect(() => {
+    if (!actif) return undefined
+    const racine = document.documentElement
+    racine.classList.add(CLASSE_IMPRESSION_PIECE)
+    return () => racine.classList.remove(CLASSE_IMPRESSION_PIECE)
+  }, [actif])
+
+  return createPortal(
     <div
-      className={cn('zone-impression space-y-6', actif ? 'hidden print:block' : 'hidden')}
+      className={cn('zone-impression piece-imprimable', actif ? 'hidden print:block' : 'hidden')}
       data-document={nature}
     >
       {[D.exemplaireClient, D.exemplaireSouche].map((exemplaire, rang) => (
-        <section
-          key={exemplaire}
-          className={cn(
-            'space-y-3 text-sm print:break-inside-avoid',
-            rang === 0 && 'border-b border-dashed pb-6',
+        <Fragment key={exemplaire}>
+          {rang === 1 && (
+            <div
+              data-testid="trait-decoupe"
+              className="hidden border-t border-dashed border-foreground py-1 text-center text-xs print:block"
+            >
+              {D.decouperIci}
+            </div>
           )}
-          aria-label={exemplaire}
-        >
-          <EnTeteDocument dateComptable={dateComptable} />
+          <section
+            className="exemplaire space-y-2 text-sm print:space-y-1.5 print:break-inside-avoid print:text-[10pt]"
+            aria-label={exemplaire}
+          >
+            <EnTeteDocument dateComptable={dateComptable} />
 
-          <div className="flex items-baseline justify-between gap-4">
-            <h3 className="text-base font-semibold">{titre}</h3>
-            <p className="font-mono text-sm">{reference}</p>
-          </div>
-          <p className="text-xs font-medium uppercase tracking-wide">
-            {exemplaire}
-            {duplicata ? ` — ${D.duplicata}` : ''}
-          </p>
-
-          {children({ caissier })}
-
-          <div className="grid grid-cols-2 gap-8 pt-6">
-            <div>
-              <p>{signatureClientRequise ? D.signatureClientObligatoire : D.signatureClientFacultative}</p>
-              <div className="mt-10 border-t border-foreground" />
+            <div className="flex items-baseline justify-between gap-4">
+              <h3 className="text-base font-semibold">{titre}</h3>
+              <p className="font-mono text-sm">{reference}</p>
             </div>
-            <div>
-              <p>{D.signatureCaissier}</p>
-              <div className="mt-10 border-t border-foreground" />
+            <p className="text-xs font-medium uppercase tracking-wide">
+              {exemplaire}
+              {duplicata ? ` — ${D.duplicata}` : ''}
+            </p>
+
+            {children({ caissier })}
+
+            <div className="grid grid-cols-2 gap-8 pt-3 print:pt-2">
+              <div>
+                <p>{signatureClientRequise ? D.signatureClientObligatoire : D.signatureClientFacultative}</p>
+                <div className="mt-8 border-t border-foreground print:mt-6" />
+              </div>
+              <div>
+                <p>{D.signatureCaissier}</p>
+                <div className="mt-8 border-t border-foreground print:mt-6" />
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </Fragment>
       ))}
-    </div>
+    </div>,
+    document.body,
   )
 }
 

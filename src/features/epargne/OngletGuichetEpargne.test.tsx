@@ -609,17 +609,17 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
       entry_number: 'CA-2026-000123',
       date_comptable: '2026-10-14',
     })
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner()
     expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
-    expect(zone(container)).toBeNull()
+    expect(zone(document.body)).toBeNull()
 
     await deposer('10000')
 
     const bouton = await screen.findByRole('button', { name: 'Imprimer le reçu' })
     fireEvent.click(bouton)
     expect(window.print).toHaveBeenCalledTimes(1)
-    const recu = zone(container)
+    const recu = zone(document.body)
     expect(recu).toHaveClass('zone-impression', 'hidden', 'print:block')
     const texte = texteDe(recu)
     expect(texte).toContain('Reçu de versement')
@@ -634,7 +634,7 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
     expect(texte).toContain('17 000 F')
     expect(texte).toContain('dix mille francs CFA')
     expect(texte).toContain('Signature du client (facultative)')
-    expect(container.querySelectorAll('[data-document="recu"] section[aria-label]')).toHaveLength(2)
+    expect(document.querySelectorAll('[data-document="recu"] section[aria-label]')).toHaveLength(2)
   })
 
   it('retrait : la signature du client est obligatoire sur le reçu', async () => {
@@ -644,7 +644,7 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
       entry_number: 'CA-2026-000124',
       date_comptable: '2026-10-14',
     })
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner()
 
     fireEvent.click(screen.getByRole('button', { name: 'Retrait' }))
@@ -653,7 +653,7 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
 
     await screen.findByRole('button', { name: 'Imprimer le reçu' })
-    const texte = texteDe(zone(container))
+    const texte = texteDe(zone(document.body))
     expect(texte).toContain('Reçu de retrait')
     expect(texte).toContain('Montant retiré')
     expect(texte).toContain('trois mille francs CFA')
@@ -667,14 +667,14 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
         data: { detail: 'Aucune session de caisse ouverte pour vous.' },
       } as never),
     )
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner()
 
     await deposer('10000')
 
     expect(await screen.findByText('Aucune session de caisse ouverte pour vous.')).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
-    expect(zone(container)).toBeNull()
+    expect(zone(document.body)).toBeNull()
   })
 
   it('l’institution non configurée : bandeau provisoire sur le document imprimé', async () => {
@@ -685,13 +685,13 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
       entry_number: 'CA-2026-000123',
       date_comptable: '2026-10-14',
     })
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner()
 
     await deposer('10000')
 
     await screen.findByRole('button', { name: 'Imprimer le reçu' })
-    expect(texteDe(zone(container))).toContain('Document provisoire')
+    expect(texteDe(zone(document.body))).toContain('Document provisoire')
     etat.institution = { nom: 'IMCEC Test', adresse: '', telephone: '', numero_agrement: '' }
   })
 
@@ -702,14 +702,14 @@ describe('OngletGuichetEpargne — impression des reçus', () => {
       entry_number: 'CA-2026-000123',
       date_comptable: '2026-10-14',
     })
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner()
     await deposer('10000')
     await screen.findByRole('button', { name: 'Imprimer le reçu' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Nouvelle opération' }))
 
-    expect(zone(container)).toBeNull()
+    expect(zone(document.body)).toBeNull()
     expect(screen.queryByRole('button', { name: 'Imprimer le reçu' })).toBeNull()
   })
 })
@@ -759,7 +759,7 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
       entry_number: 'CA-0042',
       date_comptable: '2026-10-14',
     })
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner(dat())
 
     fireEvent.click(await screen.findByRole('button', { name: 'Retrait anticipé' }))
@@ -767,7 +767,7 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Imprimer le reçu' }))
     expect(window.print).toHaveBeenCalledTimes(1)
-    const texte = texteDe(zone(container))
+    const texte = texteDe(zone(document.body))
     expect(texte).toContain('Reçu de retrait anticipé — dépôt à terme')
     expect(texte).toContain('Reçu n° CA-0042')
     expect(texte).toContain('Journée comptable : 14/10/2026')
@@ -802,14 +802,14 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
       entry_number: 'CA-0043',
       date_comptable: '2027-04-14',
     })
-    const { container } = afficher()
+    afficher()
     await chercherEtSelectionner(dat())
 
     fireEvent.click(await screen.findByRole('button', { name: 'Dénouer à l’échéance' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer le dénouement' }))
 
     await screen.findByRole('button', { name: 'Imprimer le reçu' })
-    const texte = texteDe(zone(container))
+    const texte = texteDe(zone(document.body))
     expect(texte).toContain('Reçu de dénouement — dépôt à terme')
     expect(texte).toContain('Journée comptable : 14/04/2027')
     expect(texte).not.toContain('Pénalité de retrait anticipé')
@@ -869,7 +869,7 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
       date_comptable: '2026-10-14',
       interets_a_l_echeance: 50000,
     } as never)
-    const { container } = afficher()
+    afficher()
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir un dépôt à terme' }))
     fireEvent.change(screen.getByLabelText('Numéro ou nom du membre'), { target: { value: 'D' } })
     fireEvent.click(screen.getByRole('button', { name: 'Chercher' }))
@@ -886,7 +886,7 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Imprimer le reçu' }))
     expect(window.print).toHaveBeenCalledTimes(1)
-    const texte = texteDe(zone(container))
+    const texte = texteDe(zone(document.body))
     expect(texte).toContain('Reçu de placement — dépôt à terme')
     expect(texte).toContain('Reçu n° CA-0100')
     expect(texte).toContain('Diallo Amadou')
@@ -956,7 +956,7 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
       date_comptable: '2026-10-14',
       interets_a_l_echeance: 50000,
     } as never)
-    const { container } = afficher()
+    afficher()
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir un dépôt à terme' }))
     fireEvent.change(screen.getByLabelText('Numéro ou nom du membre'), { target: { value: 'D' } })
     fireEvent.click(screen.getByRole('button', { name: 'Chercher' }))
@@ -972,8 +972,8 @@ describe('OngletGuichetEpargne — reçus du dépôt à terme', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer le placement' }))
 
     await screen.findByRole('button', { name: 'Imprimer le bon' })
-    const recu = container.querySelector('[data-document="recu"]') as HTMLElement
-    const bon = container.querySelector('[data-document="bon"]') as HTMLElement
+    const recu = document.querySelector('[data-document="recu"]') as HTMLElement
+    const bon = document.querySelector('[data-document="bon"]') as HTMLElement
     // Au départ, c'est le reçu qui est destiné au papier.
     expect(recu).toHaveClass('print:block')
     expect(bon).not.toHaveClass('print:block')
