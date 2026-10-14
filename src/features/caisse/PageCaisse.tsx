@@ -16,7 +16,7 @@ import {
   ouvrirSession,
   type SessionCaisse,
 } from '@/features/caisse/api'
-import { formatFcfa } from '@/features/epargne/api'
+import { formatFcfa, formatJour } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
 const C = LIBELLES.caisse
@@ -32,6 +32,15 @@ function fmt(gabarit: string, valeurs: Record<string, string>): string {
 function versEntier(valeur: string): number {
   const nettoye = valeur.replace(/\D/g, '')
   return nettoye === '' ? Number.NaN : Number.parseInt(nettoye, 10)
+}
+
+/** Date et heure RÉELLES (fuseau du poste) d'un horodatage — jamais la journée comptable. */
+function dateEtHeure(iso: string): { date: string; heure: string } {
+  const quand = new Date(iso)
+  return {
+    date: quand.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    heure: quand.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+  }
 }
 
 function dateHeure(iso: string): string {
@@ -313,8 +322,12 @@ export function PageCaisse() {
           <section className="space-y-3 rounded-md border p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {fmt(C.ouverteDepuis, { date: dateHeure(session.opened_at) })}
+                {/* La date MÉTIER des opérations, en évidence ; l'heure réelle en dessous. */}
+                <p className="text-lg font-semibold">
+                  {fmt(C.journeeComptable, { date: formatJour(session.journee_comptable) })}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {fmt(C.ouverteLe, dateEtHeure(session.opened_at))}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {C.compteLabel} : <span className="font-mono">{session.compte_caisse_number}</span>

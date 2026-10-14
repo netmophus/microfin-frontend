@@ -1541,7 +1541,10 @@ export const LIBELLES = {
     ouvertureEchec: 'Impossible d’ouvrir la caisse. Réessayez, puis prévenez votre responsable.',
 
     // Session ouverte : l'état courant.
-    ouverteDepuis: 'Ouverte depuis le {date}',
+    // Deux dates DISTINCTES : la journée comptable (date métier des opérations) et l'heure
+    // réelle d'ouverture du poste (audit). Les confondre serait trompeur.
+    journeeComptable: 'Journée comptable : {date}',
+    ouverteLe: 'Ouverte le {date} à {heure} (heure réelle)',
     compteLabel: 'Compte de caisse',
     fondsInitialCourant: 'Fonds initial',
     soldeTheoriqueLabel: 'Solde théorique',

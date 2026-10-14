@@ -43,6 +43,7 @@ const sessionManquante = {
   fonds_initial: 40_000,
   opened_at: '2026-08-07T08:00:00Z',
   closed_at: '2026-08-07T18:00:00Z',
+  journee_comptable: null,
   solde_theorique_actuel: null,
   montant_reel_cloture: 50_000,
   solde_theorique_cloture: 60_000,

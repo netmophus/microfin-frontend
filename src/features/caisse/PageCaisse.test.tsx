@@ -64,6 +64,7 @@ const sessionOuverte = {
   fonds_initial: 50_000,
   opened_at: '2026-08-07T08:00:00Z',
   closed_at: null,
+  journee_comptable: '2026-08-07',
   solde_theorique_actuel: 60_000,
   montant_reel_cloture: null,
   solde_theorique_cloture: null,
@@ -206,6 +207,17 @@ describe('PageCaisse', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Actualiser/ }))
     await waitFor(() => expect(sessionSimulee).toHaveBeenCalledTimes(2))
+  })
+
+  it('session ouverte : la journée comptable (date métier) et l’heure réelle sont deux informations distinctes', async () => {
+    // Journée comptable volontairement différente du jour d'ouverture réel : si l'écran déduisait
+    // l'une de l'autre, ce test le verrait.
+    sessionSimulee.mockResolvedValue({ ...sessionOuverte, journee_comptable: '2026-08-05' })
+    afficher()
+
+    expect(await screen.findByText('Journée comptable : 05/08/2026')).toBeVisible()
+    expect(screen.getByText(/^Ouverte le \d{2}\/\d{2}\/2026 à \d{2}:\d{2} \(heure réelle\)$/)).toBeVisible()
+    expect(screen.queryByText(/Ouverte depuis/i)).toBeNull()
   })
 
   it('fermeture : montre l’écart en toutes lettres avant toute confirmation', async () => {
