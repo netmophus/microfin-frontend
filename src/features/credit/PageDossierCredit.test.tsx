@@ -308,6 +308,9 @@ describe('PageDossierCredit', () => {
       balance: 15000,
       status: 'actif',
       is_provisional: true,
+      term_months: null,
+      maturity_date: null,
+      principal: null,
     }
   }
 
@@ -351,8 +354,8 @@ describe('PageDossierCredit', () => {
     expect(
       screen.getByText('EPR-2026-0000003 — Épargne programmée — solde actuel 100 000 F'),
     ).toBeVisible()
-    // DETTE TEMPORAIRE : le DAT est exclu (aucun blocage jusqu'à échéance implémenté — voir
-    // conformite-comptable.md). Ni le compte fermé, pour la raison déjà couverte ailleurs.
+    // Le DAT est exclu (bloqué jusqu'à son échéance — voir conformite-comptable.md). Ni le
+    // compte fermé, pour la raison déjà couverte ailleurs.
     expect(screen.queryByText(/DT-2026-0000002/)).toBeNull()
     expect(screen.queryByText(/Compte fermé/)).toBeNull()
   })

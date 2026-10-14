@@ -70,6 +70,125 @@ function pourcentVersBp(saisie: string): number | null {
   return Math.round(nombre * 100)
 }
 
+const DUREE_MAX_MOIS = 600 // miroir du backend (schemas.py)
+const POINTS_DE_BASE_PAR_POURCENT = 100
+
+/** Durée en mois entiers (1 à 600) ; null si la saisie est vide ou invalide. */
+function parseDureeMois(saisie: string): number | null {
+  const propre = saisie.trim()
+  if (!/^\d+$/.test(propre)) return null
+  const mois = Number(propre)
+  return mois >= 1 && mois <= DUREE_MAX_MOIS ? mois : null
+}
+
+interface ParametresTerme {
+  valide: boolean
+  duree_min_mois: number | null
+  duree_max_mois: number | null
+  penalite_anticipee_bp: number
+}
+
+/** Les paramètres propres au dépôt à terme, lus depuis la saisie. Hors type « terme », aucun.
+ * Les deux durées vides sont admises (produit pas encore paramétré : l'ouverture d'un compte
+ * sera refusée tant qu'elles manquent) ; une seule renseignée, ou min > max, est refusée. */
+function lireParametresTerme(
+  type: TypeProduit,
+  dureeMin: string,
+  dureeMax: string,
+  penalite: string,
+): ParametresTerme {
+  if (type !== 'terme') {
+    return { valide: true, duree_min_mois: null, duree_max_mois: null, penalite_anticipee_bp: 0 }
+  }
+  const min = parseDureeMois(dureeMin)
+  const max = parseDureeMois(dureeMax)
+  const vides = dureeMin.trim() === '' && dureeMax.trim() === ''
+  const pourcent = pourcentVersBp(penalite)
+  const penaliteValide = pourcent !== null && pourcent >= 0 && pourcent <= 100 * POINTS_DE_BASE_PAR_POURCENT
+  const dureesValides = vides || (min !== null && max !== null && min <= max)
+  return {
+    valide: dureesValides && penaliteValide,
+    duree_min_mois: vides ? null : min,
+    duree_max_mois: vides ? null : max,
+    penalite_anticipee_bp: penaliteValide ? (pourcent as number) : 0,
+  }
+}
+
+/** Champs d'un produit à terme : bornes de la durée choisie à l'ouverture et pénalité de retrait
+ * anticipé (en % des intérêts courus, enregistrée en points de base comme le taux). */
+function ChampsTerme({
+  idBase,
+  dureeMin,
+  dureeMax,
+  penalite,
+  onDureeMin,
+  onDureeMax,
+  onPenalite,
+}: {
+  idBase: string
+  dureeMin: string
+  dureeMax: string
+  penalite: string
+  onDureeMin: (v: string) => void
+  onDureeMax: (v: string) => void
+  onPenalite: (v: string) => void
+}) {
+  const min = parseDureeMois(dureeMin)
+  const max = parseDureeMois(dureeMax)
+  const minInvalide = dureeMin.trim() !== '' && min === null
+  const maxInvalide = dureeMax.trim() !== '' && max === null
+  const incoherentes = min !== null && max !== null && min > max
+  const pourcent = pourcentVersBp(penalite)
+  const penaliteInvalide = pourcent === null || pourcent < 0 || pourcent > 100 * POINTS_DE_BASE_PAR_POURCENT
+  return (
+    <>
+      <div className="space-y-1">
+        <Label htmlFor={`${idBase}-duree-min`}>{P.dureeMin}</Label>
+        <Input
+          id={`${idBase}-duree-min`}
+          inputMode="numeric"
+          value={dureeMin}
+          aria-invalid={minInvalide}
+          aria-describedby={`${idBase}-duree-aide`}
+          onChange={(e) => onDureeMin(e.target.value)}
+        />
+        {minInvalide && <p className="text-xs text-destructive">{P.dureeInvalide}</p>}
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor={`${idBase}-duree-max`}>{P.dureeMax}</Label>
+        <Input
+          id={`${idBase}-duree-max`}
+          inputMode="numeric"
+          value={dureeMax}
+          aria-invalid={maxInvalide || incoherentes}
+          aria-describedby={`${idBase}-duree-aide`}
+          onChange={(e) => onDureeMax(e.target.value)}
+        />
+        {maxInvalide && <p className="text-xs text-destructive">{P.dureeInvalide}</p>}
+        {incoherentes && <p className="text-xs text-destructive">{P.dureesIncoherentes}</p>}
+        <p id={`${idBase}-duree-aide`} className="text-xs text-muted-foreground">
+          {P.dureeAide}
+        </p>
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor={`${idBase}-penalite`}>{P.penaliteAnticipee}</Label>
+        <Input
+          id={`${idBase}-penalite`}
+          inputMode="decimal"
+          value={penalite}
+          aria-invalid={penaliteInvalide}
+          aria-describedby={`${idBase}-penalite-aide`}
+          onChange={(e) => onPenalite(e.target.value)}
+        />
+        {penaliteInvalide && <p className="text-xs text-destructive">{P.penaliteInvalide}</p>}
+        <p id={`${idBase}-penalite-aide`} className="text-xs text-muted-foreground">
+          {P.penaliteAnticipeeAide}
+        </p>
+      </div>
+    </>
+  )
+}
+
 /** Champ de montant en francs avec sa ligne d'aide, reliée au champ pour les lecteurs d'écran. */
 function ChampMontant({
   id,
@@ -334,12 +453,16 @@ function LigneEdition({
   const [soldeMinimum, setSoldeMinimum] = useState(String(produit.solde_minimum_remunere))
   const [depotInitial, setDepotInitial] = useState(String(produit.depot_initial_minimum))
   const [plancher, setPlancher] = useState(String(produit.min_balance))
+  const [dureeMin, setDureeMin] = useState(String(produit.duree_min_mois ?? ''))
+  const [dureeMax, setDureeMax] = useState(String(produit.duree_max_mois ?? ''))
+  const [penalite, setPenalite] = useState(bpVersPourcent(produit.penalite_anticipee_bp))
   const [motif, setMotif] = useState('')
 
   const tauxBp = pourcentVersBp(taux)
   const soldeMinimumValeur = parseMontantFrancs(soldeMinimum)
   const depotInitialValeur = parseMontantFrancs(depotInitial)
   const plancherValeur = parseMontantFrancs(plancher)
+  const terme = lireParametresTerme(type, dureeMin, dureeMax, penalite)
   const idBase = `pe-${produit.id}`
 
   const mutation = useMutation({
@@ -355,6 +478,9 @@ function LigneEdition({
         solde_minimum_remunere: soldeMinimumValeur as number,
         min_balance: plancherValeur as number,
         depot_initial_minimum: depotInitialValeur as number,
+        duree_min_mois: terme.duree_min_mois,
+        duree_max_mois: terme.duree_max_mois,
+        penalite_anticipee_bp: terme.penalite_anticipee_bp,
         motif: motif.trim(),
       }),
     onSuccess: onFini,
@@ -368,6 +494,7 @@ function LigneEdition({
     soldeMinimumValeur !== null &&
     depotInitialValeur !== null &&
     plancherValeur !== null &&
+    terme.valide &&
     motif.trim().length >= 3
 
   return (
@@ -488,6 +615,17 @@ function LigneEdition({
             valeur={plancher}
             onChange={setPlancher}
           />
+          {type === 'terme' && (
+            <ChampsTerme
+              idBase={idBase}
+              dureeMin={dureeMin}
+              dureeMax={dureeMax}
+              penalite={penalite}
+              onDureeMin={setDureeMin}
+              onDureeMax={setDureeMax}
+              onPenalite={setPenalite}
+            />
+          )}
         </div>
 
         <div className="mt-3 max-w-md space-y-2">
@@ -595,11 +733,15 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
   const [soldeMinimum, setSoldeMinimum] = useState('0')
   const [depotInitial, setDepotInitial] = useState('0')
   const [plancher, setPlancher] = useState('0')
+  const [dureeMin, setDureeMin] = useState('')
+  const [dureeMax, setDureeMax] = useState('')
+  const [penalite, setPenalite] = useState('0')
 
   const tauxBp = pourcentVersBp(taux)
   const soldeMinimumValeur = parseMontantFrancs(soldeMinimum)
   const depotInitialValeur = parseMontantFrancs(depotInitial)
   const plancherValeur = parseMontantFrancs(plancher)
+  const terme = lireParametresTerme(type, dureeMin, dureeMax, penalite)
   const idBase = 'pe-creation'
 
   const mutation = useMutation({
@@ -617,6 +759,9 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
         solde_minimum_remunere: soldeMinimumValeur as number,
         min_balance: plancherValeur as number,
         depot_initial_minimum: depotInitialValeur as number,
+        duree_min_mois: terme.duree_min_mois,
+        duree_max_mois: terme.duree_max_mois,
+        penalite_anticipee_bp: terme.penalite_anticipee_bp,
       }),
     onSuccess: onFini,
   })
@@ -629,7 +774,8 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
     tauxBp <= 10000 &&
     soldeMinimumValeur !== null &&
     depotInitialValeur !== null &&
-    plancherValeur !== null
+    plancherValeur !== null &&
+    terme.valide
 
   return (
     <div className="space-y-3 rounded-md border p-4">
@@ -759,6 +905,17 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
           valeur={plancher}
           onChange={setPlancher}
         />
+        {type === 'terme' && (
+          <ChampsTerme
+            idBase={idBase}
+            dureeMin={dureeMin}
+            dureeMax={dureeMax}
+            penalite={penalite}
+            onDureeMin={setDureeMin}
+            onDureeMax={setDureeMax}
+            onPenalite={setPenalite}
+          />
+        )}
       </div>
 
       <p className="text-xs text-muted-foreground">{P.decouvertNonAutorise}</p>

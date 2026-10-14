@@ -66,6 +66,9 @@ function produit(partiel: Partial<ProduitEpargneDetail> = {}): ProduitEpargneDet
     solde_minimum_remunere: 0,
     min_balance: 0,
     depot_initial_minimum: 0,
+    duree_min_mois: null,
+    duree_max_mois: null,
+    penalite_anticipee_bp: 0,
     ...partiel,
   }
 }
@@ -185,6 +188,109 @@ describe('PageProduitsEpargne', () => {
     await waitFor(() =>
       expect(creerSimule).toHaveBeenCalledWith(
         expect.objectContaining({ depot_initial_minimum: 5000, min_balance: 2000 }),
+      ),
+    )
+  })
+
+  it('création d’un produit à terme : durées et pénalité n’apparaissent que pour ce type', async () => {
+    listerSimule.mockResolvedValue([])
+    creerSimule.mockResolvedValue(produit({ code: 'DAT', type: 'terme' }))
+    afficher()
+    await screen.findByText(/Aucun produit d’épargne/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un produit' }))
+
+    expect(screen.queryByLabelText('Durée minimale (mois)')).toBeNull()
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'terme' } })
+    expect(screen.getByLabelText('Durée minimale (mois)')).toBeVisible()
+    expect(screen.getByLabelText('Durée maximale (mois)')).toBeVisible()
+    expect(screen.getByText(/Le capital n’est jamais entamé/)).toBeVisible()
+
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'DAT' } })
+    fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Dépôt à terme' } })
+    fireEvent.change(screen.getByLabelText('Durée minimale (mois)'), { target: { value: '3' } })
+    fireEvent.change(screen.getByLabelText('Durée maximale (mois)'), { target: { value: '24' } })
+    fireEvent.change(screen.getByLabelText('Pénalité de retrait anticipé (% des intérêts courus)'), {
+      target: { value: '50' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(creerSimule).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'terme',
+          duree_min_mois: 3,
+          duree_max_mois: 24,
+          penalite_anticipee_bp: 5000,
+        }),
+      ),
+    )
+  })
+
+  it('création à terme : durée minimale au-dessus de la maximale, enregistrement bloqué avec message', async () => {
+    listerSimule.mockResolvedValue([])
+    afficher()
+    await screen.findByText(/Aucun produit d’épargne/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un produit' }))
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'terme' } })
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'DAT' } })
+    fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Dépôt à terme' } })
+
+    fireEvent.change(screen.getByLabelText('Durée minimale (mois)'), { target: { value: '24' } })
+    fireEvent.change(screen.getByLabelText('Durée maximale (mois)'), { target: { value: '3' } })
+
+    expect(screen.getByText('La durée minimale ne peut pas dépasser la durée maximale.')).toBeVisible()
+    expect(screen.getByLabelText('Durée maximale (mois)')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
+  })
+
+  it('création à terme : pénalité hors de 0 à 100 %, refusée avec message', async () => {
+    listerSimule.mockResolvedValue([])
+    afficher()
+    await screen.findByText(/Aucun produit d’épargne/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un produit' }))
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'terme' } })
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'DAT' } })
+    fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Dépôt à terme' } })
+
+    fireEvent.change(screen.getByLabelText('Pénalité de retrait anticipé (% des intérêts courus)'), {
+      target: { value: '150' },
+    })
+
+    expect(screen.getByText('Saisissez un pourcentage entre 0 et 100.')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
+  })
+
+  it('édition d’un produit à terme : les valeurs enregistrées reviennent dans le formulaire', async () => {
+    listerSimule.mockResolvedValue([
+      produit({
+        type: 'terme',
+        duree_min_mois: 3,
+        duree_max_mois: 24,
+        penalite_anticipee_bp: 2500,
+      }),
+    ])
+    modifierSimule.mockResolvedValue(produit({ type: 'terme' }))
+    afficher()
+    await screen.findByText('Épargne à vue')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+
+    expect(screen.getByLabelText('Durée minimale (mois)')).toHaveValue('3')
+    expect(screen.getByLabelText('Durée maximale (mois)')).toHaveValue('24')
+    expect(screen.getByLabelText('Pénalité de retrait anticipé (% des intérêts courus)')).toHaveValue(
+      '25',
+    )
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), { target: { value: 'revue' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(modifierSimule).toHaveBeenCalledWith(
+        'p1',
+        expect.objectContaining({
+          duree_min_mois: 3,
+          duree_max_mois: 24,
+          penalite_anticipee_bp: 2500,
+        }),
       ),
     )
   })

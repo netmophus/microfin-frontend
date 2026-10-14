@@ -16,8 +16,10 @@ import {
   messageRefus,
   ouvrirCompte,
   type CompteEpargne,
+  type ProduitEpargne,
 } from '@/features/epargne/api'
 import { BadgeProvisoire, BadgeStatutCompte } from '@/features/epargne/badges'
+import { FormulaireDepotATerme } from '@/features/epargne/DepotATerme'
 import { LIBELLES } from '@/libelles/fr'
 
 const E = LIBELLES.epargne
@@ -50,6 +52,7 @@ export function OngletComptesEpargne({
   const membreActif = tierStatut === 'actif'
   const [ouvertureVisible, setOuvertureVisible] = useState(false)
   const [ouvertId, setOuvertId] = useState<string | null>(null)
+  const [confirmationPlacement, setConfirmationPlacement] = useState<string | null>(null)
 
   const requete = useQuery({
     queryKey: ['epargne', 'comptes', tierId],
@@ -92,8 +95,20 @@ export function OngletComptesEpargne({
         </Alert>
       )}
 
+      {confirmationPlacement && (
+        <Alert role="status">
+          <AlertDescription>{confirmationPlacement}</AlertDescription>
+        </Alert>
+      )}
+
       {ouvertureVisible && (
-        <FormulaireOuverture tierId={tierId} onFini={() => setOuvertureVisible(false)} />
+        <FormulaireOuverture
+          tierId={tierId}
+          onFini={(message) => {
+            setOuvertureVisible(false)
+            setConfirmationPlacement(message ?? null)
+          }}
+        />
       )}
 
       {comptes.length === 0 ? (
@@ -120,6 +135,11 @@ export function OngletComptesEpargne({
                     <p className="text-xs text-muted-foreground">
                       {c.product_name} {c.is_provisional && <BadgeProvisoire />}
                     </p>
+                    {c.maturity_date && (
+                      <p className="text-xs text-muted-foreground">
+                        {E.echeance(dateComptable(c.maturity_date))}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -193,8 +213,11 @@ function PanneauCompte({ compte, tierId }: { compte: CompteEpargne; tierId: stri
         )}
       </div>
 
-      {peutFermer && compte.status === 'actif' && (
-        <FermetureCompte compte={compte} tierId={tierId} />
+      {compte.status === 'actif' && compte.maturity_date ? (
+        <p className="text-sm text-muted-foreground">{E.soldeParGuichet}</p>
+      ) : (
+        peutFermer &&
+        compte.status === 'actif' && <FermetureCompte compte={compte} tierId={tierId} />
       )}
     </div>
   )
@@ -245,11 +268,12 @@ function FermetureCompte({ compte, tierId }: { compte: CompteEpargne; tierId: st
   )
 }
 
-function FormulaireOuverture({ tierId, onFini }: { tierId: string; onFini: () => void }) {
+function FormulaireOuverture({ tierId, onFini }: { tierId: string; onFini: (message?: string) => void }) {
   const client = useQueryClient()
   const [produitId, setProduitId] = useState('')
 
   const produits = useQuery({ queryKey: ['epargne', 'produits'], queryFn: listerProduits })
+  const produitChoisi = (produits.data ?? []).find((p) => p.id === produitId)
 
   const mutation = useMutation({
     mutationFn: () => ouvrirCompte(tierId, produitId),
@@ -259,6 +283,22 @@ function FormulaireOuverture({ tierId, onFini }: { tierId: string; onFini: () =>
     },
   })
 
+  // Un dépôt à terme ne s'ouvre pas comme un compte ordinaire : durée, capital et simulation.
+  if (produitChoisi?.type === 'terme') {
+    return (
+      <div className="space-y-3">
+        <SelecteurProduit produits={produits.data ?? []} produitId={produitId} onChange={setProduitId} />
+        <FormulaireDepotATerme
+          key={produitChoisi.id}
+          tierId={tierId}
+          produit={produitChoisi}
+          onFini={onFini}
+          onAnnuler={() => onFini()}
+        />
+      </div>
+    )
+  }
+
   return (
     <form
       className="space-y-3 rounded-md border bg-brand-subtle/40 p-3"
@@ -267,22 +307,7 @@ function FormulaireOuverture({ tierId, onFini }: { tierId: string; onFini: () =>
         if (produitId) mutation.mutate()
       }}
     >
-      <div className="space-y-1">
-        <Label htmlFor="produit-epargne">{E.produit}</Label>
-        <select
-          id="produit-epargne"
-          className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-          value={produitId}
-          onChange={(e) => setProduitId(e.target.value)}
-        >
-          <option value="">{E.produitChoisir}</option>
-          {(produits.data ?? []).map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} {p.is_provisional ? E.produitProvisoireSuffixe : ''}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelecteurProduit produits={produits.data ?? []} produitId={produitId} onChange={setProduitId} />
 
       {mutation.isError && (
         <Alert variant="destructive" role="alert">
@@ -294,10 +319,39 @@ function FormulaireOuverture({ tierId, onFini }: { tierId: string; onFini: () =>
         <Button type="submit" size="sm" disabled={!produitId || mutation.isPending}>
           {mutation.isPending ? E.ouvertureEnCours : E.confirmerOuverture}
         </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onFini}>
+        <Button type="button" size="sm" variant="ghost" onClick={() => onFini()}>
           {E.annuler}
         </Button>
       </div>
     </form>
+  )
+}
+
+function SelecteurProduit({
+  produits,
+  produitId,
+  onChange,
+}: {
+  produits: ProduitEpargne[]
+  produitId: string
+  onChange: (id: string) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <Label htmlFor="produit-epargne">{E.produit}</Label>
+      <select
+        id="produit-epargne"
+        className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+        value={produitId}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">{E.produitChoisir}</option>
+        {produits.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name} {p.is_provisional ? E.produitProvisoireSuffixe : ''}
+          </option>
+        ))}
+      </select>
+    </div>
   )
 }

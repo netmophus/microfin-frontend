@@ -16,6 +16,7 @@ import {
   type ResultatOperation,
 } from '@/features/epargne/api'
 import { BadgeProvisoire, BadgeStatutCompte } from '@/features/epargne/badges'
+import { PanneauDepotATermeGuichet } from '@/features/epargne/DepotATerme'
 import { useDebounce } from '@/lib/useDebounce'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -193,6 +194,8 @@ function Operations({
         <Alert role="note">
           <AlertDescription>{G.compteFerme}</AlertDescription>
         </Alert>
+      ) : compte.maturity_date ? (
+        <PanneauDepotATermeGuichet compte={compte} onSolde={onSolde} />
       ) : succes ? (
         <Alert role="status">
           <AlertDescription className="space-y-2">

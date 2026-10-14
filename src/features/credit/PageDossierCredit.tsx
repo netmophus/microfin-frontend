@@ -290,14 +290,11 @@ function PanneauDecaissement({
     queryFn: () => listerComptesMembre(dossier.tier_id),
     enabled: confirmation,
   })
-  // DETTE TEMPORAIRE (voir docs/conformite-comptable.md, chantier « blocage des DAT ») : les
-  // DAT ('terme') sont exclus ici parce qu'AUCUN mécanisme de blocage jusqu'à échéance n'existe
-  // dans le module Épargne — les y créditer n'aurait pas de sens métier (fonds indisponibles au
-  // client). Exclusion PAR TYPE, pas un vrai contrôle de disponibilité (qui n'existe pas
-  // encore) : à remplacer par un prédicat « compte disponible » le jour où le blocage DAT sera
-  // réellement implémenté. Miroir du refus serveur (epargne/operations.py).
+  // Un dépôt à terme est bloqué jusqu'à son échéance : y créditer un décaissement n'aurait pas
+  // de sens (fonds indisponibles au client). Règle métier, miroir du refus serveur
+  // (epargne/operations.py) ; le trigger de base est le dernier rempart.
   const comptesActifs = (comptes.data ?? []).filter(
-    (c) => c.status === 'actif' && c.product_type !== 'terme',
+    (c) => c.status === 'actif' && c.maturity_date === null && c.product_type !== 'terme',
   )
   const compteChoisi = comptesActifs.find((c) => c.id === compteChoisiId)
 

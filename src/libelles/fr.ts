@@ -1055,7 +1055,12 @@ export const LIBELLES = {
       // Décaissement de crédit crédité directement sur ce compte (mode 'epargne') — distinct
       // d'un dépôt classique, pour qu'un contrôleur identifie l'origine dans le relevé.
       decaissement_credit: 'Décaissement de crédit',
+      denouement: 'Dénouement du dépôt à terme',
+      retrait_anticipe: 'Retrait anticipé du dépôt à terme',
     } as Record<string, string>,
+    echeance: (date: string) => `Échéance le ${date}`,
+    soldeParGuichet:
+      'Un dépôt à terme ne se ferme pas ici : il se solde au guichet, par le dénouement à l’échéance ou par le retrait anticipé.',
     piece: 'Pièce',
     fermer: 'Fermer le compte',
     // La restitution est PROÉMINENTE avant de confirmer — on ne ferme pas à l'aveugle.
@@ -2239,6 +2244,16 @@ export const LIBELLES = {
     soldePlancher: 'Solde plancher (F CFA)',
     soldePlancherAide:
       'Solde à conserver sur le compte après un retrait. 0 : le compte peut être vidé.',
+    // Dépôt à terme : durée choisie à l'ouverture du compte, dans ces bornes.
+    dureeMin: 'Durée minimale (mois)',
+    dureeMax: 'Durée maximale (mois)',
+    dureeAide: 'Le client choisit sa durée à l’ouverture, entre ces deux bornes.',
+    dureeInvalide: 'Saisissez un nombre de mois entier, supérieur à zéro.',
+    dureesIncoherentes: 'La durée minimale ne peut pas dépasser la durée maximale.',
+    penaliteAnticipee: 'Pénalité de retrait anticipé (% des intérêts courus)',
+    penaliteAnticipeeAide:
+      'Part des intérêts courus retenue si le client retire avant l’échéance. Le capital n’est jamais entamé.',
+    penaliteInvalide: 'Saisissez un pourcentage entre 0 et 100.',
     motif: 'Motif (obligatoire)',
     motifPlaceholder: 'Pourquoi ce changement ?',
 
@@ -2968,6 +2983,54 @@ export const LIBELLES = {
   session: {
     expiree: 'Votre session a expiré. Veuillez vous reconnecter.',
     deconnexion: 'Se déconnecter',
+  },
+
+  // Dépôt à terme (DAT) : ouverture avec mise de fonds, puis dénouement ou retrait anticipé.
+  depotATerme: {
+    ouvrir: 'Placer un dépôt à terme',
+    titre: 'Nouveau dépôt à terme',
+    duree: 'Durée (mois)',
+    dureeAide: 'Entre {min} et {max} mois.',
+    dureeInvalide: 'Saisissez un nombre de mois entier, entre {min} et {max}.',
+    dureesNonParametrees:
+      'Les durées de ce dépôt à terme ne sont pas encore paramétrées : contactez l’administration fonctionnelle.',
+    raccourci: (mois: number) => `${mois} mois`,
+    capital: 'Capital à placer (F CFA)',
+    simulationTitre: 'Simulation',
+    simulationEnCours: 'Calcul de l’échéance…',
+    simulationEchec: 'Impossible de calculer l’échéance.',
+    depart: 'Départ',
+    echeance: 'Échéance',
+    interets: 'Intérêts à l’échéance',
+    totalEcheance: 'Total versé à l’échéance',
+    penalite: 'Pénalité de retrait anticipé',
+    penaliteValeur: '{pourcent} des intérêts courus',
+    placer: 'Placer le dépôt à terme',
+    placementEnCours: 'Placement…',
+    placementEchec: 'Le placement a échoué. Réessayez.',
+    placementFait: 'Dépôt à terme placé : {numero}, échéance le {echeance}.',
+    annuler: 'Annuler',
+    sessionRequise:
+      'Le capital est encaissé en espèces : il faut une session de caisse ouverte et les droits d’ouverture de compte et d’encaissement.',
+
+    // Guichet.
+    bandeau: 'Dépôt à terme — échéance le {echeance}',
+    capitalPlace: 'Capital placé : {capital}',
+    bloque: 'Ce dépôt est bloqué jusqu’à son échéance : ni dépôt ni retrait ordinaire.',
+    apercuChargement: 'Calcul de ce que recevrait le client…',
+    apercuEchec: 'Impossible de calculer le solde de ce dépôt à terme.',
+    aLEcheance: 'L’échéance est atteinte : le dénouement est sans pénalité.',
+    avantEcheance: 'L’échéance n’est pas atteinte : seul le retrait anticipé, avec pénalité, est possible.',
+    denouer: 'Dénouer à l’échéance',
+    denouerConfirmer: 'Confirmer le dénouement',
+    retraitAnticipe: 'Retrait anticipé',
+    retraitAnticipeConfirmer: 'Confirmer le retrait anticipé',
+    reserveResponsable: 'Le retrait anticipé est réservé au responsable d’agence.',
+    confirmation: 'Remettre {total} en espèces à {membre} ?',
+    enCours: 'Traitement…',
+    echec: 'L’opération a échoué. Réessayez.',
+    succes: '{message} Pièce {piece}.',
+    autreOperation: 'Autre opération',
   },
 
   chargement: 'Chargement…',

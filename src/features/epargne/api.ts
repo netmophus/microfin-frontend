@@ -16,6 +16,9 @@ export interface ProduitEpargne {
   name: string
   type: string
   is_provisional: boolean
+  // Dépôt à terme : bornes de la durée proposée à l'ouverture (null hors terme / non paramétré).
+  duree_min_mois: number | null
+  duree_max_mois: number | null
 }
 
 export interface CompteEpargne {
@@ -28,6 +31,10 @@ export interface CompteEpargne {
   balance: number
   status: string // 'actif' | 'cloture'
   is_provisional: boolean
+  // Dépôt à terme : renseignés pour un compte à terme (l'échéance le bloque), null sinon.
+  term_months: number | null
+  maturity_date: string | null // AAAA-MM-JJ, journée comptable
+  principal: number | null
 }
 
 export interface MouvementEpargne {
@@ -84,6 +91,9 @@ export interface CompteGuichet {
   balance: number
   status: string
   is_provisional: boolean
+  term_months: number | null
+  maturity_date: string | null
+  principal: number | null
 }
 
 export interface ResultatOperation {
@@ -121,6 +131,78 @@ export async function retirerGuichet(
 /** Ferme un compte (responsable) : restitution du solde résiduel + clôture définitive. */
 export async function fermerCompte(compteId: string): Promise<CompteEpargne> {
   const { data } = await api.post<CompteEpargne>(`/epargne/comptes/${compteId}/fermeture`)
+  return data
+}
+
+// --- Dépôt à terme (DAT) : ouverture avec mise de fonds, dénouement, retrait anticipé -------
+
+export interface DemandeDepotATerme {
+  product_id: string
+  term_months: number
+  montant: number
+}
+
+/** Échéance et intérêts attendus d'un placement — à montrer au client avant de valider. */
+export interface SimulationDepotATerme {
+  journee_comptable: string
+  maturity_date: string
+  jours: number
+  interets_a_l_echeance: number
+  total_a_l_echeance: number
+  taux_bp: number
+  penalite_anticipee_bp: number
+  duree_min_mois: number
+  duree_max_mois: number
+}
+
+export interface ResultatOuvertureDepotATerme {
+  compte: CompteEpargne
+  entry_number: string | null
+  interets_a_l_echeance: number
+}
+
+/** Ce que recevrait le client en soldant son dépôt à terme maintenant. */
+export interface ApercuDenouement {
+  mode: 'echeance' | 'anticipe'
+  jours: number
+  capital: number
+  interets_courus: number
+  penalite: number
+  interets_nets: number
+  total_paye: number
+  message: string
+}
+
+export interface ResultatDenouement extends Omit<ApercuDenouement, 'jours'> {
+  account_number: string
+  entry_number: string | null
+}
+
+export async function simulerDepotATerme(demande: DemandeDepotATerme): Promise<SimulationDepotATerme> {
+  const { data } = await api.post<SimulationDepotATerme>('/epargne/depots-a-terme/simulation', demande)
+  return data
+}
+
+export async function ouvrirDepotATerme(
+  tierId: string,
+  demande: DemandeDepotATerme,
+): Promise<ResultatOuvertureDepotATerme> {
+  const { data } = await api.post<ResultatOuvertureDepotATerme>(`/tiers/${tierId}/depots-a-terme`, demande)
+  return data
+}
+
+export async function apercuDenouement(compteId: string): Promise<ApercuDenouement> {
+  const { data } = await api.get<ApercuDenouement>(`/epargne/comptes/${compteId}/denouement/apercu`)
+  return data
+}
+
+export async function denouerDepotATerme(compteId: string): Promise<ResultatDenouement> {
+  const { data } = await api.post<ResultatDenouement>(`/epargne/comptes/${compteId}/denouement`)
+  return data
+}
+
+export async function retirerParAnticipation(compteId: string): Promise<ResultatDenouement> {
+  const { data } = await api.post<ResultatDenouement>(`/epargne/comptes/${compteId}/retrait-anticipe`)
   return data
 }
 
@@ -228,6 +310,13 @@ export function formatFcfa(montant: number): string {
   return `${montant.toLocaleString('fr-FR')} F`
 }
 
+/** AAAA-MM-JJ -> JJ/MM/AAAA, sans passer par Date : un jour comptable n'a pas de fuseau. */
+export function formatJour(iso: string | null): string {
+  if (!iso) return '—'
+  const [annee, mois, jour] = iso.split('-')
+  return `${jour}/${mois}/${annee}`
+}
+
 /** Points de base -> pourcentage lisible. Ex. 1000 -> « 10 % », 350 -> « 3,5 % ». */
 export function formatTaux(tauxBp: number): string {
   const pourcent = (tauxBp / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
@@ -274,6 +363,11 @@ export interface ProduitEpargneDetail {
   solde_minimum_remunere: number
   min_balance: number // solde plancher
   depot_initial_minimum: number
+  // Dépôt à terme : bornes de la durée choisie à l'ouverture, pénalité de retrait anticipé en
+  // points de base des intérêts courus (10 000 = tous les intérêts ; le capital reste intact).
+  duree_min_mois: number | null
+  duree_max_mois: number | null
+  penalite_anticipee_bp: number
 }
 
 export interface CreationProduitEpargne {
@@ -289,6 +383,9 @@ export interface CreationProduitEpargne {
   solde_minimum_remunere: number
   min_balance: number
   depot_initial_minimum: number
+  duree_min_mois: number | null
+  duree_max_mois: number | null
+  penalite_anticipee_bp: number
 }
 
 export interface ModificationProduitEpargne {
@@ -302,6 +399,9 @@ export interface ModificationProduitEpargne {
   solde_minimum_remunere: number
   min_balance: number
   depot_initial_minimum: number
+  duree_min_mois: number | null
+  duree_max_mois: number | null
+  penalite_anticipee_bp: number
   motif: string
 }
 
