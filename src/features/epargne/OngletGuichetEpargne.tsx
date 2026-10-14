@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAPermission } from '@/features/auth/useProfil'
 import {
   deposerGuichet,
   formatFcfa,
@@ -16,7 +17,7 @@ import {
   type ResultatOperation,
 } from '@/features/epargne/api'
 import { BadgeProvisoire, BadgeStatutCompte } from '@/features/epargne/badges'
-import { PanneauDepotATermeGuichet } from '@/features/epargne/DepotATerme'
+import { OuvertureDepotATermeGuichet, PanneauDepotATermeGuichet } from '@/features/epargne/DepotATerme'
 import { useDebounce } from '@/lib/useDebounce'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -36,10 +37,26 @@ function fmt(gabarit: string, valeurs: Record<string, string>): string {
  */
 export function OngletGuichetEpargne() {
   const [compte, setCompte] = useState<CompteGuichet | null>(null)
+  const [ouvertureDat, setOuvertureDat] = useState(false)
+  const peutOuvrirDat = useAPermission('epargne.dat.open')
+
+  if (ouvertureDat) {
+    return (
+      <div className="mx-auto max-w-xl space-y-5 p-4">
+        <OuvertureDepotATermeGuichet onQuitter={() => setOuvertureDat(false)} />
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-xl space-y-5 p-4">
       <p className="text-sm text-muted-foreground">{G.intro}</p>
+
+      {!compte && peutOuvrirDat && (
+        <Button variant="outline" onClick={() => setOuvertureDat(true)}>
+          {LIBELLES.depotATerme.ouvrirGuichet}
+        </Button>
+      )}
 
       {!compte ? (
         <Recherche onSelection={setCompte} />

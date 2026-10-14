@@ -8,12 +8,16 @@ import {
   apercuDenouement,
   denouerDepotATerme,
   deposerGuichet,
+  listerProduits,
+  ouvrirDepotATerme,
   rechercherComptes,
   retirerGuichet,
   retirerParAnticipation,
+  simulerDepotATerme,
   type CompteGuichet,
 } from '@/features/epargne/api'
 import { OngletGuichetEpargne } from '@/features/epargne/OngletGuichetEpargne'
+import { listerTiers } from '@/features/tiers/api'
 
 /**
  * Onglet Épargne du guichet. Points durs : recherche EN TEMPS RÉEL (débouncée, sans bouton ni
@@ -40,7 +44,15 @@ vi.mock('@/features/epargne/api', async () => {
     apercuDenouement: vi.fn(),
     denouerDepotATerme: vi.fn(),
     retirerParAnticipation: vi.fn(),
+    listerProduits: vi.fn(),
+    ouvrirDepotATerme: vi.fn(),
+    simulerDepotATerme: vi.fn(),
   }
+})
+
+vi.mock('@/features/tiers/api', async () => {
+  const reel = await vi.importActual<typeof import('@/features/tiers/api')>('@/features/tiers/api')
+  return { ...reel, listerTiers: vi.fn() }
 })
 
 const rechercheSimule = vi.mocked(rechercherComptes)
@@ -49,6 +61,10 @@ const retraitSimule = vi.mocked(retirerGuichet)
 const apercuSimule = vi.mocked(apercuDenouement)
 const denouementSimule = vi.mocked(denouerDepotATerme)
 const retraitAnticipeSimule = vi.mocked(retirerParAnticipation)
+const produitsSimules = vi.mocked(listerProduits)
+const placementSimule = vi.mocked(ouvrirDepotATerme)
+const simulationSimulee = vi.mocked(simulerDepotATerme)
+const tiersSimules = vi.mocked(listerTiers)
 
 function unCompte(o: Partial<CompteGuichet> = {}): CompteGuichet {
   return {
@@ -352,5 +368,198 @@ describe('OngletGuichetEpargne — dépôt à terme', () => {
 
     expect(await screen.findByText('Impossible de calculer le solde de ce dépôt à terme.')).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Retrait anticipé' })).toBeNull()
+  })
+})
+
+describe('OngletGuichetEpargne — ouverture d’un dépôt à terme', () => {
+  const produitDat = {
+    id: 'dat',
+    code: 'DAT',
+    name: 'Dépôt à terme',
+    type: 'terme',
+    is_provisional: false,
+    duree_min_mois: 3,
+    duree_max_mois: 24,
+  }
+  const simulation = {
+    journee_comptable: '2026-10-14',
+    maturity_date: '2027-10-14',
+    jours: 365,
+    interets_a_l_echeance: 50000,
+    total_a_l_echeance: 1050000,
+    taux_bp: 500,
+    penalite_anticipee_bp: 5000,
+    duree_min_mois: 3,
+    duree_max_mois: 24,
+  }
+  const membre = (o: Record<string, unknown> = {}) => ({
+    id: 't9',
+    tier_number: 'M-2026-0000009',
+    tier_type: 'individual',
+    display_name: 'Diallo Amadou',
+    status: 'actif',
+    is_member: true,
+    primary_agency_id: 'a1',
+    ...o,
+  })
+
+  async function versLeFormulaire(o: { membre?: Record<string, unknown> } = {}) {
+    etat.permissions = ['epargne.dat.open']
+    produitsSimules.mockResolvedValue([
+      { ...produitDat, type: 'a_vue', id: 'eav', name: 'Épargne à vue' },
+      produitDat,
+    ] as never)
+    tiersSimules.mockResolvedValue({
+      lignes: [membre(o.membre)],
+      total: 1,
+      page: 1,
+      taille: 25,
+    } as never)
+    afficher()
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir un dépôt à terme' }))
+    fireEvent.change(screen.getByLabelText('Numéro ou nom du membre'), {
+      target: { value: 'Diallo' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }))
+    fireEvent.click(await screen.findByRole('button', { name: /Diallo Amadou/ }))
+  }
+
+  async function choisirProduit() {
+    await screen.findByRole('option', { name: 'Dépôt à terme' }) // produits chargés
+    fireEvent.change(screen.getByLabelText('Produit à terme'), { target: { value: 'dat' } })
+  }
+
+  it('l’action n’existe qu’avec epargne.dat.open', () => {
+    etat.permissions = []
+    afficher()
+    expect(screen.queryByRole('button', { name: 'Ouvrir un dépôt à terme' })).toBeNull()
+  })
+
+  it('seuls les produits à terme sont proposés ; le nom du membre est en évidence', async () => {
+    await versLeFormulaire()
+
+    expect(await screen.findByText('Diallo Amadou')).toBeVisible()
+    await screen.findByRole('option', { name: 'Dépôt à terme' })
+    expect(screen.queryByRole('option', { name: 'Épargne à vue' })).toBeNull()
+  })
+
+  it('parcours complet : simulation, confirmation avec le nom du membre, puis placement', async () => {
+    simulationSimulee.mockResolvedValue(simulation)
+    placementSimule.mockResolvedValue({
+      compte: unCompte({ account_number: 'DT-2026-0000007', maturity_date: '2027-10-14' }),
+      entry_number: 'CA-0100',
+      interets_a_l_echeance: 50000,
+    } as never)
+    await versLeFormulaire()
+    await choisirProduit()
+
+    fireEvent.click(await screen.findByRole('button', { name: '12 mois' }))
+    fireEvent.change(screen.getByLabelText('Capital à placer (F CFA)'), {
+      target: { value: '1 000 000' },
+    })
+    expect(await screen.findByText('14/10/2027')).toBeVisible()
+    expect(screen.getByText('1 050 000 F')).toBeVisible()
+    expect(simulationSimulee).toHaveBeenCalledWith({
+      product_id: 'dat',
+      term_months: 12,
+      montant: 1000000,
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    expect(
+      screen.getByText(
+        'Placer 1 000 000 F en dépôt à terme de 12 mois pour Diallo Amadou ? Échéance le 14/10/2027, 50 000 F d’intérêts à l’échéance.',
+      ),
+    ).toBeVisible()
+    expect(placementSimule).not.toHaveBeenCalled() // rien n'est fait avant la confirmation
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le placement' }))
+
+    await waitFor(() =>
+      expect(placementSimule).toHaveBeenCalledWith('t9', {
+        product_id: 'dat',
+        term_months: 12,
+        montant: 1000000,
+      }),
+    )
+    expect(
+      await screen.findByText('Dépôt à terme placé : DT-2026-0000007, échéance le 14/10/2027.'),
+    ).toBeVisible()
+  })
+
+  it('modifier la saisie après « Continuer » annule la confirmation', async () => {
+    simulationSimulee.mockResolvedValue(simulation)
+    await versLeFormulaire()
+    await choisirProduit()
+    fireEvent.click(await screen.findByRole('button', { name: '12 mois' }))
+    fireEvent.change(screen.getByLabelText('Capital à placer (F CFA)'), {
+      target: { value: '1000000' },
+    })
+    await screen.findByText('1 050 000 F')
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    expect(screen.getByRole('button', { name: 'Confirmer le placement' })).toBeVisible()
+
+    fireEvent.change(screen.getByLabelText('Capital à placer (F CFA)'), {
+      target: { value: '2000000' },
+    })
+
+    expect(screen.queryByRole('button', { name: 'Confirmer le placement' })).toBeNull()
+  })
+
+  it('durée hors bornes ou capital décimal : messages, pas de simulation, Continuer grisé', async () => {
+    await versLeFormulaire()
+    await choisirProduit()
+
+    fireEvent.change(await screen.findByLabelText('Durée (mois)'), { target: { value: '30' } })
+    fireEvent.change(screen.getByLabelText('Capital à placer (F CFA)'), {
+      target: { value: '1000,50' },
+    })
+
+    expect(screen.getByText('Saisissez un nombre de mois entier, entre 3 et 24.')).toBeVisible()
+    expect(screen.getByText('Saisissez un montant en francs entiers, sans décimales')).toBeVisible()
+    expect(simulationSimulee).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Continuer' })).toBeDisabled()
+  })
+
+  it('membre non actif : on explique, aucun formulaire', async () => {
+    await versLeFormulaire({ membre: { status: 'prospect' } })
+
+    expect(await screen.findByText(/doit être activé \(KYC validé\)/)).toBeVisible()
+    expect(screen.queryByLabelText('Produit à terme')).toBeNull()
+  })
+
+  it('refus du serveur (pas de session de caisse) : message métier tel quel', async () => {
+    simulationSimulee.mockResolvedValue(simulation)
+    placementSimule.mockRejectedValue(
+      new AxiosError('rejet', undefined, undefined, undefined, {
+        status: 422,
+        data: { detail: 'Aucune session de caisse ouverte pour vous.' },
+      } as never),
+    )
+    await versLeFormulaire()
+    await choisirProduit()
+    fireEvent.click(await screen.findByRole('button', { name: '12 mois' }))
+    fireEvent.change(screen.getByLabelText('Capital à placer (F CFA)'), {
+      target: { value: '1000000' },
+    })
+    await screen.findByText('1 050 000 F')
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le placement' }))
+
+    expect(await screen.findByText('Aucune session de caisse ouverte pour vous.')).toBeVisible()
+  })
+
+  it('aucun produit à terme : message, pas de formulaire', async () => {
+    etat.permissions = ['epargne.dat.open']
+    produitsSimules.mockResolvedValue([
+      { ...produitDat, type: 'a_vue', id: 'eav', name: 'Épargne à vue' },
+    ] as never)
+    tiersSimules.mockResolvedValue({ lignes: [membre()], total: 1, page: 1, taille: 25 } as never)
+    afficher()
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir un dépôt à terme' }))
+    fireEvent.change(screen.getByLabelText('Numéro ou nom du membre'), { target: { value: 'D' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Chercher' }))
+    fireEvent.click(await screen.findByRole('button', { name: /Diallo Amadou/ }))
+
+    expect(await screen.findByText('Aucun produit à terme n’est disponible.')).toBeVisible()
   })
 })

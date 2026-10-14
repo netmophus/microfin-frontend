@@ -16,10 +16,12 @@ import {
   ouvrirDepotATerme,
   retirerParAnticipation,
   simulerDepotATerme,
+  listerProduits,
   type CompteGuichet,
   type ProduitEpargne,
   type ResultatDenouement,
 } from '@/features/epargne/api'
+import { listerTiers, type LigneTier } from '@/features/tiers/api'
 import { parseMontantFrancs } from '@/lib/montants'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -40,18 +42,20 @@ function parseDuree(saisie: string, min: number, max: number): number | null {
 }
 
 /**
- * Ouverture d'un dépôt à terme depuis la fiche membre : durée choisie (raccourcis 3/6/12/24 dans
+ * Ouverture d'un dépôt à terme AU GUICHET (caissier) : durée choisie (raccourcis 3/6/12/24 dans
  * les bornes du produit, ou nombre de mois libre), capital, puis SIMULATION — échéance et
  * intérêts attendus — à montrer au client avant de valider. L'ouverture place le capital en
  * espèces dans la même opération : jamais de dépôt à terme vide.
  */
 export function FormulaireDepotATerme({
   tierId,
+  membreNom,
   produit,
   onFini,
   onAnnuler,
 }: {
   tierId: string
+  membreNom: string
   produit: ProduitEpargne
   onFini: (message: string) => void
   onAnnuler: () => void
@@ -59,6 +63,7 @@ export function FormulaireDepotATerme({
   const client = useQueryClient()
   const [mois, setMois] = useState('')
   const [capital, setCapital] = useState('')
+  const [confirmation, setConfirmation] = useState(false)
 
   const min = produit.duree_min_mois
   const max = produit.duree_max_mois
@@ -100,7 +105,7 @@ export function FormulaireDepotATerme({
       className="space-y-3 rounded-md border bg-brand-subtle/40 p-3"
       onSubmit={(e) => {
         e.preventDefault()
-        if (demande) placement.mutate()
+        if (demande && simulation.isSuccess) setConfirmation(true)
       }}
     >
       <p className="text-sm font-medium">
@@ -123,7 +128,10 @@ export function FormulaireDepotATerme({
                 value={mois}
                 aria-invalid={dureeInvalide}
                 aria-describedby="dat-duree-aide"
-                onChange={(e) => setMois(e.target.value)}
+                onChange={(e) => {
+                  setMois(e.target.value)
+                  setConfirmation(false)
+                }}
               />
               {RACCOURCIS_MOIS.filter((m) => m >= min && m <= max).map((m) => (
                 <Button
@@ -131,7 +139,10 @@ export function FormulaireDepotATerme({
                   type="button"
                   size="sm"
                   variant={dureeValeur === m ? 'default' : 'outline'}
-                  onClick={() => setMois(String(m))}
+                  onClick={() => {
+                    setMois(String(m))
+                    setConfirmation(false)
+                  }}
                 >
                   {D.raccourci(m)}
                 </Button>
@@ -150,7 +161,10 @@ export function FormulaireDepotATerme({
               inputMode="numeric"
               value={capital}
               aria-invalid={capitalInvalide}
-              onChange={(e) => setCapital(e.target.value)}
+              onChange={(e) => {
+                setCapital(e.target.value)
+                setConfirmation(false)
+              }}
             />
             {capitalInvalide && <p className="text-xs text-destructive">{LIBELLES.montantFrancsInvalide}</p>}
           </div>
@@ -201,14 +215,42 @@ export function FormulaireDepotATerme({
         </Alert>
       )}
 
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={demande === null || placement.isPending}>
-          {placement.isPending ? D.placementEnCours : D.placer}
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onAnnuler}>
-          {D.annuler}
-        </Button>
-      </div>
+      {confirmation && demande && simulation.isSuccess ? (
+        <div className="space-y-3 rounded-md border bg-background p-3">
+          <p className="text-sm font-semibold">
+            {fmt(D.confirmerPlacement, {
+              capital: formatFcfa(demande.montant),
+              mois: String(demande.term_months),
+              membre: membreNom,
+              echeance: formatJour(simulation.data.maturity_date),
+              interets: formatFcfa(simulation.data.interets_a_l_echeance),
+            })}
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" disabled={placement.isPending} onClick={() => placement.mutate()}>
+              {placement.isPending ? D.placementEnCours : D.confirmerPlacementBouton}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={placement.isPending}
+              onClick={() => setConfirmation(false)}
+            >
+              {D.modifier}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={!simulation.isSuccess}>
+            {D.continuer}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onAnnuler}>
+            {D.annuler}
+          </Button>
+        </div>
+      )}
     </form>
   )
 }
@@ -320,5 +362,145 @@ export function PanneauDepotATermeGuichet({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Guichet — ouvrir un dépôt à terme : le caissier choisit le MEMBRE (recherche par numéro ou nom),
+ * puis le produit à terme, la durée et le capital ; simulation, confirmation (le nom du membre y
+ * est rappelé), et le capital est encaissé dans la caisse de SA session. Le compte ordinaire,
+ * lui, reste ouvert par le chargé de clientèle depuis la fiche.
+ */
+export function OuvertureDepotATermeGuichet({ onQuitter }: { onQuitter: () => void }) {
+  const [membre, setMembre] = useState<LigneTier | null>(null)
+  const [produitId, setProduitId] = useState('')
+  const [fait, setFait] = useState<string | null>(null)
+  const [q, setQ] = useState('')
+
+  const recherche = useMutation({ mutationFn: () => listerTiers({ q: q.trim() }) })
+  const produits = useQuery({ queryKey: ['epargne', 'produits'], queryFn: listerProduits })
+  const produitsTerme = (produits.data ?? []).filter((p) => p.type === 'terme')
+  const produit = produitsTerme.find((p) => p.id === produitId)
+
+  if (fait) {
+    return (
+      <div className="space-y-3">
+        <Alert role="status">
+          <AlertDescription>{fait}</AlertDescription>
+        </Alert>
+        <Button variant="ghost" onClick={onQuitter}>
+          {D.retour}
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <section className="space-y-4 rounded-md border p-4">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-base font-semibold">{D.ouvrirGuichet}</h2>
+        <Button size="sm" variant="ghost" onClick={onQuitter}>
+          {D.retour}
+        </Button>
+      </div>
+      <p className="text-sm text-muted-foreground">{D.introGuichet}</p>
+
+      {!membre ? (
+        <form
+          className="space-y-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (q.trim()) recherche.mutate()
+          }}
+        >
+          <Label htmlFor="recherche-membre-dat">{D.rechercherLabel}</Label>
+          <div className="flex gap-2">
+            <Input
+              id="recherche-membre-dat"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={D.rechercherPlaceholder}
+            />
+            <Button type="submit" disabled={!q.trim() || recherche.isPending}>
+              {recherche.isPending ? D.rechercheEnCours : D.chercher}
+            </Button>
+          </div>
+          {recherche.isSuccess && recherche.data.lignes.length === 0 && (
+            <Alert role="alert">
+              <AlertDescription>{D.aucunMembre}</AlertDescription>
+            </Alert>
+          )}
+          {recherche.isSuccess && recherche.data.lignes.length > 0 && (
+            <ul className="divide-y rounded-md border bg-background text-sm">
+              {recherche.data.lignes.map((ligne) => (
+                <li key={ligne.id}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-muted/50"
+                    onClick={() => setMembre(ligne)}
+                  >
+                    <span className="font-medium">{ligne.display_name}</span>
+                    <span className="font-mono text-xs text-muted-foreground">{ligne.tier_number}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </form>
+      ) : (
+        <div className="space-y-3">
+          {/* Le NOM du membre en évidence : vérification humaine avant d'encaisser. */}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">{D.membre}</p>
+              <p className="text-lg font-bold">{membre.display_name}</p>
+              <p className="font-mono text-sm text-muted-foreground">{membre.tier_number}</p>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setMembre(null)}>
+              {D.changerMembre}
+            </Button>
+          </div>
+
+          {membre.status !== 'actif' ? (
+            <Alert role="note">
+              <AlertDescription>{D.membreNonActif}</AlertDescription>
+            </Alert>
+          ) : produits.isSuccess && produitsTerme.length === 0 ? (
+            <Alert role="note">
+              <AlertDescription>{D.aucunProduitTerme}</AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              <div className="space-y-1">
+                <Label htmlFor="produit-terme">{D.produitLabel}</Label>
+                <select
+                  id="produit-terme"
+                  className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                  value={produitId}
+                  onChange={(e) => setProduitId(e.target.value)}
+                >
+                  <option value="">{D.produitChoisir}</option>
+                  {produitsTerme.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {produit && (
+                <FormulaireDepotATerme
+                  key={produit.id}
+                  tierId={membre.id}
+                  membreNom={membre.display_name}
+                  produit={produit}
+                  onFini={setFait}
+                  onAnnuler={onQuitter}
+                />
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </section>
   )
 }

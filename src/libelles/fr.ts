@@ -2988,6 +2988,28 @@ export const LIBELLES = {
   // Dépôt à terme (DAT) : ouverture avec mise de fonds, puis dénouement ou retrait anticipé.
   depotATerme: {
     ouvrir: 'Placer un dépôt à terme',
+    // Guichet : le caissier ouvre le dépôt et encaisse le capital en une seule opération.
+    ouvrirGuichet: 'Ouvrir un dépôt à terme',
+    introGuichet:
+      'Choisissez le membre, le produit, la durée et le capital : le dépôt est ouvert et le capital encaissé en une seule opération.',
+    rechercherLabel: 'Numéro ou nom du membre',
+    rechercherPlaceholder: 'M-2026-0000001 ou nom',
+    chercher: 'Chercher',
+    rechercheEnCours: 'Recherche…',
+    aucunMembre: 'Aucun membre ne correspond à cette recherche.',
+    membre: 'Membre',
+    changerMembre: 'Changer de membre',
+    membreNonActif:
+      'Ce membre doit être activé (KYC validé) avant de pouvoir placer un dépôt à terme.',
+    produitLabel: 'Produit à terme',
+    produitChoisir: 'Choisir un produit…',
+    aucunProduitTerme: 'Aucun produit à terme n’est disponible.',
+    retour: 'Retour au guichet',
+    continuer: 'Continuer',
+    confirmerPlacement:
+      'Placer {capital} en dépôt à terme de {mois} mois pour {membre} ? Échéance le {echeance}, {interets} d’intérêts à l’échéance.',
+    confirmerPlacementBouton: 'Confirmer le placement',
+    modifier: 'Modifier',
     titre: 'Nouveau dépôt à terme',
     duree: 'Durée (mois)',
     dureeAide: 'Entre {min} et {max} mois.',
