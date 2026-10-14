@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   initierTransfert,
   listerMesPostes,
+  listerPostesDestination,
   listerTransferts,
   receptionnerTransfert,
   type PageTransferts,
@@ -39,6 +40,7 @@ vi.mock('@/features/caisse/api', async () => {
     initierTransfert: vi.fn(),
     receptionnerTransfert: vi.fn(),
     listerMesPostes: vi.fn(),
+    listerPostesDestination: vi.fn(),
   }
 })
 
@@ -46,6 +48,7 @@ const listerSimule = vi.mocked(listerTransferts)
 const initierSimule = vi.mocked(initierTransfert)
 const receptionnerSimule = vi.mocked(receptionnerTransfert)
 const mesPostesSimule = vi.mocked(listerMesPostes)
+const postesDestinationSimule = vi.mocked(listerPostesDestination)
 
 function transfert(o: Partial<Transfert> = {}): Transfert {
   return {
@@ -170,6 +173,96 @@ describe('PageTransfertsCaisse', () => {
     })
 
     expect(await screen.findByLabelText('Poste')).toBeVisible()
+  })
+
+  it('dotation descendante (destination secondaire) : propose les postes ACTIFS DE L’AGENCE, pas « mes postes »', async () => {
+    // L'acteur est le caissier principal : aucun poste ne lui est assigné.
+    mesPostesSimule.mockResolvedValue([])
+    postesDestinationSimule.mockResolvedValue([
+      { id: 'p1', code: '01', libelle: 'Guichet 1' },
+      { id: 'p2', code: '02', libelle: 'Guichet 2' },
+    ])
+    listerSimule.mockResolvedValue(page([]))
+    initierSimule.mockResolvedValue(transfert())
+    afficher()
+    await screen.findByText(/Aucun transfert en transit/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Initier un transfert' }))
+    fireEvent.change(screen.getByLabelText('Niveau source'), { target: { value: 'principale' } })
+    fireEvent.change(screen.getByLabelText('Niveau destination'), {
+      target: { value: 'secondaire' },
+    })
+
+    expect(await screen.findByRole('option', { name: 'Guichet 1 (01)' })).toBeVisible()
+    expect(screen.getByRole('option', { name: 'Guichet 2 (02)' })).toBeVisible()
+    expect(screen.queryByText('Aucun poste ne vous est assigné.')).toBeNull()
+    expect(postesDestinationSimule).toHaveBeenCalled()
+    expect(mesPostesSimule).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByLabelText('Poste'), { target: { value: 'p2' } })
+    fireEvent.change(screen.getByLabelText('Montant envoyé (F CFA)'), { target: { value: '40000' } })
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Dotation du guichet 2' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Envoyer' }))
+
+    await waitFor(() =>
+      expect(initierSimule).toHaveBeenCalledWith(
+        'principale',
+        'secondaire',
+        'p2',
+        40_000,
+        'Dotation du guichet 2',
+      ),
+    )
+  })
+
+  it('dotation descendante sans poste actif dans l’agence : message adapté, envoi impossible', async () => {
+    postesDestinationSimule.mockResolvedValue([])
+    listerSimule.mockResolvedValue(page([]))
+    afficher()
+    await screen.findByText(/Aucun transfert en transit/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Initier un transfert' }))
+    fireEvent.change(screen.getByLabelText('Niveau source'), { target: { value: 'principale' } })
+    fireEvent.change(screen.getByLabelText('Niveau destination'), {
+      target: { value: 'secondaire' },
+    })
+
+    expect(await screen.findByText('Aucun poste actif dans votre agence.')).toBeVisible()
+    expect(screen.queryByText('Aucun poste ne vous est assigné.')).toBeNull()
+    fireEvent.change(screen.getByLabelText('Montant envoyé (F CFA)'), { target: { value: '40000' } })
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Dotation du guichet' },
+    })
+    expect(screen.getByRole('button', { name: 'Envoyer' })).toBeDisabled()
+  })
+
+  it('transfert montant (source secondaire) : « mes postes », pas ceux de l’agence', async () => {
+    mesPostesSimule.mockResolvedValue([{ id: 'p1', code: '01', libelle: 'Mon guichet' }])
+    postesDestinationSimule.mockResolvedValue([
+      { id: 'p9', code: '09', libelle: 'Guichet d’un collègue' },
+    ])
+    listerSimule.mockResolvedValue(page([]))
+    afficher()
+    await screen.findByText(/Aucun transfert en transit/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Initier un transfert' }))
+    fireEvent.change(screen.getByLabelText('Niveau source'), { target: { value: 'secondaire' } })
+
+    expect(await screen.findByRole('option', { name: 'Mon guichet (01)' })).toBeVisible()
+    expect(screen.queryByRole('option', { name: /collègue/ })).toBeNull()
+    expect(mesPostesSimule).toHaveBeenCalled()
+    expect(postesDestinationSimule).not.toHaveBeenCalled()
+  })
+
+  it('transfert montant sans poste assigné : le message d’origine est conservé', async () => {
+    mesPostesSimule.mockResolvedValue([])
+    listerSimule.mockResolvedValue(page([]))
+    afficher()
+    await screen.findByText(/Aucun transfert en transit/i)
+    fireEvent.click(screen.getByRole('button', { name: 'Initier un transfert' }))
+    fireEvent.change(screen.getByLabelText('Niveau source'), { target: { value: 'secondaire' } })
+
+    expect(await screen.findByText('Aucun poste ne vous est assigné.')).toBeVisible()
+    expect(screen.queryByText('Aucun poste actif dans votre agence.')).toBeNull()
   })
 
   it('initiation : envoie les bons paramètres au serveur', async () => {

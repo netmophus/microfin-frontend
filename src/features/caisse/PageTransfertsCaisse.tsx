@@ -12,6 +12,7 @@ import {
   NIVEAUX_ADJACENTS,
   initierTransfert,
   listerMesPostes,
+  listerPostesDestination,
   listerTransferts,
   messageRefusCaisse,
   receptionnerTransfert,
@@ -235,11 +236,21 @@ function PanneauInitiation({ onFini, onAnnuler }: { onFini: () => void; onAnnule
   const [motif, setMotif] = useState('')
 
   const posteRequis = niveauSource === 'secondaire' || niveauDestination === 'secondaire'
+  // L'adjacence garantit qu'AU PLUS UN des deux niveaux est secondaire. Source secondaire : le
+  // caissier choisit SON poste. Destination secondaire (dotation descendante) : l'acteur est le
+  // caissier principal, sans poste assigné — il choisit parmi les postes actifs de l'agence.
+  const destinationSecondaire = niveauDestination === 'secondaire'
   const mesPostes = useQuery({
     queryKey: ['caisse', 'mes-postes'],
     queryFn: listerMesPostes,
-    enabled: posteRequis,
+    enabled: niveauSource === 'secondaire',
   })
+  const postesAgence = useQuery({
+    queryKey: ['caisse', 'postes-destination'],
+    queryFn: listerPostesDestination,
+    enabled: destinationSecondaire,
+  })
+  const postesProposes = destinationSecondaire ? postesAgence : mesPostes
 
   const montantNum = versEntier(montant)
   const motifValide = motif.trim().length >= 3
@@ -312,14 +323,16 @@ function PanneauInitiation({ onFini, onAnnuler }: { onFini: () => void; onAnnule
               onChange={(e) => setPosteId(e.target.value)}
             >
               <option value="">{T.choisirUnPoste}</option>
-              {(mesPostes.data ?? []).map((p: PosteAssigne) => (
+              {(postesProposes.data ?? []).map((p: PosteAssigne) => (
                 <option key={p.id} value={p.id}>
                   {p.libelle} ({p.code})
                 </option>
               ))}
             </select>
-            {mesPostes.data?.length === 0 && (
-              <p className="text-xs text-muted-foreground">{T.aucunPosteAssigne}</p>
+            {postesProposes.data?.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                {destinationSecondaire ? T.aucunPosteActifAgence : T.aucunPosteAssigne}
+              </p>
             )}
           </div>
         )}

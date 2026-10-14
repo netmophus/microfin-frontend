@@ -79,6 +79,14 @@ export async function listerMesPostes(): Promise<PosteAssigne[]> {
   return data
 }
 
+/** Les postes candidats comme DESTINATION d'un transfert : postes actifs de l'agence de l'acteur
+ * (dotation d'un guichet par le caissier principal, qui n'a aucun poste assigné). Distinct de
+ * `listerMesPostes` (les postes de l'acteur, pour SA session) et de `listerPostes` (gestion). */
+export async function listerPostesDestination(): Promise<PosteAssigne[]> {
+  const { data } = await api.get<PosteAssigne[]>('/caisse/transferts/postes-destination')
+  return data
+}
+
 /** Ouvre une session pour L'ACTEUR — `fonds_initial` compté PHYSIQUEMENT à la prise de poste ;
  * `posteId` TOUJOURS transmis explicitement (Bloc C), même quand un seul poste est proposé — un
  * pré-remplissage à l'écran n'est jamais une valeur implicite acceptée sans confirmation. */

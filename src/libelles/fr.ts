@@ -1748,6 +1748,7 @@ export const LIBELLES = {
     posteLabel: 'Poste',
     choisirUnPoste: 'Choisir un poste…',
     aucunPosteAssigne: 'Aucun poste ne vous est assigné.',
+    aucunPosteActifAgence: 'Aucun poste actif dans votre agence.',
     montantEnvoyeLabel: 'Montant envoyé (F CFA)',
     montantErreur: 'Indiquez le montant envoyé avant de valider.',
     motif: 'Motif (obligatoire)',
