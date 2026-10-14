@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useAPermission } from '@/features/auth/useProfil'
 import { ouvrirPdf, regenererDocument, telechargerDocument, type DocumentRef } from '@/features/documents/api'
+import { messageDocument } from '@/features/documents/erreurs'
 import { messageRefus } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -67,7 +68,7 @@ export function ActionsDocument({
         </Button>
         {ouverture.isError && (
           <Alert variant="destructive" role="alert">
-            <AlertDescription>{messageRefus(ouverture.error, D.ouvertureEchec)}</AlertDescription>
+            <AlertDescription>{messageDocument(ouverture.error, D.ouvertureEchec)}</AlertDescription>
           </Alert>
         )}
         {repli(false)}

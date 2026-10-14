@@ -14,6 +14,7 @@ import { PageCaisse } from '@/features/caisse/PageCaisse'
 import { PageLettreExplication } from '@/features/caisse/PageLettreExplication'
 import { PagePostes } from '@/features/caisse/PagePostes'
 import { PageSessionsManquantes } from '@/features/caisse/PageSessionsManquantes'
+import { PageDocuments } from '@/features/documents/PageDocuments'
 import { PageTransfertsCaisse } from '@/features/caisse/PageTransfertsCaisse'
 import { PageBalance } from '@/features/comptabilite/PageBalance'
 import { PageBilan } from '@/features/comptabilite/PageBilan'
@@ -166,6 +167,16 @@ export function App() {
                 element={
                   <RoutePermission permission="caisse.session.read">
                     <PageCaisse />
+                  </RoutePermission>
+                }
+              />
+              <Route
+                path="/documents"
+                element={
+                  // Le serveur cloisonne (les siens / l'agence / le réseau) : la route n'exige
+                  // que la lecture des documents.
+                  <RoutePermission permission="documents.read">
+                    <PageDocuments />
                   </RoutePermission>
                 }
               />

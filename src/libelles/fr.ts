@@ -191,6 +191,7 @@ export const LIBELLES = {
       // lui-même — ouverture, solde théorique en direct, fermeture (CA1/CA4).
       caisse: 'Caisse',
       manquantsCaisse: 'Manquants de caisse',
+      documentsDuJour: 'Documents du jour',
       postesCaisse: 'Postes de caisse',
       transfertsCaisse: 'Transferts de caisse',
       guichetEpargne: 'Guichet',
@@ -1619,6 +1620,70 @@ export const LIBELLES = {
     // ajustable — pas une règle validée.
     texteFormel:
       'Un manquant de {montant} a été constaté à la fermeture de votre session de caisse du {date}. Nous vous demandons de bien vouloir fournir une explication écrite dans un délai de 48 heures à compter de la remise de la présente lettre.',
+  },
+
+  // Écran « Documents du jour » : retrouver, télécharger et régénérer les documents archivés.
+  documentsDuJour: {
+    titre: 'Documents du jour',
+    intro:
+      'Reçus, bons, lettres et états archivés par le serveur. Chaque document est daté de la journée comptable de son opération.',
+    filtresTitre: 'Filtres',
+    filtreJournee: 'Journée comptable',
+    filtreModule: 'Module',
+    filtreType: 'Type de document',
+    tous: 'Tous',
+    reinitialiser: 'Réinitialiser les filtres',
+    chargement: 'Chargement des documents…',
+    erreur: 'Impossible de charger les documents.',
+    reessayer: 'Réessayer',
+    videSansFiltre:
+      'Aucun document archivé pour l’instant. Les documents apparaissent ici dès qu’une opération de guichet est enregistrée ou qu’une journée est clôturée.',
+    videAvecFiltre:
+      'Aucun document ne correspond à ces filtres. Élargissez la journée ou le type, ou réinitialisez les filtres.',
+    partiel:
+      '{nombre} document(s) de cette page n’ont pas pu être générés. L’opération concernée est bien enregistrée : régénérez le document.',
+    colJournee: 'Journée',
+    colType: 'Document',
+    colModule: 'Module',
+    colPiece: 'Pièce',
+    colFichier: 'Fichier',
+    colStatut: 'État',
+    colActions: 'Actions',
+    statutOk: 'Disponible',
+    statutEchec: 'Échec de génération',
+    telecharger: 'Télécharger',
+    regenerer: 'Régénérer',
+    pagination: 'Page {page} sur {total} — {nombre} document(s)',
+    pagePrecedente: 'Précédente',
+    pageSuivante: 'Suivante',
+    actionEchec: 'L’action a échoué. Réessayez.',
+    brouillonsTitre: 'Journée ouverte — brouillons',
+    brouillonsIntro:
+      'Un brouillon est généré à la demande et n’est pas archivé : il est figé et archivé à la clôture de la journée.',
+    brouillonJournal: 'Journal du jour (brouillon)',
+    brouillonBalance: 'Balance du jour (brouillon)',
+    brouillonEchec: 'Impossible de générer le brouillon. Réessayez.',
+    modules: {
+      caisse: 'Caisse',
+      epargne: 'Épargne',
+      tiers: 'Tiers',
+      comptabilite: 'Comptabilité',
+    },
+    types: {
+      recu_versement: 'Reçu de versement',
+      recu_retrait: 'Reçu de retrait',
+      recu_placement_dat: 'Reçu de placement — dépôt à terme',
+      recu_denouement_dat: 'Reçu de dénouement — dépôt à terme',
+      recu_retrait_anticipe_dat: 'Reçu de retrait anticipé — dépôt à terme',
+      bon_dat: 'Bon de dépôt à terme',
+      recu_parts_souscription: 'Reçu de souscription de parts',
+      recu_parts_liberation: 'Reçu de libération de parts',
+      recu_parts_remboursement: 'Reçu de remboursement de parts',
+      lettre_explication_ecart: 'Lettre d’explication d’écart de caisse',
+      journal_du_jour: 'Journal du jour',
+      balance_du_jour: 'Balance du jour',
+    } as Record<string, string>,
+    typeInconnu: 'Autre document',
   },
 
   sessionsManquantes: {

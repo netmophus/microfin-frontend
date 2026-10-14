@@ -117,6 +117,14 @@ export const MENU: readonly GroupeMenu[] = [
         chemin: '/caisse/manquants',
         permission: ['caisse.session.read', 'caisse.session.read.autres'],
       },
+      // Documents archivés (PDF serveur) : le caissier retrouve les SIENS, le responsable ceux de
+      // son agence — le périmètre est décidé par le serveur (documents.read.agence).
+      {
+        etat: 'actif',
+        libelle: M.entrees.documentsDuJour,
+        chemin: '/documents',
+        permission: 'documents.read',
+      },
       // Postes de caisse (Bloc B) : ANY-OF, le responsable d'agence gère SES postes
       // (caisse.poste.manage), le comptable rattache un compte n'importe où
       // (compta.plan.manage) — même écran, chacun voit ce que sa permission autorise.
