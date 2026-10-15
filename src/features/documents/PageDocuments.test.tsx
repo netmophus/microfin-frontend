@@ -159,6 +159,17 @@ describe('PageDocuments', () => {
     )
   })
 
+  it('le filtre de type propose l’arrêté de caisse', async () => {
+    listeSimulee.mockResolvedValue(unePage([unDocument()]))
+    afficher()
+    await screen.findByRole('cell', { name: 'Reçu de versement' })
+
+    fireEvent.change(screen.getByLabelText('Type de document'), { target: { value: 'arrete_caisse' } })
+
+    await waitFor(() => expect(listeSimulee).toHaveBeenLastCalledWith({ type: 'arrete_caisse' }, 1, 25))
+    expect(screen.getByRole('option', { name: 'Arrêté de caisse' })).toBeInTheDocument()
+  })
+
   it('pagination serveur : « page 1 sur 3 », précédente désactivée sur la première', async () => {
     listeSimulee.mockResolvedValue(unePage([unDocument()], 60))
     afficher()

@@ -16,6 +16,7 @@ import {
   ouvrirSession,
   type SessionCaisse,
 } from '@/features/caisse/api'
+import { ActionsDocument } from '@/features/documents/ActionsDocument'
 import { formatFcfa, formatJour } from '@/features/epargne/api'
 import { LIBELLES } from '@/libelles/fr'
 
@@ -92,8 +93,7 @@ export function PageCaisse() {
   // une valeur implicite : dérivée à chaque rendu (pas un effet + setState), et de toute façon
   // transmise EXPLICITEMENT dans la requête d'ouverture, comme un choix normal.
   const mesPostesListe = mesPostes.data
-  const posteEffectif =
-    posteId || (mesPostesListe?.length === 1 ? (mesPostesListe[0]?.id ?? '') : '')
+  const posteEffectif = posteId || (mesPostesListe?.length === 1 ? (mesPostesListe[0]?.id ?? '') : '')
 
   const [fondsInitial, setFondsInitial] = useState('')
   const [fondsInitialErreur, setFondsInitialErreur] = useState<string | null>(null)
@@ -236,6 +236,7 @@ export function PageCaisse() {
                 {C.telechargerLettre}
               </Button>
             )}
+            <ActionsDocument reference={dernierRecap.arrete} objet="arrete" />
             <Button size="sm" variant="ghost" onClick={() => setDernierRecap(null)}>
               {C.nouvelleSession}
             </Button>
@@ -366,9 +367,7 @@ export function PageCaisse() {
                   value={montantReel}
                   onChange={(e) => setMontantReel(e.target.value)}
                   onBlur={() =>
-                    setMontantReelErreur(
-                      Number.isNaN(versEntier(montantReel)) ? C.montantReelErreur : null,
-                    )
+                    setMontantReelErreur(Number.isNaN(versEntier(montantReel)) ? C.montantReelErreur : null)
                   }
                   aria-invalid={montantReelErreur !== null}
                 />

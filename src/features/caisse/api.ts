@@ -42,6 +42,8 @@ export interface SessionCaisse {
   valide_le: string | null
   valide_par_nom: string | null
   a_valider: boolean
+  // Arrêté de caisse (session fermée) : de quoi le télécharger ; null tant que la session est ouverte.
+  arrete: DocumentRef | null
 }
 
 /**

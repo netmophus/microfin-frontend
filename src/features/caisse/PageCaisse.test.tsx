@@ -12,6 +12,7 @@ import {
   ouvrirSession,
 } from '@/features/caisse/api'
 import { PageCaisse } from '@/features/caisse/PageCaisse'
+import { ouvrirPdf, telechargerDocument } from '@/features/documents/api'
 
 /**
  * Session de caisse (CA1/CA4/CA2). Points durs : aucune session -> formulaire d'ouverture ; une
@@ -33,6 +34,16 @@ vi.mock('@/features/caisse/api', async () => {
     listerMesPostes: vi.fn(),
   }
 })
+
+// L'arrêté de la caisse fermée se télécharge par ActionsDocument : droit de lecture et API simulés.
+vi.mock('@/features/auth/useProfil', () => ({
+  useAPermission: (permission: string) => permission === 'documents.read',
+}))
+vi.mock('@/features/documents/api', () => ({
+  telechargerDocument: vi.fn(),
+  regenererDocument: vi.fn(),
+  ouvrirPdf: vi.fn(),
+}))
 
 const sessionSimulee = vi.mocked(chargerSessionCourante)
 const ouvertureSimulee = vi.mocked(ouvrirSession)
@@ -74,6 +85,7 @@ const sessionOuverte = {
   valide_le: null,
   valide_par_nom: null,
   a_valider: false,
+  arrete: null,
 }
 
 beforeEach(() => {
@@ -110,9 +122,7 @@ describe('PageCaisse', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la caisse' }))
 
-    expect(
-      await screen.findByText('Indiquez le fonds initial compté, en francs.'),
-    ).toBeVisible()
+    expect(await screen.findByText('Indiquez le fonds initial compté, en francs.')).toBeVisible()
     expect(ouvertureSimulee).not.toHaveBeenCalled()
   })
 
@@ -187,9 +197,7 @@ describe('PageCaisse', () => {
     fireEvent.change(screen.getByLabelText('Fonds initial compté'), { target: { value: '50000' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la caisse' }))
 
-    expect(
-      await screen.findByText('Choisissez le poste où vous ouvrez la caisse.'),
-    ).toBeVisible()
+    expect(await screen.findByText('Choisissez le poste où vous ouvrez la caisse.')).toBeVisible()
     expect(ouvertureSimulee).not.toHaveBeenCalled()
 
     fireEvent.change(screen.getByLabelText('Poste de caisse'), { target: { value: 'p2' } })
@@ -306,18 +314,70 @@ describe('PageCaisse', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer la fermeture' }))
 
     await waitFor(() =>
-      expect(fermetureSimulee).toHaveBeenCalledWith(
-        'ses-1',
-        9_999_999,
-        'Erreur de comptage massive',
-      ),
+      expect(fermetureSimulee).toHaveBeenCalledWith('ses-1', 9_999_999, 'Erreur de comptage massive'),
     )
     expect(await screen.findByText('Caisse fermée')).toBeVisible()
     expect(screen.getByText('Ouvrir une nouvelle session')).toBeVisible()
     // Excédent, pas un manquant : pas de lettre de demande d'explication (hors périmètre).
-    expect(
-      screen.queryByRole('button', { name: /demande d’explication/ }),
-    ).toBeNull()
+    expect(screen.queryByRole('button', { name: /demande d’explication/ })).toBeNull()
+  })
+
+  it('caisse fermée : l’arrêté est proposé au téléchargement, quel que soit l’écart', async () => {
+    const pdf = new Blob(['%PDF'])
+    vi.mocked(telechargerDocument).mockResolvedValue(pdf)
+    sessionSimulee.mockResolvedValueOnce(sessionOuverte).mockResolvedValue(null)
+    fermetureSimulee.mockResolvedValue({
+      ...sessionOuverte,
+      status: 'fermee',
+      closed_at: '2026-08-07T18:00:00Z',
+      solde_theorique_actuel: null,
+      montant_reel_cloture: 60_000,
+      solde_theorique_cloture: 60_000,
+      ecart: 0,
+      arrete: { id: 'arr-1', nom: 'arrete_caisse_101111.pdf', statut: 'ok' },
+    })
+    afficher()
+    await screen.findByText('60 000 F')
+
+    fireEvent.change(screen.getByLabelText('Montant compté à la fermeture'), {
+      target: { value: '60000' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer la caisse' }))
+    await screen.findByText('Confirmer la fermeture ?')
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la fermeture' }))
+    await screen.findByText('Caisse fermée')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Télécharger l’arrêté' }))
+
+    await waitFor(() => expect(telechargerDocument).toHaveBeenCalledWith('arr-1'))
+    await waitFor(() => expect(ouvrirPdf).toHaveBeenCalledWith(pdf, 'arrete_caisse_101111.pdf'))
+  })
+
+  it('caisse fermée sans arrêté généré : un message le dit, aucun bouton de téléchargement', async () => {
+    sessionSimulee.mockResolvedValueOnce(sessionOuverte).mockResolvedValue(null)
+    fermetureSimulee.mockResolvedValue({
+      ...sessionOuverte,
+      status: 'fermee',
+      closed_at: '2026-08-07T18:00:00Z',
+      solde_theorique_actuel: null,
+      montant_reel_cloture: 60_000,
+      solde_theorique_cloture: 60_000,
+      ecart: 0,
+      arrete: null,
+    })
+    afficher()
+    await screen.findByText('60 000 F')
+
+    fireEvent.change(screen.getByLabelText('Montant compté à la fermeture'), {
+      target: { value: '60000' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Fermer la caisse' }))
+    await screen.findByText('Confirmer la fermeture ?')
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la fermeture' }))
+    await screen.findByText('Caisse fermée')
+
+    expect(screen.getByText('Le document PDF n’est pas disponible pour le moment.')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Télécharger l’arrêté' })).toBeNull()
   })
 
   it('fermeture avec manquant : le bouton de la lettre apparaît et mène à la lettre', async () => {

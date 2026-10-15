@@ -25,8 +25,8 @@ export function ActionsDocument({
   objet,
 }: {
   reference: DocumentRef | null | undefined
-  /** « recu », « bon » ou « lettre » : libellé du bouton. */
-  objet: 'recu' | 'bon' | 'lettre'
+  /** « recu », « bon », « lettre » ou « arrete » : libellé du bouton. */
+  objet: 'recu' | 'bon' | 'lettre' | 'arrete'
 }) {
   const peutLire = useAPermission('documents.read')
   // La référence peut être remplacée par une régénération réussie.
@@ -48,6 +48,7 @@ export function ActionsDocument({
     recu: D.telechargerImprimerRecu,
     bon: D.telechargerImprimerBon,
     lettre: D.telechargerLettre,
+    arrete: D.telechargerArrete,
   }[objet]
 
   if (courante && courante.statut === 'ok' && peutLire) {

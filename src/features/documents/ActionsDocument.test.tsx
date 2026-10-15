@@ -33,7 +33,10 @@ const uneRef = (o: Partial<DocumentRef> = {}): DocumentRef => ({
   ...o,
 })
 
-function afficher(reference: DocumentRef | null | undefined, objet: 'recu' | 'bon' | 'lettre' = 'recu') {
+function afficher(
+  reference: DocumentRef | null | undefined,
+  objet: 'recu' | 'bon' | 'lettre' | 'arrete' = 'recu',
+) {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
@@ -69,6 +72,12 @@ describe('ActionsDocument', () => {
     afficher(uneRef({ nom: 'lettre.pdf' }), 'lettre')
 
     expect(screen.getByRole('button', { name: 'Télécharger la lettre' })).toBeVisible()
+  })
+
+  it('l’arrêté de caisse a son propre libellé', () => {
+    afficher(uneRef({ nom: 'arrete_caisse_101111.pdf' }), 'arrete')
+
+    expect(screen.getByRole('button', { name: 'Télécharger l’arrêté' })).toBeVisible()
   })
 
   it('échec d’ouverture : message affiché, rien n’est ouvert', async () => {
