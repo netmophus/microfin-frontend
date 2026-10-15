@@ -100,9 +100,7 @@ function Recherche({ onSelection }: { onSelection: (t: LigneTier) => void }) {
               >
                 <span>
                   <span className="font-medium">{ligne.display_name}</span>{' '}
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {ligne.tier_number}
-                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">{ligne.tier_number}</span>
                 </span>
                 <BadgeSocietariat isMember={ligne.is_member} />
               </button>
@@ -114,13 +112,7 @@ function Recherche({ onSelection }: { onSelection: (t: LigneTier) => void }) {
   )
 }
 
-function FicheGuichet({
-  tier,
-  onChangerRecherche,
-}: {
-  tier: LigneTier
-  onChangerRecherche: () => void
-}) {
+function FicheGuichet({ tier, onChangerRecherche }: { tier: LigneTier; onChangerRecherche: () => void }) {
   const requete = useQuery({
     queryKey: ['guichet', 'parts', tier.id],
     queryFn: () => chargerParts(tier.id),
@@ -150,10 +142,9 @@ function FicheGuichet({
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            {P.capitalLibere} : <span className="font-medium text-foreground">
-              {fcfa(requete.data.capital_libere)}
-            </span>{' '}
-            ({P.partsLiberees(requete.data.shares_liberees)})
+            {P.capitalLibere} :{' '}
+            <span className="font-medium text-foreground">{fcfa(requete.data.capital_libere)}</span> (
+            {P.partsLiberees(requete.data.shares_liberees)})
           </p>
 
           {tier.status !== 'actif' ? (
@@ -161,11 +152,7 @@ function FicheGuichet({
               <AlertDescription>{P.gateNonActif}</AlertDescription>
             </Alert>
           ) : (
-            <Actions
-              tierId={tier.id}
-              nom={tier.display_name}
-              fiche={requete.data}
-            />
+            <Actions tierId={tier.id} nom={tier.display_name} fiche={requete.data} />
           )}
         </>
       )}
@@ -179,15 +166,7 @@ function FicheGuichet({
 
 type Mode = 'comptant' | 'liberation'
 
-function Actions({
-  tierId,
-  nom,
-  fiche,
-}: {
-  tierId: string
-  nom: string
-  fiche: FichePartsSociales
-}) {
+function Actions({ tierId, nom, fiche }: { tierId: string; nom: string; fiche: FichePartsSociales }) {
   const client = useQueryClient()
   const [mode, setMode] = useState<Mode | null>(null)
   const [nb, setNb] = useState('')
@@ -199,8 +178,7 @@ function Actions({
   const total = nbNum * fiche.unit_value
 
   const mutation = useMutation({
-    mutationFn: () =>
-      mode === 'comptant' ? souscrireComptant(tierId, nbNum) : libererParts(tierId, nbNum),
+    mutationFn: () => (mode === 'comptant' ? souscrireComptant(tierId, nbNum) : libererParts(tierId, nbNum)),
     onSuccess: (res) => {
       void client.invalidateQueries({ queryKey: ['guichet', 'parts', tierId] })
       void client.invalidateQueries({ queryKey: ['tiers', 'parts', tierId] })

@@ -51,7 +51,15 @@ const telechargerSimule = vi.mocked(telechargerDocument)
 const regenererSimule = vi.mocked(regenererDocument)
 const ouvrirSimule = vi.mocked(ouvrirPdf)
 
-function ligne(o: Partial<{ id: string; tier_number: string; display_name: string; status: string; is_member: boolean }> = {}) {
+function ligne(
+  o: Partial<{
+    id: string
+    tier_number: string
+    display_name: string
+    status: string
+    is_member: boolean
+  }> = {},
+) {
   return {
     id: 't1',
     tier_number: 'M-2026-0000005',

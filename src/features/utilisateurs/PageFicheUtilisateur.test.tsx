@@ -15,10 +15,9 @@ import { PageFicheUtilisateur } from '@/features/utilisateurs/PageFicheUtilisate
 
 vi.mock('@/features/auth/profil', () => ({ chargerProfil: vi.fn(), nomAffiche: vi.fn() }))
 vi.mock('@/features/utilisateurs/fiche-api', async () => {
-  const reel =
-    await vi.importActual<typeof import('@/features/utilisateurs/fiche-api')>(
-      '@/features/utilisateurs/fiche-api',
-    )
+  const reel = await vi.importActual<typeof import('@/features/utilisateurs/fiche-api')>(
+    '@/features/utilisateurs/fiche-api',
+  )
   return {
     ...reel,
     chargerFiche: vi.fn(),

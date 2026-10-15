@@ -152,7 +152,9 @@ describe('PageLettreExplication', () => {
       afficher()
 
       expect(await screen.findByText('Journée comptable de la session : 05/08/2026')).toBeVisible()
-      expect(screen.getByText(/constaté à la fermeture de votre session de caisse du 05\/08\/2026/)).toBeVisible()
+      expect(
+        screen.getByText(/constaté à la fermeture de votre session de caisse du 05\/08\/2026/),
+      ).toBeVisible()
       // L'horloge simulée (2031) n'apparaît nulle part sur le document.
       expect(document.body.textContent).not.toContain('2031')
     } finally {
@@ -164,9 +166,7 @@ describe('PageLettreExplication', () => {
     lectureSimulee.mockResolvedValue({ ...sessionManquante, ecart: 0 })
     afficher()
 
-    expect(
-      await screen.findByText(/Cette session n’a pas de manquant/),
-    ).toBeVisible()
+    expect(await screen.findByText(/Cette session n’a pas de manquant/)).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Télécharger la lettre' })).toBeNull()
   })
 
@@ -179,7 +179,10 @@ describe('PageLettreExplication', () => {
 
   it('session encore ouverte : refuse (pas de manquant tant que rien n’est figé)', async () => {
     lectureSimulee.mockResolvedValue({
-      ...sessionManquante, status: 'ouverte', ecart: null, closed_at: null,
+      ...sessionManquante,
+      status: 'ouverte',
+      ecart: null,
+      closed_at: null,
     })
     afficher()
 

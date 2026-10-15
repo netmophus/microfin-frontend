@@ -102,9 +102,7 @@ function Recherche({ onSelection }: { onSelection: (c: CompteGuichet) => void })
         />
       </div>
 
-      {recherche.isFetching && (
-        <p className="text-sm text-muted-foreground">{G.rechercheEnCours}</p>
-      )}
+      {recherche.isFetching && <p className="text-sm text-muted-foreground">{G.rechercheEnCours}</p>}
 
       {!recherche.isFetching && recherche.isSuccess && recherche.data.length === 0 && (
         <Alert role="alert">
@@ -123,16 +121,12 @@ function Recherche({ onSelection }: { onSelection: (c: CompteGuichet) => void })
               >
                 <span>
                   <span className="font-medium">{c.membre_nom}</span>{' '}
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {c.account_number}
-                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">{c.account_number}</span>
                   <br />
                   <span className="text-xs text-muted-foreground">{c.product_name}</span>
                 </span>
                 <span className="text-right">
-                  <span className="block font-mono text-sm tabular-nums">
-                    {formatFcfa(c.balance)}
-                  </span>
+                  <span className="block font-mono text-sm tabular-nums">{formatFcfa(c.balance)}</span>
                   <BadgeStatutCompte statut={c.status} />
                 </span>
               </button>
@@ -163,9 +157,7 @@ function Operations({
 
   const operation = useMutation<ResultatOperation, unknown, void>({
     mutationFn: () =>
-      sens === 'depot'
-        ? deposerGuichet(compte.id, montantNum)
-        : retirerGuichet(compte.id, montantNum),
+      sens === 'depot' ? deposerGuichet(compte.id, montantNum) : retirerGuichet(compte.id, montantNum),
     onSuccess: (res) => {
       onSolde(res.nouveau_solde)
       const modele = sens === 'depot' ? G.succesDepot : G.succesRetrait
@@ -196,8 +188,7 @@ function Operations({
             <p className="text-xs uppercase tracking-wide text-muted-foreground">{G.membre}</p>
             <p className="text-lg font-bold">{compte.membre_nom}</p>
             <p className="font-mono text-sm text-muted-foreground">
-              {compte.account_number} · {compte.product_name}{' '}
-              {compte.is_provisional && <BadgeProvisoire />}
+              {compte.account_number} · {compte.product_name} {compte.is_provisional && <BadgeProvisoire />}
             </p>
           </div>
         </div>

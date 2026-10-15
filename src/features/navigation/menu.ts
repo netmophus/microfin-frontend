@@ -339,11 +339,7 @@ export const MENU: readonly GroupeMenu[] = [
   {
     id: 'systeme',
     titre: M.groupes.systeme,
-    entrees: [
-      aVenir(M.entrees.multiAgences),
-      aVenir(M.entrees.canauxNumerique),
-      aVenir(M.entrees.ged),
-    ],
+    entrees: [aVenir(M.entrees.multiAgences), aVenir(M.entrees.canauxNumerique), aVenir(M.entrees.ged)],
   },
 ]
 

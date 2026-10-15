@@ -75,9 +75,7 @@ export function OngletParts({ tierId, tierStatut }: { tierId: string; tierStatut
         <div className="flex items-start gap-3">
           <Coins className="mt-1 size-6 text-muted-foreground" />
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              {P.capitalLibere}
-            </p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">{P.capitalLibere}</p>
             <p className="text-xl font-semibold tabular-nums">{fcfa(f.capital_libere)}</p>
             <p className="text-sm text-muted-foreground">{P.partsLiberees(f.shares_liberees)}</p>
             {f.shares_non_liberees > 0 && (
@@ -118,12 +116,10 @@ export function OngletParts({ tierId, tierStatut }: { tierId: string; tierStatut
         </div>
         <div className="flex flex-wrap gap-x-8 gap-y-1 text-muted-foreground">
           <span>
-            {P.valeurPart} :{' '}
-            <span className="tabular-nums text-foreground">{fcfa(f.unit_value)}</span>
+            {P.valeurPart} : <span className="tabular-nums text-foreground">{fcfa(f.unit_value)}</span>
           </span>
           <span>
-            {P.minimum} :{' '}
-            <span className="text-foreground">{P.minimumValeur(f.minimum_shares)}</span>
+            {P.minimum} : <span className="text-foreground">{P.minimumValeur(f.minimum_shares)}</span>
           </span>
         </div>
       </div>
@@ -140,13 +136,9 @@ export function OngletParts({ tierId, tierStatut }: { tierId: string; tierStatut
         ) : (
           <ul className="divide-y rounded-md border bg-background text-sm">
             {f.mouvements.map((m, i) => (
-              <li
-                key={`${m.saisi_le}-${i}`}
-                className="flex items-center justify-between gap-2 px-3 py-2"
-              >
+              <li key={`${m.saisi_le}-${i}`} className="flex items-center justify-between gap-2 px-3 py-2">
                 <span title={P.saisiLe(new Date(m.saisi_le).toLocaleString('fr-FR'))}>
-                  {dateComptable(m.date_comptable)} ·{' '}
-                  {P.operations[m.type] ?? m.type}
+                  {dateComptable(m.date_comptable)} · {P.operations[m.type] ?? m.type}
                   {' · '}
                   {m.shares_count} {m.shares_count > 1 ? 'parts' : 'part'}
                   {m.entry_number && (
@@ -230,9 +222,7 @@ function ActionsParts({
       <Alert role="status">
         <AlertDescription className="space-y-2">
           <p>{succes}</p>
-          {recuAttendu && (
-            <ActionsDocument reference={documentRecu} objet="recu" />
-          )}
+          {recuAttendu && <ActionsDocument reference={documentRecu} objet="recu" />}
           <Button
             size="sm"
             variant="ghost"

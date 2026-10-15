@@ -189,9 +189,7 @@ export interface EngagementDesactivation {
 }
 
 /** Les blocages à la désactivation, AVANT de proposer le bouton (symétrie des conditions KYC). */
-export async function lireEngagementsDesactivation(
-  id: string,
-): Promise<EngagementDesactivation[]> {
+export async function lireEngagementsDesactivation(id: string): Promise<EngagementDesactivation[]> {
   const { data } = await api.get<EngagementDesactivation[]>(`/tiers/${id}/deactivation-engagements`)
   return data
 }
@@ -248,10 +246,7 @@ export async function souscrireParts(tierId: string, sharesCount: number): Promi
 }
 
 /** Souscription AU COMPTANT (caissier) — souscrire + payer d'un geste : devient membre. */
-export async function souscrireComptant(
-  tierId: string,
-  sharesCount: number,
-): Promise<ResultatParts> {
+export async function souscrireComptant(tierId: string, sharesCount: number): Promise<ResultatParts> {
   const { data } = await api.post<ResultatParts>(`/tiers/${tierId}/parts/souscription-comptant`, {
     shares_count: sharesCount,
   })
@@ -409,13 +404,7 @@ export function creerGroupement(donnees: DonneesGroupement): Promise<FicheTier> 
 // --- transitions de cycle de vie (T1e) -------------------------------------------------
 
 export type TransitionNom =
-  | 'activate'
-  | 'suspend'
-  | 'reactivate'
-  | 'mark_deceased'
-  | 'mark_dissolved'
-  | 'deactivate'
-  | 'restore'
+  'activate' | 'suspend' | 'reactivate' | 'mark_deceased' | 'mark_dissolved' | 'deactivate' | 'restore'
 
 const URL_TRANSITION: Record<TransitionNom, string> = {
   activate: 'activate',
@@ -483,10 +472,14 @@ function traduireTransition(erreur: unknown): EchecTransition {
   if (reponse.status === 422) {
     // Collision de pièce à la restauration : détail structuré {message, tier_id, nom}.
     const detail = reponse.data?.detail as
-      | { message?: string; tier_id?: string | null; nom?: string | null }
-      | undefined
+      { message?: string; tier_id?: string | null; nom?: string | null } | undefined
     if (detail && typeof detail === 'object' && 'message' in detail) {
-      return { type: 'doublon', message: detail.message ?? '', tierId: detail.tier_id ?? null, nom: detail.nom ?? null }
+      return {
+        type: 'doublon',
+        message: detail.message ?? '',
+        tierId: detail.tier_id ?? null,
+        nom: detail.nom ?? null,
+      }
     }
   }
   return { type: 'inattendue' }
@@ -570,10 +563,7 @@ async function modifierProfil<T>(url: string, donnees: T): Promise<FicheTier> {
   }
 }
 
-export function modifierPersonneMorale(
-  id: string,
-  donnees: ModificationPersonneMorale,
-): Promise<FicheTier> {
+export function modifierPersonneMorale(id: string, donnees: ModificationPersonneMorale): Promise<FicheTier> {
   return modifierProfil(`/tiers/${id}/legal-entity`, donnees)
 }
 

@@ -36,9 +36,7 @@ vi.mock('@/features/auth/useProfil', () => ({
 }))
 
 vi.mock('@/features/epargne/api', async () => {
-  const reel = await vi.importActual<typeof import('@/features/epargne/api')>(
-    '@/features/epargne/api',
-  )
+  const reel = await vi.importActual<typeof import('@/features/epargne/api')>('@/features/epargne/api')
   return {
     ...reel,
     rechercherComptes: vi.fn(),
@@ -131,10 +129,7 @@ describe('OngletGuichetEpargne', () => {
     rechercheSimule.mockResolvedValue([unCompte()])
     afficher()
 
-    await userEvent.setup().type(
-      screen.getByLabelText(/Numéro de compte ou nom du titulaire/),
-      'T',
-    )
+    await userEvent.setup().type(screen.getByLabelText(/Numéro de compte ou nom du titulaire/), 'T')
 
     expect(screen.queryByRole('button', { name: /^Chercher$/ })).toBeNull()
     expect(await screen.findByText('Traoré Fatoumata')).toBeVisible()
@@ -145,10 +140,7 @@ describe('OngletGuichetEpargne', () => {
     rechercheSimule.mockResolvedValue([])
     afficher()
 
-    await userEvent.setup().type(
-      screen.getByLabelText(/Numéro de compte ou nom du titulaire/),
-      'Traore',
-    )
+    await userEvent.setup().type(screen.getByLabelText(/Numéro de compte ou nom du titulaire/), 'Traore')
 
     await waitFor(() => expect(rechercheSimule).toHaveBeenCalledWith('Traore'))
     expect(rechercheSimule).toHaveBeenCalledTimes(1)
@@ -229,9 +221,7 @@ describe('OngletGuichetEpargne', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
 
     expect(
-      await screen.findByText(
-        'Premier dépôt insuffisant : ce produit exige au moins 5 000 F à l’ouverture.',
-      ),
+      await screen.findByText('Premier dépôt insuffisant : ce produit exige au moins 5 000 F à l’ouverture.'),
     ).toBeVisible()
   })
 
@@ -250,9 +240,7 @@ describe('OngletGuichetEpargne', () => {
     fireEvent.click(screen.getByRole('button', { name: /Continuer/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
 
-    await waitFor(() =>
-      expect(screen.getByText(/Solde insuffisant : disponible 7 000 F/)).toBeVisible(),
-    )
+    await waitFor(() => expect(screen.getByText(/Solde insuffisant : disponible 7 000 F/)).toBeVisible())
   })
 })
 
@@ -348,7 +336,9 @@ describe('OngletGuichetEpargne — dépôt à terme', () => {
     })
     await ouvrirDat(apercuEcheance)
 
-    expect(await screen.findByText('L’échéance est atteinte : le dénouement est sans pénalité.')).toBeVisible()
+    expect(
+      await screen.findByText('L’échéance est atteinte : le dénouement est sans pénalité.'),
+    ).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Retrait anticipé' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Dénouer à l’échéance' }))
     expect(screen.getByText('Remettre 1 024 932 F en espèces à Traoré Fatoumata ?')).toBeVisible()

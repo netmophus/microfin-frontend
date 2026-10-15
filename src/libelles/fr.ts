@@ -58,17 +58,14 @@ export const LIBELLES = {
     compteVerrouille: 'Compte verrouillé',
     compteVerrouilleDetail: (echeance: string) =>
       `Trop de tentatives infructueuses. Votre compte sera de nouveau accessible ${echeance}.`,
-    compteVerrouilleSansEcheance:
-      'Trop de tentatives infructueuses. Votre compte est temporairement bloqué.',
+    compteVerrouilleSansEcheance: 'Trop de tentatives infructueuses. Votre compte est temporairement bloqué.',
 
     motDePasseARenouveler: 'Mot de passe à renouveler',
-    motDePasseARenouvelerDetail:
-      'Votre mot de passe doit être changé avant d’accéder à l’application.',
+    motDePasseARenouvelerDetail: 'Votre mot de passe doit être changé avant d’accéder à l’application.',
 
     // Panne réseau, backend arrêté, proxy mal configuré : l'utilisateur doit pouvoir
     // distinguer « mes identifiants sont mauvais » de « le service ne répond pas ».
-    serveurInjoignable:
-      'Le serveur ne répond pas. Vérifiez votre connexion, puis réessayez.',
+    serveurInjoignable: 'Le serveur ne répond pas. Vérifiez votre connexion, puis réessayez.',
     inattendue: 'Une erreur inattendue est survenue. Réessayez, puis contactez votre administrateur.',
   },
 
@@ -79,8 +76,7 @@ export const LIBELLES = {
     // Ton DÉLIBÉRÉMENT rassurant : le renouvellement est une procédure normale (compte
     // neuf, ou mot de passe réinitialisé par un administrateur), pas une sanction. Un
     // message alarmant ferait croire à un incident et générerait des appels au support.
-    instructionForce:
-      'Pour votre sécurité, veuillez définir un nouveau mot de passe avant de continuer.',
+    instructionForce: 'Pour votre sécurité, veuillez définir un nouveau mot de passe avant de continuer.',
     instructionVolontaire:
       'Choisissez un nouveau mot de passe. Vous devrez saisir votre mot de passe actuel pour confirmer.',
 
@@ -108,16 +104,14 @@ export const LIBELLES = {
 
     // Les trois refus du serveur, distincts parce qu'ils appellent trois gestes différents.
     actuelIncorrect: 'Le mot de passe actuel est incorrect.',
-    dejaUtilise:
-      'Ce mot de passe a déjà été utilisé. Choisissez-en un différent des 12 derniers.',
+    dejaUtilise: 'Ce mot de passe a déjà été utilisé. Choisissez-en un différent des 12 derniers.',
     refuseParLaPolitique: 'Le serveur a refusé ce mot de passe :',
 
     succes: 'Votre mot de passe a été modifié.',
     // Cas où le changement a RÉUSSI mais où la session n'a pas pu être renouvelée. On
     // n'annonce jamais un échec sur une opération qui a abouti : l'utilisateur croirait
     // devoir recommencer, avec un ancien mot de passe qui ne fonctionne plus.
-    succesReconnexionRequise:
-      'Votre mot de passe a été modifié. Veuillez vous reconnecter avec le nouveau.',
+    succesReconnexionRequise: 'Votre mot de passe a été modifié. Veuillez vous reconnecter avec le nouveau.',
   },
 
   champMotDePasse: {
@@ -465,8 +459,7 @@ export const LIBELLES = {
 
     // Lot 4 — édition des rôles SYSTÈME (métadonnées + permissions ; jamais la suppression,
     // toujours interdite sur un rôle système) et déverrouillage.
-    avertissementSysteme:
-      'Rôle système : cette modification affecte tous les comptes qui le détiennent.',
+    avertissementSysteme: 'Rôle système : cette modification affecte tous les comptes qui le détiennent.',
     gereManuellement: 'Géré manuellement',
     reinitialiserBouton: 'Réinitialiser au réglage d’usine',
     reinitialiserConfirmerTitre: (nom: string) => `Réinitialiser le rôle « ${nom} » ?`,
@@ -725,8 +718,7 @@ export const LIBELLES = {
     enregistrerModifications: 'Enregistrer les modifications',
     enregistrementEnCours: 'Enregistrement…',
     annulerModification: 'Annuler',
-    erreurModification:
-      'Impossible d’enregistrer les modifications. Vérifiez les champs et réessayez.',
+    erreurModification: 'Impossible d’enregistrer les modifications. Vérifiez les champs et réessayez.',
 
     identite: 'Identité',
     timeline: 'Frise chronologique',
@@ -907,8 +899,7 @@ export const LIBELLES = {
     terminer: 'Terminer le mandat',
     retirer: 'Retirer',
     retirerTitre: 'Retirer cette personne ?',
-    retirerRappel:
-      'Le lien sera retiré de la fiche. Il reste conservé dans l’historique, avec le motif.',
+    retirerRappel: 'Le lien sera retiré de la fiche. Il reste conservé dans l’historique, avec le motif.',
     motif: 'Motif du retrait (obligatoire)',
     motifRequis: 'Indiquez le motif du retrait.',
     confirmerRetrait: 'Confirmer le retrait',
@@ -919,8 +910,7 @@ export const LIBELLES = {
       'Le niveau de risque d’une société ou d’un groupement est celui de la personne la plus exposée parmi ses personnes liées en cours.',
     risqueProvisoire:
       'Règle provisoire : les critères propres aux sociétés (secteur, pays, structure du capital) restent à définir avec l’expert LBC/FT.',
-    risqueNonEvalue:
-      'Niveau non évalué : aucune personne liée en cours n’a de niveau de risque calculé.',
+    risqueNonEvalue: 'Niveau non évalué : aucune personne liée en cours n’a de niveau de risque calculé.',
     risqueAjouter: 'Ajoutez les personnes liées dans l’onglet « Personnes liées ».',
     risquePersonnes: 'Personnes liées en cours',
     risqueNiveau: 'Niveau de risque',
@@ -970,8 +960,7 @@ export const LIBELLES = {
 
     // --- Actions (bloc 2) : souscrire / libérer = « devenir membre » ---
     // Réservé au tiers ACTIF ; sinon on l'explique (comme le gate KYC de l'épargne).
-    gateNonActif:
-      'Ce tiers doit être actif (dossier validé) avant de souscrire des parts sociales.',
+    gateNonActif: 'Ce tiers doit être actif (dossier validé) avant de souscrire des parts sociales.',
     // Le geste central, guidé : combien de parts -> total à payer -> confirmer.
     actionComptant: 'Souscrire au comptant (devenir membre)',
     actionComptantAide:
@@ -1082,8 +1071,7 @@ export const LIBELLES = {
     vide: 'Aucune demande de crédit.',
     nouvelleDemande: 'Nouvelle demande',
     // Gate KYC visible : on explique POURQUOI le bouton est absent (même patron qu’Épargne/Parts).
-    gateNonActif:
-      'Ce tiers doit être actif (dossier validé) avant de pouvoir demander un crédit.',
+    gateNonActif: 'Ce tiers doit être actif (dossier validé) avant de pouvoir demander un crédit.',
 
     // Formulaire de création.
     produit: 'Produit de crédit',
@@ -1287,8 +1275,7 @@ export const LIBELLES = {
     apercuAucunTitre: 'Aucun intérêt à verser sur cette période',
     raisonTauxZero:
       'Les produits d’épargne sont à taux 0 : le barème n’a pas encore été fixé par l’expert. Posez un taux avant de verser.',
-    raisonAucunCompte:
-      'Aucun compte d’épargne actif à traiter pour cette période.',
+    raisonAucunCompte: 'Aucun compte d’épargne actif à traiter pour cette période.',
     raisonSoldes:
       'Les comptes actifs n’ont pas de solde rémunérable sur cette période (soldes insuffisants ou aucun mouvement).',
     // Champs incomplets : le clic ne doit pas rester sans effet.
@@ -1300,8 +1287,7 @@ export const LIBELLES = {
     // Déjà versé (anti-double) : on le DIT clairement, on n'échoue pas en silence.
     dejaVerseTitre: 'Intérêts déjà versés pour cette période',
     // {date} injectée.
-    dejaVerseDetail:
-      'Cette période a déjà été traitée le {date}. Aucun nouveau versement ne sera fait.',
+    dejaVerseDetail: 'Cette période a déjà été traitée le {date}. Aucun nouveau versement ne sera fait.',
     dejaTraites: '{n} comptes déjà versés.',
 
     // Comptes que le calcul ne peut pas traiter (anomalie de données) : signalés, jamais devinés.
@@ -1338,8 +1324,7 @@ export const LIBELLES = {
     succesTitre: 'Versement effectué',
     // {credites} et {total} injectés.
     succesDetail: '{credites} comptes crédités, pour un total de {total}.',
-    succesRienAVerser:
-      'Aucun compte n’a été crédité (période déjà versée, ou aucun intérêt dû).',
+    succesRienAVerser: 'Aucun compte n’a été crédité (période déjà versée, ou aucun intérêt dû).',
 
     echec: 'Le versement a échoué. Réessayez, puis prévenez votre administrateur.',
     champsRequis: 'Renseignez la période et les deux dates.',
@@ -1362,8 +1347,7 @@ export const LIBELLES = {
     apercuTitre: 'Supervision — rien n’est encore reclassé',
     // {n} et {total} injectés.
     apercuResume: '{n} dossier(s) seraient reclassés, sur {total} dossier(s) décaissés évalués.',
-    apercuAucun:
-      'Aucun dossier ne serait reclassé : tous les crédits décaissés sont dans le bon palier.',
+    apercuAucun: 'Aucun dossier ne serait reclassé : tous les crédits décaissés sont dans le bon palier.',
 
     // Un ou plusieurs dossiers échoueraient à l'exécution (paramétrage incomplet sur un
     // palier) — on le DIT avant de lancer, pas après coup.
@@ -1533,7 +1517,8 @@ export const LIBELLES = {
     posteChargement: 'Recherche de vos postes assignés…',
     posteErreur: 'Impossible de charger vos postes assignés.',
     // Écran MUET interdit (§21) : dire QUOI manque et QUI contacter, pas un formulaire vide.
-    posteAucun: 'Aucun poste ne vous est assigné. Demandez à votre responsable de vous assigner à un poste de caisse.',
+    posteAucun:
+      'Aucun poste ne vous est assigné. Demandez à votre responsable de vous assigner à un poste de caisse.',
     fondsInitialLabel: 'Fonds initial compté',
     fondsInitialAide: 'Le montant en espèces compté physiquement avant toute opération.',
     fondsInitialErreur: 'Indiquez le fonds initial compté, en francs.',
@@ -1940,8 +1925,7 @@ export const LIBELLES = {
       n <= 1 ? '1 anomalie — rien ne sera importé' : `${n} anomalies — rien ne sera importé`,
 
     apercuCreesTitre: (n: number) => (n <= 1 ? '1 compte à créer' : `${n} comptes à créer`),
-    apercuModifiesTitre: (n: number) =>
-      n <= 1 ? '1 compte à modifier' : `${n} comptes à modifier`,
+    apercuModifiesTitre: (n: number) => (n <= 1 ? '1 compte à modifier' : `${n} comptes à modifier`),
     apercuInchanges: (n: number) => (n <= 1 ? '1 compte inchangé' : `${n} comptes inchangés`),
     apercuRienAFaire: 'Ce fichier ne change rien au plan actuel.',
 
@@ -2219,8 +2203,7 @@ export const LIBELLES = {
     // Répété sur les 3 écrans du Bloc 5 : un rattachement ne change QUE les prochaines
     // opérations, jamais les écritures déjà passées (elles référencent un compte, pas ce
     // paramètre) — jamais laissé au silence.
-    avertissement:
-      'Ce changement s’applique aux prochaines opérations, jamais aux écritures déjà passées.',
+    avertissement: 'Ce changement s’applique aux prochaines opérations, jamais aux écritures déjà passées.',
     chargement: 'Chargement des rattachements…',
     listeVide: 'Aucun produit d’épargne actif.',
     interdit: 'Vous n’avez pas la permission de consulter ces rattachements.',
@@ -2300,11 +2283,9 @@ export const LIBELLES = {
     soldeMinimum: 'Solde minimum rémunéré (F CFA)',
     soldeMinimumAide: 'En dessous de ce solde, aucun intérêt n’est versé.',
     depotInitialMinimum: 'Dépôt initial minimum (F CFA)',
-    depotInitialMinimumAide:
-      'Montant minimum du premier dépôt sur un compte neuf. 0 : aucune exigence.',
+    depotInitialMinimumAide: 'Montant minimum du premier dépôt sur un compte neuf. 0 : aucune exigence.',
     soldePlancher: 'Solde plancher (F CFA)',
-    soldePlancherAide:
-      'Solde à conserver sur le compte après un retrait. 0 : le compte peut être vidé.',
+    soldePlancherAide: 'Solde à conserver sur le compte après un retrait. 0 : le compte peut être vidé.',
     // Dépôt à terme : durée choisie à l'ouverture du compte, dans ces bornes.
     dureeMin: 'Durée minimale (mois)',
     dureeMax: 'Durée maximale (mois)',
@@ -2422,8 +2403,7 @@ export const LIBELLES = {
   rattachementsCaisse: {
     titre: 'Caisse par agence',
     sousTitre: 'Le compte de caisse comptable rattaché à chaque agence.',
-    avertissement:
-      'Ce changement s’applique aux prochaines opérations, jamais aux écritures déjà passées.',
+    avertissement: 'Ce changement s’applique aux prochaines opérations, jamais aux écritures déjà passées.',
     chargement: 'Chargement des rattachements…',
     listeVide: 'Aucune agence active.',
     interdit: 'Vous n’avez pas la permission de consulter ces rattachements.',
@@ -2459,8 +2439,7 @@ export const LIBELLES = {
   parametresParts: {
     titre: 'Paramètres des parts sociales',
     sousTitre: 'Valeurs d’institution — valeur d’une part, minimum d’adhésion, rattachements.',
-    avertissement:
-      'Ce changement s’applique aux prochaines opérations, jamais aux écritures déjà passées.',
+    avertissement: 'Ce changement s’applique aux prochaines opérations, jamais aux écritures déjà passées.',
     chargement: 'Chargement des paramètres…',
     interdit: 'Vous n’avez pas la permission de consulter ces paramètres.',
     erreur: 'Impossible de charger les paramètres. Réessayez dans un instant.',
@@ -2770,8 +2749,7 @@ export const LIBELLES = {
     anChargement: 'Calcul des soldes à reporter…',
     anErreur: 'Impossible de calculer l’aperçu des à-nouveaux.',
     anDejaGeneres: 'Les à-nouveaux de cet exercice ont déjà été générés.',
-    anRienAReporter:
-      'Aucun compte de bilan à solde non nul sur cet exercice : rien à reporter.',
+    anRienAReporter: 'Aucun compte de bilan à solde non nul sur cet exercice : rien à reporter.',
     // {date} injectée (JJ/MM/AAAA).
     anSuivantAbsent:
       'L’exercice suivant n’existe pas encore. Ouvrez un exercice commençant le {date} avant de générer les à-nouveaux.',
@@ -3056,8 +3034,7 @@ export const LIBELLES = {
     preparation: 'Préparation du document…',
     ouvertureEchec: 'Impossible de récupérer le document. Réessayez.',
     documentAbsent: 'Le document PDF n’est pas disponible pour le moment.',
-    generationEchec:
-      'Le document n’a pas pu être généré : l’opération est bien enregistrée. Régénérez-le.',
+    generationEchec: 'Le document n’a pas pu être généré : l’opération est bien enregistrée. Régénérez-le.',
     regenerer: 'Régénérer',
     regenerationEnCours: 'Régénération…',
     regenerationEchec: 'La régénération a échoué. Réessayez.',
@@ -3077,8 +3054,7 @@ export const LIBELLES = {
     aucunMembre: 'Aucun membre ne correspond à cette recherche.',
     membre: 'Membre',
     changerMembre: 'Changer de membre',
-    membreNonActif:
-      'Ce membre doit être activé (KYC validé) avant de pouvoir placer un dépôt à terme.',
+    membreNonActif: 'Ce membre doit être activé (KYC validé) avant de pouvoir placer un dépôt à terme.',
     produitLabel: 'Produit à terme',
     produitChoisir: 'Choisir un produit…',
     aucunProduitTerme: 'Aucun produit à terme n’est disponible.',

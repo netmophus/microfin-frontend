@@ -158,10 +158,7 @@ export interface PageSessionsManquantes {
  * direction : tout le réseau) — contrôlé côté serveur. C'est ce qui permet de retrouver une
  * lettre plus tard sans dépendre d'un lien reçu au moment de la fermeture.
  */
-export async function listerSessionsManquantes(
-  page = 1,
-  taille = 25,
-): Promise<PageSessionsManquantes> {
+export async function listerSessionsManquantes(page = 1, taille = 25): Promise<PageSessionsManquantes> {
   const { data } = await api.get<PageSessionsManquantes>('/caisse/sessions', {
     params: { manquant: true, page, taille },
   })
@@ -285,10 +282,7 @@ export interface PageSessionsAValider {
  * (contrôlé côté serveur). Une session validée disparaît immédiatement de cette liste — c'est
  * un calcul dérivé, jamais un statut stocké à rafraîchir manuellement.
  */
-export async function listerSessionsAValider(
-  page = 1,
-  taille = 25,
-): Promise<PageSessionsAValider> {
+export async function listerSessionsAValider(page = 1, taille = 25): Promise<PageSessionsAValider> {
   const { data } = await api.get<PageSessionsAValider>('/caisse/sessions-a-valider', {
     params: { page, taille },
   })
@@ -300,9 +294,7 @@ export async function listerSessionsAValider(
  * blocage : ne change rien d'autre que la date/l'auteur de validation.
  */
 export async function validerEcart(sessionId: string): Promise<SessionCaisse> {
-  const { data } = await api.post<SessionCaisse>(
-    `/caisse/sessions/${sessionId}/validation-ecart`,
-  )
+  const { data } = await api.post<SessionCaisse>(`/caisse/sessions/${sessionId}/validation-ecart`)
   return data
 }
 
@@ -326,11 +318,7 @@ export async function listerPostes(): Promise<PosteCaisse[]> {
   return data
 }
 
-export async function creerPoste(
-  code: string,
-  libelle: string,
-  motif: string,
-): Promise<PosteCaisse> {
+export async function creerPoste(code: string, libelle: string, motif: string): Promise<PosteCaisse> {
   const { data } = await api.post<PosteCaisse>('/caisse/postes', { code, libelle, motif })
   return data
 }
@@ -381,14 +369,10 @@ export async function listerAssignations(posteId: string): Promise<UtilisateurAs
   return data
 }
 
-export async function assignerGuichetier(
-  posteId: string,
-  userId: string,
-): Promise<UtilisateurAssigne[]> {
-  const { data } = await api.post<UtilisateurAssigne[]>(
-    `/caisse/postes/${posteId}/assignations`,
-    { user_id: userId },
-  )
+export async function assignerGuichetier(posteId: string, userId: string): Promise<UtilisateurAssigne[]> {
+  const { data } = await api.post<UtilisateurAssigne[]>(`/caisse/postes/${posteId}/assignations`, {
+    user_id: userId,
+  })
   return data
 }
 
@@ -487,10 +471,7 @@ export async function initierTransfert(
  * à l'arrivée, jamais présumé égal au montant envoyé. Double regard (receveur != envoyeur) et
  * contrôle du poste (côté secondaire) refusés proprement par le serveur — message affiché tel
  * quel, voir `messageRefusCaisse`. */
-export async function receptionnerTransfert(
-  transfertId: string,
-  montantCompte: number,
-): Promise<Transfert> {
+export async function receptionnerTransfert(transfertId: string, montantCompte: number): Promise<Transfert> {
   const { data } = await api.post<Transfert>(`/caisse/transferts/${transfertId}/reception`, {
     montant_compte: montantCompte,
   })
@@ -512,9 +493,7 @@ export interface CaissierPrincipalAgence {
 }
 
 export async function lireCaissierPrincipal(agencyId: string): Promise<CaissierPrincipalAgence> {
-  const { data } = await api.get<CaissierPrincipalAgence>(
-    `/caisse/agences/${agencyId}/caissier-principal`,
-  )
+  const { data } = await api.get<CaissierPrincipalAgence>(`/caisse/agences/${agencyId}/caissier-principal`)
   return data
 }
 
@@ -526,10 +505,10 @@ export async function designerCaissierPrincipal(
   userId: string,
   motif: string,
 ): Promise<CaissierPrincipalAgence> {
-  const { data } = await api.put<CaissierPrincipalAgence>(
-    `/caisse/agences/${agencyId}/caissier-principal`,
-    { user_id: userId, motif },
-  )
+  const { data } = await api.put<CaissierPrincipalAgence>(`/caisse/agences/${agencyId}/caissier-principal`, {
+    user_id: userId,
+    motif,
+  })
   return data
 }
 

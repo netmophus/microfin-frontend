@@ -24,9 +24,7 @@ vi.mock('@/features/auth/useProfil', () => ({
 }))
 
 vi.mock('@/features/tiers/api', async () => {
-  const reel = await vi.importActual<typeof import('@/features/tiers/api')>(
-    '@/features/tiers/api',
-  )
+  const reel = await vi.importActual<typeof import('@/features/tiers/api')>('@/features/tiers/api')
   return {
     ...reel,
     chargerParts: vi.fn(),
@@ -207,9 +205,7 @@ describe('OngletParts', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer' }))
 
-    expect(
-      await screen.findByRole('button', { name: 'Télécharger / Imprimer le reçu' }),
-    ).toBeVisible()
+    expect(await screen.findByRole('button', { name: 'Télécharger / Imprimer le reçu' })).toBeVisible()
   })
 
   it('remboursement dont le reçu a échoué : message et « Régénérer »', async () => {

@@ -209,9 +209,7 @@ export function App() {
               <Route
                 path="/caisse/transferts"
                 element={
-                  <RoutePermission
-                    permission={['caisse.transfert.initier', 'caisse.transfert.valider']}
-                  >
+                  <RoutePermission permission={['caisse.transfert.initier', 'caisse.transfert.valider']}>
                     <PageTransfertsCaisse />
                   </RoutePermission>
                 }
@@ -259,9 +257,7 @@ export function App() {
               <Route
                 path="/credit/reclassification"
                 element={
-                  <RoutePermission
-                    permission={['credit.delinquency.read', 'credit.delinquency.executer']}
-                  >
+                  <RoutePermission permission={['credit.delinquency.read', 'credit.delinquency.executer']}>
                     <PageReclassification />
                   </RoutePermission>
                 }
