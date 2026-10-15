@@ -493,7 +493,7 @@ function PanneauDecaissement({
  * 'a_echoir' ne sont ni supprimées ni masquées (le plan reste un témoin historique, arbitrage
  * acté) mais visiblement neutralisées — grisées ET un texte explicite, jamais la couleur seule
  * (règle d'accessibilité du projet). */
-function TableEcheances({
+export function TableEcheances({
   lignes,
   avecStatut,
   neutraliserSiAEchoir = false,

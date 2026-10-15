@@ -212,6 +212,33 @@ export async function lireApercuEcheancierCredit(
   return data
 }
 
+// Guichet de décaissement : un dossier APPROUVÉ prêt à décaisser en espèces.
+export interface DossierDecaissable {
+  id: string
+  application_number: string
+  tier_number: string
+  tier_nom: string
+  product_name: string
+  montant_decide: number
+  duree_echeances: number
+}
+
+/** Recherche du guichet de décaissement : dossiers APPROUVÉS par numéro, numéro de tiers ou nom. */
+export async function rechercherDecaissements(q: string): Promise<DossierDecaissable[]> {
+  const { data } = await api.get<DossierDecaissable[]>('/credit/recherche-decaissement', {
+    params: { q },
+  })
+  return data
+}
+
+/** Aperçu de l'échéancier d'un dossier approuvé, gardé par la permission de décaisser. */
+export async function lireApercuDecaissementGuichet(id: string): Promise<EcheanceApercuCredit[]> {
+  const { data } = await api.get<EcheanceApercuCredit[]>(
+    `/credit/recherche-decaissement/${id}/echeancier-apercu`,
+  )
+  return data
+}
+
 /**
  * Recherche du guichet (CR6d) : crédits DÉCAISSÉS du périmètre par numéro de dossier, numéro de
  * tiers ou nom. Un dossier déjà soldé reste dans les résultats (`prochaine_echeance: null`) —

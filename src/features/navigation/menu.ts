@@ -150,7 +150,12 @@ export const MENU: readonly GroupeMenu[] = [
         etat: 'actif',
         libelle: M.entrees.guichetEpargne,
         chemin: '/guichet',
-        permission: ['epargne.operation.deposit', 'tiers.shares.pay', 'credit.remboursement.create'],
+        permission: [
+          'epargne.operation.deposit',
+          'tiers.shares.pay',
+          'credit.remboursement.create',
+          'credit.decaissement.create',
+        ],
       },
       // Versement des intérêts : acte d'INSTITUTION, réservé à la direction.
       {

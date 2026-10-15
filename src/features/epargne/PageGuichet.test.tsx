@@ -26,6 +26,9 @@ vi.mock('@/features/tiers/OngletGuichetParts', () => ({
 vi.mock('@/features/credit/OngletGuichetCredit', () => ({
   OngletGuichetCredit: () => <div>contenu-credit</div>,
 }))
+vi.mock('@/features/credit/OngletGuichetDecaissement', () => ({
+  OngletGuichetDecaissement: () => <div>contenu-decaissement</div>,
+}))
 
 beforeEach(() => {
   etat.permissions = []
@@ -93,5 +96,25 @@ describe('PageGuichet', () => {
     expect(screen.getByText('contenu-credit')).toBeVisible()
     expect(screen.queryByText('contenu-epargne')).toBeNull()
     expect(screen.queryByText('contenu-parts')).toBeNull()
+  })
+
+  it('credit.decaissement.create : onglet Décaissement, seul il s’affiche sans barre d’onglets', () => {
+    etat.permissions = ['credit.decaissement.create']
+    render(<PageGuichet />)
+
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.getByText('contenu-decaissement')).toBeVisible()
+    expect(screen.queryByText('contenu-credit')).toBeNull()
+  })
+
+  it('caissier complet : l’onglet Décaissement côtoie Crédit et bascule au clic', () => {
+    etat.permissions = ['credit.remboursement.create', 'credit.decaissement.create']
+    render(<PageGuichet />)
+
+    expect(screen.getByRole('tab', { name: 'Crédit' })).toBeVisible()
+    fireEvent.click(screen.getByRole('tab', { name: 'Décaissement' }))
+
+    expect(screen.getByText('contenu-decaissement')).toBeVisible()
+    expect(screen.queryByText('contenu-credit')).toBeNull()
   })
 })

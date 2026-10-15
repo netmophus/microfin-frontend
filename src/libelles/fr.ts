@@ -1434,6 +1434,7 @@ export const LIBELLES = {
     ongletEpargne: 'Épargne',
     ongletParts: 'Parts sociales',
     ongletCredit: 'Crédit',
+    ongletDecaissement: 'Décaissement',
 
     intro: 'Cherchez un compte par numéro ou nom du titulaire, puis opérez.',
     rechercherLabel: 'Numéro de compte ou nom du titulaire',
@@ -1486,6 +1487,36 @@ export const LIBELLES = {
   // Onglet « Crédit » du guichet (CR6d) — encaissement du caissier, une échéance à la fois.
   // DIVERGENCE assumée avec les deux autres onglets : le montant n'est JAMAIS saisi, seulement
   // affiché (le serveur exige un montant EXACT, saisir serait risquer un refus évitable).
+  guichetDecaissement: {
+    intro:
+      'Cherchez un crédit approuvé par numéro de dossier, numéro de tiers ou nom, puis décaissez en espèces depuis votre caisse.',
+    rechercherLabel: 'Numéro de dossier, numéro ou nom du tiers',
+    rechercherPlaceholder: 'CR-2026-0000001, M-2026-0000001 ou nom',
+    rechercheEnCours: 'Recherche…',
+    rechercheErreur: 'La recherche a échoué. Réessayez.',
+    aucunResultat: 'Aucun crédit approuvé ne correspond à cette recherche.',
+    resultatLigne: '{montant} accordés · {produit}',
+    changerRecherche: 'Nouvelle recherche',
+    tiers: 'Tiers',
+    dossier: 'Dossier',
+    montantADecaisser: 'Montant à décaisser',
+    duree: 'Remboursable en {n} échéance(s)',
+    apercuTitre: 'Échéancier',
+    apercuChargement: 'Calcul de l’échéancier…',
+    apercuErreur: 'Impossible de calculer l’échéancier de ce dossier.',
+    decaisser: 'Décaisser',
+    // Confirmation — le NOM est RÉPÉTÉ (même règle que les autres onglets du guichet).
+    confirmerDecaissement: 'Remettre {montant} en espèces pour le crédit {dossier}',
+    confirmerQuestion: 'Confirmez-vous l’opération pour {nom} ?',
+    confirmer: 'Confirmer',
+    annuler: 'Annuler',
+    enCours: 'Traitement…',
+    succes: 'Crédit {dossier} décaissé : {montant} remis en espèces.',
+    succesEcheances: 'L’échéancier compte {n} échéance(s).',
+    echec: 'Le décaissement a échoué. Réessayez.',
+    autreOperation: 'Nouvelle opération',
+  },
+
   guichetCredit: {
     intro: 'Cherchez un crédit par numéro de dossier, numéro de tiers ou nom, puis encaissez.',
     rechercherLabel: 'Numéro de dossier, numéro ou nom du tiers',
