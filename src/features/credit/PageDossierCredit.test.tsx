@@ -527,7 +527,7 @@ describe('PageDossierCredit', () => {
     // Rien n'a été décaissé : la mutation de décaissement ne part jamais toute seule.
     expect(decaisserSimule).not.toHaveBeenCalled()
     // La table de l'aperçu montre le montant, sans colonne Statut (rien n'est suivi).
-    expect(screen.getByText('37 333 F')).toBeVisible()
+    expect(screen.getAllByText('37 333 F')[0]).toBeVisible() // ligne + pied (total)
     expect(screen.queryByText('Statut')).toBeNull()
 
     // La phrase que le responsable doit pouvoir répéter au client, telle quelle.
@@ -558,7 +558,80 @@ describe('PageDossierCredit', () => {
 
     await screen.findByText('CR-2026-0000001')
     expect(screen.queryByText('Échéancier — aperçu')).toBeNull()
-    expect(apercuSimule).not.toHaveBeenCalled()
+    expect(apercuSimule).not.toHaveBeenCalledWith(ID)
+  })
+
+  // --- Simulation de l'échéancier avant décision ---------------------------------------------
+
+  const LIGNES_SIMULEES = [
+    { numero: 1, due_date: '2026-11-05', capital: 40000, interets: 5000, total: 45000, capital_restant_du: 60000 },
+    { numero: 2, due_date: '2026-12-05', capital: 60000, interets: 3000, total: 63000, capital_restant_du: 0 },
+  ]
+
+  it('simulation visible en instruction pour l’agent (sans droit de décision), pied de tableau compris', async () => {
+    etat.permissions = ['credit.demande.read']
+    apercuSimule.mockResolvedValue(LIGNES_SIMULEES)
+    lireSimule.mockResolvedValue(unDossier({ status: 'en_instruction' }))
+    afficher()
+
+    expect(await screen.findByText('Échéancier simulé')).toBeVisible()
+    expect(apercuSimule).toHaveBeenCalledWith(ID, undefined)
+    expect(screen.getByText(/Simulation sur le montant demandé : 500 000 F/)).toBeVisible()
+    expect(screen.getByText('45 000 F')).toBeVisible()
+    expect(screen.getByText('63 000 F')).toBeVisible()
+    // Pied : capital total, intérêts totaux, total à rembourser — sommes des lignes du serveur.
+    const pied = screen.getByText('Totaux').closest('tr') as HTMLElement
+    expect(pied).toHaveTextContent('100 000 F')
+    expect(pied).toHaveTextContent('8 000 F')
+    expect(pied).toHaveTextContent('108 000 F')
+    expect(screen.queryByText('Statut')).toBeNull()
+  })
+
+  it('simulation côté comité : suit le montant accordé saisi (recalcul serveur)', async () => {
+    apercuSimule.mockResolvedValue(LIGNES_SIMULEES)
+    lireSimule.mockResolvedValue(unDossier({ status: 'en_instruction' }))
+    afficher()
+
+    await screen.findByText('Échéancier simulé')
+    fireEvent.click(screen.getByRole('button', { name: 'Approuver' }))
+    fireEvent.change(screen.getByLabelText('Montant accordé'), { target: { value: '300000' } })
+
+    await waitFor(() => expect(apercuSimule).toHaveBeenCalledWith(ID, 300000))
+    expect(await screen.findByText(/Simulation sur le montant accordé saisi : 300 000 F/)).toBeVisible()
+  })
+
+  it('simulation : montant accordé invalide (au-dessus du demandé) → retombe sur le montant demandé', async () => {
+    apercuSimule.mockResolvedValue(LIGNES_SIMULEES)
+    lireSimule.mockResolvedValue(unDossier({ status: 'en_instruction' }))
+    afficher()
+
+    await screen.findByText('Échéancier simulé')
+    fireEvent.click(screen.getByRole('button', { name: 'Approuver' }))
+    fireEvent.change(screen.getByLabelText('Montant accordé'), { target: { value: '900000' } })
+
+    await new Promise((r) => setTimeout(r, 600))
+    expect(apercuSimule).not.toHaveBeenCalledWith(ID, 900000)
+    expect(screen.getByText(/Simulation sur le montant demandé : 500 000 F/)).toBeVisible()
+  })
+
+  it('simulation : erreur serveur affichée en langage humain, le panneau de décision reste utilisable', async () => {
+    apercuSimule.mockRejectedValue(new Error('échec'))
+    lireSimule.mockResolvedValue(unDossier({ status: 'en_instruction' }))
+    afficher()
+
+    expect(
+      await screen.findByText('Impossible de calculer la simulation de l’échéancier.'),
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Approuver' })).toBeVisible()
+  })
+
+  it('aperçu d’un dossier approuvé : pied de tableau avec les totaux', async () => {
+    apercuSimule.mockResolvedValue(LIGNES_SIMULEES)
+    lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 100000 }))
+    afficher()
+
+    const pied = (await screen.findByText('Totaux')).closest('tr') as HTMLElement
+    expect(pied).toHaveTextContent('108 000 F')
   })
 
   // --- Impression de l'aperçu ---------------------------------------------------------------

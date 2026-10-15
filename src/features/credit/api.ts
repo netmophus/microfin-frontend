@@ -191,13 +191,19 @@ export async function lireEcheancierCredit(id: string): Promise<EcheanceCredit[]
 }
 
 /**
- * Aperçu PUR de l'échéancier d'une demande APPROUVÉE — même moteur que le décaissement réel,
- * RIEN N'EST ÉCRIT en base. Montants garantis identiques à l'échéancier réel ; dates
- * indicatives (calculées comme si le décaissement avait lieu aujourd'hui).
+ * Aperçu PUR de l'échéancier — même moteur que le décaissement réel, RIEN N'EST ÉCRIT en base.
+ * Dossier approuvé : montants garantis identiques à l'échéancier réel, dates indicatives (comme
+ * si le décaissement avait lieu à la journée comptable courante). Dossier en instruction :
+ * simulation avant décision, sur `montant` (montant accordé envisagé) ou, à défaut, sur le
+ * montant demandé. Le calcul reste côté serveur.
  */
-export async function lireApercuEcheancierCredit(id: string): Promise<EcheanceApercuCredit[]> {
+export async function lireApercuEcheancierCredit(
+  id: string,
+  montant?: number,
+): Promise<EcheanceApercuCredit[]> {
   const { data } = await api.get<EcheanceApercuCredit[]>(
     `/credit/demandes/${id}/echeancier-apercu`,
+    montant === undefined ? undefined : { params: { montant } },
   )
   return data
 }

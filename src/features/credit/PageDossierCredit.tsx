@@ -1,7 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import { ArrowLeft, Printer } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -58,6 +58,8 @@ function RetourListeCredit() {
 export function PageDossierCredit() {
   const { id = '' } = useParams()
   const client = useQueryClient()
+  // Montant accordé saisi par le comité (null = pas de saisie valide : simulation sur le demandé).
+  const [montantSimule, setMontantSimule] = useState<number | null>(null)
 
   const requete = useQuery({
     queryKey: ['credit', 'demande', id],
@@ -130,7 +132,12 @@ export function PageDossierCredit() {
         </section>
       )}
 
-      {d.status === 'en_instruction' && <PanneauDecision dossier={d} onDecide={rafraichir} />}
+      {d.status === 'en_instruction' && (
+        <>
+          <PanneauDecision dossier={d} onDecide={rafraichir} onMontantAccorde={setMontantSimule} />
+          <SimulationEcheancier dossier={d} montantAccorde={montantSimule} />
+        </>
+      )}
 
       {d.status === 'approuve' && (
         <>
@@ -150,14 +157,65 @@ export function PageDossierCredit() {
   )
 }
 
+/** Simulation de l'échéancier d'un dossier EN INSTRUCTION, visible de l'agent comme du comité.
+ * Le calcul vient du serveur (même moteur que le décaissement) ; la saisie du montant est
+ * temporisée pour ne pas interroger le serveur à chaque frappe. */
+const DELAI_SAISIE_MS = 400
+
+function SimulationEcheancier({
+  dossier,
+  montantAccorde,
+}: {
+  dossier: DemandeCreditDetail
+  montantAccorde: number | null
+}) {
+  const [montant, setMontant] = useState(montantAccorde)
+  useEffect(() => {
+    const minuteur = setTimeout(() => setMontant(montantAccorde), DELAI_SAISIE_MS)
+    return () => clearTimeout(minuteur)
+  }, [montantAccorde])
+
+  const requete = useQuery({
+    queryKey: ['credit', 'echeancier-simulation', dossier.id, montant],
+    queryFn: () => lireApercuEcheancierCredit(dossier.id, montant ?? undefined),
+    placeholderData: keepPreviousData,
+  })
+
+  if (requete.isPending) {
+    return <p className="py-4 text-sm text-muted-foreground">{C.simulationChargement}</p>
+  }
+  if (requete.isError) {
+    return (
+      <Alert variant="destructive" role="alert">
+        <AlertDescription>{C.simulationErreur}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  return (
+    <section className="space-y-2">
+      <h2 className="text-sm font-semibold">{C.simulationTitre}</h2>
+      <p className="text-sm text-muted-foreground">
+        {montant === null
+          ? C.simulationBaseDemande(formatFcfa(dossier.montant_demande))
+          : C.simulationBaseAccorde(formatFcfa(montant))}{' '}
+        {C.simulationAvertissement}
+      </p>
+      <TableEcheances lignes={requete.data} avecStatut={false} avecTotaux />
+    </section>
+  )
+}
+
 type ModeDecision = 'approuve' | 'refuse'
 
 function PanneauDecision({
   dossier,
   onDecide,
+  onMontantAccorde,
 }: {
   dossier: DemandeCreditDetail
   onDecide: () => void
+  onMontantAccorde: (montant: number | null) => void
 }) {
   const peutDecider = useAPermission('credit.demande.decide')
   const [mode, setMode] = useState<ModeDecision | null>(null)
@@ -177,6 +235,13 @@ function PanneauDecision({
       }),
     onSuccess: onDecide,
   })
+
+  // La simulation suit le montant accordé saisi tant qu'il est valide ; sinon elle retombe sur
+  // le montant demandé.
+  const montantSimule = mode === 'approuve' && montantValide ? montantNum : null
+  useEffect(() => {
+    onMontantAccorde(montantSimule)
+  }, [montantSimule, onMontantAccorde])
 
   if (!peutDecider) return null
 
@@ -432,11 +497,14 @@ function TableEcheances({
   lignes,
   avecStatut,
   neutraliserSiAEchoir = false,
+  avecTotaux = false,
 }: {
   lignes: (EcheanceCredit | EcheanceApercuCredit)[]
   avecStatut: boolean
   neutraliserSiAEchoir?: boolean
+  avecTotaux?: boolean
 }) {
+  const somme = (champ: 'capital' | 'interets' | 'total') => lignes.reduce((cumul, e) => cumul + e[champ], 0)
   return (
     <div className="overflow-x-auto rounded-md border">
       <table className="w-full text-sm">
@@ -495,6 +563,25 @@ function TableEcheances({
             )
           })}
         </tbody>
+        {avecTotaux && (
+          <tfoot className="border-t bg-muted/50 font-semibold">
+            <tr>
+              <th scope="row" colSpan={2} className="px-3 py-2 text-left">
+                {C.totaux}
+              </th>
+              <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(somme('capital'))}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(somme('interets'))}</td>
+              <td
+                className="px-3 py-2 text-right tabular-nums"
+                title={C.totalARembourser}
+                aria-label={`${C.totalARembourser} : ${formatFcfa(somme('total'))}`}
+              >
+                {formatFcfa(somme('total'))}
+              </td>
+              <td />
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   )
@@ -629,7 +716,7 @@ function ApercuEcheancier({ dossier }: { dossier: DemandeCreditDetail }) {
           </p>
         </div>
 
-        <TableEcheances lignes={requete.data} avecStatut={false} />
+        <TableEcheances lignes={requete.data} avecStatut={false} avecTotaux />
 
         {/* Signature — sans objet à l'écran, imprimée seulement. */}
         <div className="hidden print:grid print:grid-cols-2 print:gap-8 print:pt-10 print:text-sm">

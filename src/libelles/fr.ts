@@ -1186,6 +1186,17 @@ export const LIBELLES = {
     // CR5b : sous le total, seulement pour une échéance partiellement payée.
     soldeRestant: 'Solde restant : {montant}',
 
+    // Pied de tableau des échéanciers (simulation et aperçu) : capital, intérêts, total.
+    totaux: 'Totaux',
+    totalARembourser: 'Total à rembourser',
+    // --- Simulation de l'échéancier (dossier en instruction, avant décision) ---
+    simulationTitre: 'Échéancier simulé',
+    simulationBaseDemande: (montant: string) => `Simulation sur le montant demandé : ${montant}.`,
+    simulationBaseAccorde: (montant: string) => `Simulation sur le montant accordé saisi : ${montant}.`,
+    simulationAvertissement:
+      'Simulation avant décision : rien n’est enregistré. Les dates sont calées sur la journée comptable courante ; les dates définitives sont fixées au décaissement.',
+    simulationChargement: 'Calcul de la simulation…',
+    simulationErreur: 'Impossible de calculer la simulation de l’échéancier.',
     // --- Aperçu de l'échéancier (CR6b) — avant tout décaissement, pour signature client ---
     apercuTitre: 'Échéancier — aperçu',
     apercuChargement: 'Calcul de l’aperçu…',
