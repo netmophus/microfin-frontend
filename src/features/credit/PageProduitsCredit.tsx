@@ -349,10 +349,12 @@ function LigneEdition({
   const [tauxUsure, setTauxUsure] = useState(
     produit.taux_usure_max_bp === null ? '' : bpVersPourcent(produit.taux_usure_max_bp),
   )
+  const [tauxTva, setTauxTva] = useState(bpVersPourcent(produit.taux_tva_bp))
   const [motif, setMotif] = useState('')
 
   const tauxBp = pourcentVersBp(taux)
   const tauxUsureBp = tauxUsure.trim() === '' ? null : pourcentVersBp(tauxUsure)
+  const tauxTvaBp = pourcentVersBp(tauxTva)
   const idBase = `pc-${produit.id}`
 
   const mutation = useMutation({
@@ -364,6 +366,7 @@ function LigneEdition({
         methode_amortissement: methode,
         regle_arrondi: arrondi,
         taux_usure_max_bp: tauxUsureBp,
+        taux_tva_bp: tauxTvaBp as number,
         motif: motif.trim(),
       }),
     onSuccess: onFini,
@@ -374,6 +377,9 @@ function LigneEdition({
     tauxBp !== null &&
     tauxBp >= 0 &&
     tauxBp <= 10000 &&
+    tauxTvaBp !== null &&
+    tauxTvaBp >= 0 &&
+    tauxTvaBp <= 10000 &&
     (tauxUsure.trim() === '' || (tauxUsureBp !== null && tauxUsureBp >= 0)) &&
     motif.trim().length >= 3
 
@@ -456,6 +462,19 @@ function LigneEdition({
             />
             <p id={`${idBase}-usure-aide`} className="text-xs text-muted-foreground">
               {P.tauxUsureMaxAide}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor={`${idBase}-tva`}>{P.tauxTva}</Label>
+            <Input
+              id={`${idBase}-tva`}
+              inputMode="decimal"
+              value={tauxTva}
+              onChange={(e) => setTauxTva(e.target.value)}
+              aria-describedby={`${idBase}-tva-aide`}
+            />
+            <p id={`${idBase}-tva-aide`} className="text-xs text-muted-foreground">
+              {P.tauxTvaAide}
             </p>
           </div>
         </div>
@@ -561,9 +580,12 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
   const [methode, setMethode] = useState<MethodeAmortissement>('echeance_constante')
   const [arrondi, setArrondi] = useState<RegleArrondi>('plus_proche')
   const [tauxUsure, setTauxUsure] = useState('')
+  // Défaut applicatif d'un NOUVEAU produit : 19 % (0 = exonéré).
+  const [tauxTva, setTauxTva] = useState('19')
 
   const tauxBp = pourcentVersBp(taux)
   const tauxUsureBp = tauxUsure.trim() === '' ? null : pourcentVersBp(tauxUsure)
+  const tauxTvaBp = pourcentVersBp(tauxTva)
   const idBase = 'pc-creation'
 
   const mutation = useMutation({
@@ -576,6 +598,7 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
         methode_amortissement: methode,
         regle_arrondi: arrondi,
         taux_usure_max_bp: tauxUsureBp,
+        taux_tva_bp: tauxTvaBp as number,
       }),
     onSuccess: onFini,
   })
@@ -586,6 +609,9 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
     tauxBp !== null &&
     tauxBp >= 0 &&
     tauxBp <= 10000 &&
+    tauxTvaBp !== null &&
+    tauxTvaBp >= 0 &&
+    tauxTvaBp <= 10000 &&
     (tauxUsure.trim() === '' || (tauxUsureBp !== null && tauxUsureBp >= 0))
 
   return (
@@ -677,6 +703,19 @@ function FormulaireCreation({ onFini, onAnnuler }: { onFini: () => void; onAnnul
           />
           <p id={`${idBase}-usure-aide`} className="text-xs text-muted-foreground">
             {P.tauxUsureMaxAide}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor={`${idBase}-tva`}>{P.tauxTva}</Label>
+          <Input
+            id={`${idBase}-tva`}
+            inputMode="decimal"
+            value={tauxTva}
+            onChange={(e) => setTauxTva(e.target.value)}
+            aria-describedby={`${idBase}-tva-aide`}
+          />
+          <p id={`${idBase}-tva-aide`} className="text-xs text-muted-foreground">
+            {P.tauxTvaAide}
           </p>
         </div>
       </div>
@@ -805,7 +844,7 @@ function RattachementsContenu({
   const r = rattachements.data
   return (
     <div className="rounded-md border p-4">
-      <dl className="grid gap-3 sm:grid-cols-3">
+      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <dt className="text-xs text-muted-foreground">{P.colonneCompteMembre}</dt>
           <dd className="mt-0.5">
@@ -822,6 +861,12 @@ function RattachementsContenu({
           <dt className="text-xs text-muted-foreground">{P.colonneCompteInterets}</dt>
           <dd className="mt-0.5">
             <TexteCompte compte={r.compte_produits_interets} />
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">{P.colonneCompteTva}</dt>
+          <dd className="mt-0.5">
+            <TexteCompte compte={r.compte_tva} />
           </dd>
         </div>
       </dl>
@@ -860,6 +905,7 @@ function FormulaireRattachements({
     compte_credit_membre: { account_number: string; name: string } | null
     compte_credit_client: { account_number: string; name: string } | null
     compte_produits_interets: { account_number: string; name: string } | null
+    compte_tva: { account_number: string; name: string } | null
   }
   onFini: () => void
   onAnnuler: () => void
@@ -873,6 +919,7 @@ function FormulaireRattachements({
   const [compteInterets, setCompteInterets] = useState(
     actuel.compte_produits_interets?.account_number ?? null,
   )
+  const [compteTva, setCompteTva] = useState(actuel.compte_tva?.account_number ?? null)
   const [motif, setMotif] = useState('')
 
   const mutation = useMutation({
@@ -881,6 +928,7 @@ function FormulaireRattachements({
         compte_credit_membre: compteMembre,
         compte_credit_client: compteClient,
         compte_produits_interets: compteInterets,
+        compte_tva: compteTva,
         motif: motif.trim(),
       }),
     onSuccess: onFini,
@@ -890,7 +938,7 @@ function FormulaireRattachements({
 
   return (
     <div className="rounded-md border p-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <SelecteurCompte
           id="rc-membre"
           label={P.colonneCompteMembre}
@@ -914,6 +962,14 @@ function FormulaireRattachements({
           valeur={compteInterets}
           onChange={setCompteInterets}
           libelleInitial={libelleCompte(actuel.compte_produits_interets)}
+        />
+        <SelecteurCompte
+          id="rc-tva"
+          label={P.colonneCompteTva}
+          filtre="saisie"
+          valeur={compteTva}
+          onChange={setCompteTva}
+          libelleInitial={libelleCompte(actuel.compte_tva)}
         />
       </div>
 

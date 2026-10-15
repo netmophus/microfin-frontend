@@ -75,6 +75,7 @@ function produit(partiel: Partial<ProduitCreditDetail> = {}): ProduitCreditDetai
     base_jours: 360,
     regle_arrondi: 'plus_proche',
     taux_usure_max_bp: null,
+    taux_tva_bp: 1900,
     ...partiel,
   }
 }
@@ -89,6 +90,7 @@ function rattachements(
     compte_credit_membre: null,
     compte_credit_client: null,
     compte_produits_interets: null,
+    compte_tva: null,
     ...partiel,
   }
 }
@@ -122,6 +124,100 @@ describe('PageProduitsCredit', () => {
     expect(screen.getByText('Actif')).toBeVisible()
     expect(screen.getAllByText('Inactif')).toHaveLength(2)
     expect(screen.getByText('Provisoire')).toBeVisible()
+  })
+
+  it('création : le taux de TVA vaut 19 % par défaut et part en points de base (1900)', async () => {
+    listerSimule.mockResolvedValue([])
+    creerSimule.mockResolvedValue(produit({ code: 'TVA1' }))
+    afficher()
+    await screen.findByText(/Aucun produit de crédit/i)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un produit' }))
+    expect(screen.getByLabelText('Taux de TVA sur les intérêts (%)')).toHaveValue('19')
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'TVA1' } })
+    fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Avec TVA' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(creerSimule).toHaveBeenCalledWith(expect.objectContaining({ taux_tva_bp: 1900 })),
+    )
+  })
+
+  it('création : 0 est accepté (produit exonéré), une valeur au-delà de 100 % bloque l’enregistrement', async () => {
+    listerSimule.mockResolvedValue([])
+    creerSimule.mockResolvedValue(produit({ code: 'EXO' }))
+    afficher()
+    await screen.findByText(/Aucun produit de crédit/i)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un produit' }))
+    fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'EXO' } })
+    fireEvent.change(screen.getByLabelText('Nom'), { target: { value: 'Exonéré' } })
+    fireEvent.change(screen.getByLabelText('Taux de TVA sur les intérêts (%)'), {
+      target: { value: '101' },
+    })
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Taux de TVA sur les intérêts (%)'), {
+      target: { value: '0' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(creerSimule).toHaveBeenCalledWith(expect.objectContaining({ taux_tva_bp: 0 })),
+    )
+  })
+
+  it('modification : le taux de TVA du produit est repris et renvoyé', async () => {
+    listerSimule.mockResolvedValue([produit({ taux_tva_bp: 1900 })])
+    vi.mocked(modifierProduitCredit).mockResolvedValue(produit({ taux_tva_bp: 1800 }))
+    afficher()
+    await screen.findByText('Crédit court terme')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    expect(screen.getByLabelText('Taux de TVA sur les intérêts (%)')).toHaveValue('19')
+    fireEvent.change(screen.getByLabelText('Taux de TVA sur les intérêts (%)'), {
+      target: { value: '18' },
+    })
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Taux révisé' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(vi.mocked(modifierProduitCredit)).toHaveBeenCalledWith(
+        'p1',
+        expect.objectContaining({ taux_tva_bp: 1800, motif: 'Taux révisé' }),
+      ),
+    )
+  })
+
+  it('onglet Rattachements : le compte TVA est affiché et envoyé avec les trois autres', async () => {
+    lireRattachementsSimule.mockResolvedValue(
+      rattachements({ compte_tva: { account_number: '332100', name: 'État, TVA collectée à reverser' } }),
+    )
+    modifierRattachementsSimule.mockResolvedValue(rattachements())
+    afficher()
+    await screen.findByText('Crédit court terme')
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Rattachements comptables' }))
+    fireEvent.change(await screen.findByLabelText('Choisir un produit'), {
+      target: { value: 'p1' },
+    })
+    expect(await screen.findByText('Compte TVA collectée à reverser')).toBeVisible()
+    expect(screen.getByText(/332100 — État, TVA collectée à reverser/)).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    fireEvent.change(screen.getByLabelText('Motif (obligatoire)'), {
+      target: { value: 'Contrôle' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    await waitFor(() =>
+      expect(modifierRattachementsSimule).toHaveBeenCalledWith(
+        'p1',
+        expect.objectContaining({ compte_tva: '332100' }),
+      ),
+    )
   })
 
   it('« Ajouter un produit » absent sans credit.product.manage', async () => {
@@ -190,7 +286,7 @@ describe('PageProduitsCredit', () => {
       target: { value: 'p1' },
     })
 
-    expect(await screen.findAllByText('— non rattaché —')).toHaveLength(3)
+    expect(await screen.findAllByText('— non rattaché —')).toHaveLength(4)
     expect(screen.queryByRole('button', { name: 'Modifier' })).toBeNull()
   })
 

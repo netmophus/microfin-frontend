@@ -1176,6 +1176,11 @@ export const LIBELLES = {
     colCapital: 'Capital',
     colInterets: 'Intérêts',
     colTotal: 'Total',
+    // Produit soumis à la TVA : colonne TVA, total TTC, pied de tableau.
+    colTva: 'TVA',
+    colTotalTtc: 'Total (TTC)',
+    colInteretsHt: 'Intérêts (HT)',
+    tvaTotale: 'TVA totale',
     colCapitalRestant: 'Capital restant dû',
     colStatutEcheance: 'Statut',
     statutsEcheance: {
@@ -1226,7 +1231,8 @@ export const LIBELLES = {
     soldeAnticipeApercuErreur: 'Impossible de calculer le solde anticipé.',
     soldeAnticipeTitre: 'Solde anticipé — montant à régler aujourd’hui',
     soldeAnticipeCapitalRestant: 'Capital restant dû',
-    soldeAnticipeInteretsCourus: 'Intérêts courus',
+    soldeAnticipeInteretsCourus: 'Intérêts courus (HT)',
+    soldeAnticipeTvaCourue: 'TVA sur les intérêts courus',
     soldeAnticipeTotal: 'Total à régler',
     // {jours}/{date} — {date} déjà formatée. Le point de départ du prorata (dernière échéance
     // payée, ou décaissement si aucune ne l'est encore).
@@ -1497,6 +1503,10 @@ export const LIBELLES = {
     echeanceLabel: 'Échéance',
     capitalLabel: 'Capital',
     interetsLabel: 'Intérêts',
+    interetsHtLabel: 'Intérêts HT',
+    tvaLabel: 'TVA',
+    // Ventilation du versement encaissé (affichée seulement si une TVA a été collectée).
+    ventilation: 'Dont capital {capital}, intérêts HT {interets}, TVA {tva}.',
     // CR5b : visible seulement si un versement partiel a déjà eu lieu sur cette échéance.
     dejaVerse: 'Déjà versé : {montant}',
     continuer: 'Continuer',
@@ -2378,6 +2388,10 @@ export const LIBELLES = {
     arrondi: 'Règle d’arrondi',
     arrondiPlusProche: 'Au plus proche',
     arrondiPlancher: 'Au franc inférieur',
+    tauxTva: 'Taux de TVA sur les intérêts (%)',
+    tauxTvaAide:
+      '19 par défaut. Saisissez 0 pour un produit exonéré. La TVA ne porte que sur les intérêts, jamais sur le capital.',
+    colonneCompteTva: 'Compte TVA collectée à reverser',
     tauxUsureMax: 'Plafond de taux (usure, optionnel)',
     tauxUsureMaxAide: 'Laissez vide pour aucun plafond. Saisi en pourcentage, enregistré en points de base.',
     motif: 'Motif (obligatoire)',

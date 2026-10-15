@@ -21,9 +21,7 @@ import { OngletGuichetCredit } from '@/features/credit/OngletGuichetCredit'
  */
 
 vi.mock('@/features/credit/api', async () => {
-  const reel = await vi.importActual<typeof import('@/features/credit/api')>(
-    '@/features/credit/api',
-  )
+  const reel = await vi.importActual<typeof import('@/features/credit/api')>('@/features/credit/api')
   return { ...reel, rechercherRemboursements: vi.fn(), rembourserDemandeCredit: vi.fn() }
 })
 
@@ -42,6 +40,7 @@ function unDossier(o: Partial<DossierRemboursable> = {}): DossierRemboursable {
       due_date: '2026-09-04',
       capital: 25000,
       interets: 3000,
+      tva: 0,
       total: 28000,
       montant_paye: 0,
       solde_du: 28000,
@@ -82,10 +81,7 @@ describe('OngletGuichetCredit', () => {
     rechercheSimule.mockResolvedValue([unDossier()])
     afficher()
 
-    await userEvent.setup().type(
-      screen.getByLabelText(/Numéro de dossier, numéro ou nom du tiers/),
-      'D',
-    )
+    await userEvent.setup().type(screen.getByLabelText(/Numéro de dossier, numéro ou nom du tiers/), 'D')
 
     // Aucun bouton « Chercher » : le résultat doit apparaître de la seule frappe.
     expect(screen.queryByRole('button', { name: /Chercher/ })).toBeNull()
@@ -97,10 +93,7 @@ describe('OngletGuichetCredit', () => {
     rechercheSimule.mockResolvedValue([])
     afficher()
 
-    await userEvent.setup().type(
-      screen.getByLabelText(/Numéro de dossier, numéro ou nom du tiers/),
-      'Diallo',
-    )
+    await userEvent.setup().type(screen.getByLabelText(/Numéro de dossier, numéro ou nom du tiers/), 'Diallo')
 
     await waitFor(() => expect(rechercheSimule).toHaveBeenCalledWith('Diallo'))
     // Pas un appel par lettre (D, Di, Dia…) — un seul, après la pause de saisie.
@@ -149,6 +142,7 @@ describe('OngletGuichetCredit', () => {
           due_date: '2026-09-04',
           capital: 25000,
           interets: 3000,
+          tva: 0,
           total: 28000,
           montant_paye: 10000,
           solde_du: 18000,
@@ -188,6 +182,7 @@ describe('OngletGuichetCredit', () => {
       due_date: '2026-09-04',
       capital: 25000,
       interets: 3000,
+      tva: 0,
       montant_total: 28000,
       paid_at: '2026-09-04T10:00:00Z',
       solde_du: 0,
@@ -204,12 +199,50 @@ describe('OngletGuichetCredit', () => {
     expect(screen.getByText('Ce crédit est maintenant intégralement soldé.')).toBeVisible()
   })
 
+  it('produit soumis à la TVA : la fiche distingue intérêts HT et TVA, le succès donne la ventilation', async () => {
+    const avecTva = unDossier({
+      prochaine_echeance: {
+        numero: 3,
+        due_date: '2026-09-04',
+        capital: 25000,
+        interets: 3000,
+        tva: 570,
+        total: 28570,
+        montant_paye: 0,
+        solde_du: 28570,
+      },
+    })
+    rembourserSimule.mockResolvedValue({
+      numero: 3,
+      due_date: '2026-09-04',
+      capital: 25000,
+      interets: 3000,
+      tva: 570,
+      montant_total: 28570,
+      paid_at: '2026-09-04T10:00:00Z',
+      solde_du: 0,
+      echeance_soldee: true,
+      echeances_restantes: 2,
+    })
+    afficher()
+    await chercherEtSelectionner(avecTva)
+
+    expect(screen.getByText(/Intérêts HT 3 000 F/)).toBeVisible()
+    expect(screen.getByText(/TVA 570 F/)).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
+
+    await waitFor(() => expect(rembourserSimule).toHaveBeenCalledWith('d1', 28570))
+    expect(await screen.findByText('Dont capital 25 000 F, intérêts HT 3 000 F, TVA 570 F.')).toBeVisible()
+  })
+
   it('remboursement avec échéances restantes : le dit, pas « soldé »', async () => {
     rembourserSimule.mockResolvedValue({
       numero: 3,
       due_date: '2026-09-04',
       capital: 25000,
       interets: 3000,
+      tva: 0,
       montant_total: 28000,
       paid_at: '2026-09-04T10:00:00Z',
       solde_du: 0,
@@ -237,8 +270,6 @@ describe('OngletGuichetCredit', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continuer' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmer' }))
 
-    expect(
-      await screen.findByText('Cette échéance est de 28000 F, vous avez saisi 0 F.'),
-    ).toBeVisible()
+    expect(await screen.findByText('Cette échéance est de 28000 F, vous avez saisi 0 F.')).toBeVisible()
   })
 })

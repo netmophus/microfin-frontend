@@ -183,7 +183,13 @@ function FicheGuichet({
         <p className="text-2xl font-bold tabular-nums">{formatFcfa(echeance.solde_du)}</p>
         <p className="text-xs text-muted-foreground">
           {G.echeanceLabel} #{echeance.numero} · {G.capitalLabel} {formatFcfa(echeance.capital)} ·{' '}
-          {G.interetsLabel} {formatFcfa(echeance.interets)}
+          {echeance.tva > 0 ? G.interetsHtLabel : G.interetsLabel} {formatFcfa(echeance.interets)}
+          {echeance.tva > 0 && (
+            <>
+              {' '}
+              · {G.tvaLabel} {formatFcfa(echeance.tva)}
+            </>
+          )}
         </p>
         {echeance.montant_paye > 0 && (
           <p className="text-xs text-muted-foreground">
@@ -224,6 +230,15 @@ function Operations({
           <p>
             {fmt(G.succes, { numero: String(succes.numero), montant: formatFcfa(succes.montant_total) })}
           </p>
+          {succes.tva > 0 && (
+            <p>
+              {fmt(G.ventilation, {
+                capital: formatFcfa(succes.capital),
+                interets: formatFcfa(succes.interets),
+                tva: formatFcfa(succes.tva),
+              })}
+            </p>
+          )}
           <p>
             {succes.echeances_restantes === 0
               ? G.succesSolde

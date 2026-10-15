@@ -424,6 +424,7 @@ describe('PageDossierCredit', () => {
         due_date: '2026-09-04',
         capital: 25000,
         interets: 3000,
+        tva: 0,
         total: 28000,
         capital_restant_du: 275000,
         status: 'a_echoir',
@@ -435,6 +436,7 @@ describe('PageDossierCredit', () => {
         due_date: '2026-10-04',
         capital: 25000,
         interets: 2750,
+        tva: 0,
         total: 27750,
         capital_restant_du: 250000,
         status: 'a_echoir',
@@ -463,6 +465,7 @@ describe('PageDossierCredit', () => {
         due_date: '2026-09-04',
         capital: 25000,
         interets: 3000,
+        tva: 0,
         total: 28000,
         capital_restant_du: 25000,
         status: 'paye',
@@ -474,6 +477,7 @@ describe('PageDossierCredit', () => {
         due_date: '2026-10-04',
         capital: 25000,
         interets: 2750,
+        tva: 0,
         total: 27750,
         capital_restant_du: 0,
         status: 'paye',
@@ -495,6 +499,7 @@ describe('PageDossierCredit', () => {
         due_date: '2026-09-04',
         capital: 25000,
         interets: 3000,
+        tva: 0,
         total: 28000,
         capital_restant_du: 275000,
         status: 'partiellement_paye',
@@ -517,7 +522,7 @@ describe('PageDossierCredit', () => {
 
   it('aperçu visible dès `approuve`, AVANT tout décaissement, avec son bandeau', async () => {
     apercuSimule.mockResolvedValue([
-      { numero: 1, due_date: '2026-09-04', capital: 33333, interets: 4000, total: 37333, capital_restant_du: 366667 },
+      { numero: 1, due_date: '2026-09-04', capital: 33333, interets: 4000, tva: 0, total: 37333, capital_restant_du: 366667 },
     ])
     lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
     afficher()
@@ -564,8 +569,8 @@ describe('PageDossierCredit', () => {
   // --- Simulation de l'échéancier avant décision ---------------------------------------------
 
   const LIGNES_SIMULEES = [
-    { numero: 1, due_date: '2026-11-05', capital: 40000, interets: 5000, total: 45000, capital_restant_du: 60000 },
-    { numero: 2, due_date: '2026-12-05', capital: 60000, interets: 3000, total: 63000, capital_restant_du: 0 },
+    { numero: 1, due_date: '2026-11-05', capital: 40000, interets: 5000, tva: 0, total: 45000, capital_restant_du: 60000 },
+    { numero: 2, due_date: '2026-12-05', capital: 60000, interets: 3000, tva: 0, total: 63000, capital_restant_du: 0 },
   ]
 
   it('simulation visible en instruction pour l’agent (sans droit de décision), pied de tableau compris', async () => {
@@ -585,6 +590,37 @@ describe('PageDossierCredit', () => {
     expect(pied).toHaveTextContent('8 000 F')
     expect(pied).toHaveTextContent('108 000 F')
     expect(screen.queryByText('Statut')).toBeNull()
+  })
+
+  it('produit soumis à la TVA : colonne TVA, total TTC, pied « TVA totale » et « Total à rembourser (TTC) »', async () => {
+    etat.permissions = ['credit.demande.read']
+    apercuSimule.mockResolvedValue([
+      { numero: 1, due_date: '2026-11-05', capital: 40000, interets: 5000, tva: 950, total: 45950, capital_restant_du: 60000 },
+      { numero: 2, due_date: '2026-12-05', capital: 60000, interets: 3000, tva: 570, total: 63570, capital_restant_du: 0 },
+    ])
+    lireSimule.mockResolvedValue(unDossier({ status: 'en_instruction' }))
+    afficher()
+
+    await screen.findByText('Échéancier simulé')
+    expect(screen.getByRole('columnheader', { name: 'TVA' })).toBeVisible()
+    expect(screen.getByRole('columnheader', { name: 'Total (TTC)' })).toBeVisible()
+    expect(screen.getByRole('columnheader', { name: 'Intérêts (HT)' })).toBeVisible()
+    const pied = screen.getByText('Totaux').closest('tr') as HTMLElement
+    expect(pied).toHaveTextContent('100 000 F')
+    expect(pied).toHaveTextContent('8 000 F')
+    expect(screen.getByLabelText('TVA totale : 1 520 F')).toBeVisible()
+    expect(screen.getByLabelText('Total à rembourser : 109 520 F')).toBeVisible()
+  })
+
+  it('produit exonéré : pas de colonne TVA', async () => {
+    etat.permissions = ['credit.demande.read']
+    apercuSimule.mockResolvedValue(LIGNES_SIMULEES)
+    lireSimule.mockResolvedValue(unDossier({ status: 'en_instruction' }))
+    afficher()
+
+    await screen.findByText('Échéancier simulé')
+    expect(screen.queryByRole('columnheader', { name: 'TVA' })).toBeNull()
+    expect(screen.getByRole('columnheader', { name: 'Total' })).toBeVisible()
   })
 
   it('simulation côté comité : suit le montant accordé saisi (recalcul serveur)', async () => {
@@ -640,7 +676,7 @@ describe('PageDossierCredit', () => {
     const printSimule = vi.fn()
     vi.stubGlobal('print', printSimule)
     apercuSimule.mockResolvedValue([
-      { numero: 1, due_date: '2026-09-04', capital: 33333, interets: 4000, total: 37333, capital_restant_du: 366667 },
+      { numero: 1, due_date: '2026-09-04', capital: 33333, interets: 4000, tva: 0, total: 37333, capital_restant_du: 366667 },
     ])
     lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
     afficher()
@@ -653,7 +689,7 @@ describe('PageDossierCredit', () => {
 
   it('impression : la ligne de signature du client et la date figurent dans le document', async () => {
     apercuSimule.mockResolvedValue([
-      { numero: 1, due_date: '2026-09-04', capital: 33333, interets: 4000, total: 37333, capital_restant_du: 366667 },
+      { numero: 1, due_date: '2026-09-04', capital: 33333, interets: 4000, tva: 0, total: 37333, capital_restant_du: 366667 },
     ])
     lireSimule.mockResolvedValue(unDossier({ status: 'approuve', montant_decide: 400000 }))
     afficher()
@@ -675,6 +711,7 @@ describe('PageDossierCredit', () => {
         due_date: '2026-09-04',
         capital: 25000,
         interets: 3000,
+        tva: 0,
         total: 28000,
         capital_restant_du: 275000,
         status: 'a_echoir' as const,
@@ -686,6 +723,7 @@ describe('PageDossierCredit', () => {
         due_date: '2026-10-04',
         capital: 25000,
         interets: 2750,
+        tva: 0,
         total: 27750,
         capital_restant_du: 250000,
         status: 'a_echoir' as const,
@@ -720,6 +758,7 @@ describe('PageDossierCredit', () => {
     apercuSoldeSimule.mockResolvedValue({
       capital_restant: 275000,
       interets_courus: 1500,
+      tva_courue: 0,
       montant_total: 276500,
       date_reference_interets: '2026-09-04',
       jours_courus: 15,
@@ -768,6 +807,7 @@ describe('PageDossierCredit', () => {
     apercuSoldeSimule.mockResolvedValue({
       capital_restant: 275000,
       interets_courus: 1500,
+      tva_courue: 0,
       montant_total: 276500,
       date_reference_interets: '2026-09-04',
       jours_courus: 15,
@@ -775,6 +815,7 @@ describe('PageDossierCredit', () => {
     soldeSimule.mockResolvedValue({
       capital_regle: 275000,
       interets_courus: 1500,
+      tva_courue: 0,
       montant_total: 276500,
       jours_courus: 15,
       solde_at: '2026-09-19T10:00:00Z',

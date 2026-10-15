@@ -504,7 +504,11 @@ function TableEcheances({
   neutraliserSiAEchoir?: boolean
   avecTotaux?: boolean
 }) {
-  const somme = (champ: 'capital' | 'interets' | 'total') => lignes.reduce((cumul, e) => cumul + e[champ], 0)
+  const somme = (champ: 'capital' | 'interets' | 'tva' | 'total') =>
+    lignes.reduce((cumul, e) => cumul + e[champ], 0)
+  // Colonne TVA seulement pour un produit soumis à la TVA : pour un produit exonéré, une
+  // colonne de zéros n'apporte rien.
+  const avecTva = lignes.some((e) => e.tva > 0)
   return (
     <div className="overflow-x-auto rounded-md border">
       <table className="w-full text-sm">
@@ -513,8 +517,13 @@ function TableEcheances({
             <th className="px-3 py-2 text-left font-medium">{C.colEcheance}</th>
             <th className="px-3 py-2 text-left font-medium">{C.colEcheanceDate}</th>
             <th className="px-3 py-2 text-right font-medium">{C.colCapital}</th>
-            <th className="px-3 py-2 text-right font-medium">{C.colInterets}</th>
-            <th className="px-3 py-2 text-right font-medium">{C.colTotal}</th>
+            <th className="px-3 py-2 text-right font-medium">
+              {avecTva ? C.colInteretsHt : C.colInterets}
+            </th>
+            {avecTva && <th className="px-3 py-2 text-right font-medium">{C.colTva}</th>}
+            <th className="px-3 py-2 text-right font-medium">
+              {avecTva ? C.colTotalTtc : C.colTotal}
+            </th>
             <th className="px-3 py-2 text-right font-medium">{C.colCapitalRestant}</th>
             {avecStatut && (
               <th className="px-3 py-2 text-left font-medium">{C.colStatutEcheance}</th>
@@ -536,6 +545,9 @@ function TableEcheances({
                 <td className="px-3 py-2">{new Date(e.due_date).toLocaleDateString('fr-FR')}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.capital)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.interets)}</td>
+                {avecTva && (
+                  <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(e.tva)}</td>
+                )}
                 <td className="px-3 py-2 text-right font-semibold tabular-nums">
                   {formatFcfa(e.total)}
                   {/* CR5b : le solde restant, seulement si un versement partiel a déjà eu lieu —
@@ -571,6 +583,15 @@ function TableEcheances({
               </th>
               <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(somme('capital'))}</td>
               <td className="px-3 py-2 text-right tabular-nums">{formatFcfa(somme('interets'))}</td>
+              {avecTva && (
+                <td
+                  className="px-3 py-2 text-right tabular-nums"
+                  title={C.tvaTotale}
+                  aria-label={`${C.tvaTotale} : ${formatFcfa(somme('tva'))}`}
+                >
+                  {formatFcfa(somme('tva'))}
+                </td>
+              )}
               <td
                 className="px-3 py-2 text-right tabular-nums"
                 title={C.totalARembourser}
@@ -820,6 +841,9 @@ function PanneauSoldeAnticipe({
       <dl className="divide-y">
         <Ligne label={C.soldeAnticipeCapitalRestant} valeur={formatFcfa(a.capital_restant)} />
         <Ligne label={C.soldeAnticipeInteretsCourus} valeur={formatFcfa(a.interets_courus)} />
+        {a.tva_courue > 0 && (
+          <Ligne label={C.soldeAnticipeTvaCourue} valeur={formatFcfa(a.tva_courue)} />
+        )}
         <Ligne label={C.soldeAnticipeTotal} valeur={formatFcfa(a.montant_total)} />
       </dl>
       <p className="text-xs text-muted-foreground">

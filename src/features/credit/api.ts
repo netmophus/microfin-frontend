@@ -62,6 +62,8 @@ export interface EcheanceCredit {
   due_date: string
   capital: number
   interets: number
+  // TVA sur les intérêts (0 pour un produit exonéré) ; `total` est le total TTC.
+  tva: number
   total: number
   capital_restant_du: number
   status: string // 'a_echoir' | 'partiellement_paye' | 'paye'
@@ -101,6 +103,7 @@ export interface EcheanceDue {
   due_date: string
   capital: number
   interets: number
+  tva: number
   total: number
   montant_paye: number
   solde_du: number
@@ -123,6 +126,7 @@ export interface RemboursementRecu {
   due_date: string
   capital: number
   interets: number
+  tva: number
   montant_total: number
   paid_at: string
   solde_du: number
@@ -243,6 +247,7 @@ export async function rembourserDemandeCredit(
 export interface ApercuSoldeAnticipeCredit {
   capital_restant: number
   interets_courus: number
+  tva_courue: number
   montant_total: number
   date_reference_interets: string
   jours_courus: number
@@ -251,6 +256,7 @@ export interface ApercuSoldeAnticipeCredit {
 export interface SoldeAnticipeCreditRecu {
   capital_regle: number
   interets_courus: number
+  tva_courue: number
   montant_total: number
   jours_courus: number
   solde_at: string
@@ -367,6 +373,8 @@ export interface ProduitCreditDetail {
   base_jours: BaseJours
   regle_arrondi: RegleArrondi
   taux_usure_max_bp: number | null
+  // TVA sur les intérêts, en points de base (1900 = 19 %) ; 0 = produit exonéré.
+  taux_tva_bp: number
 }
 
 // `base_jours` ABSENT de ces deux schémas d'entrée, à dessein : GELÉ côté backend (calcul
@@ -381,6 +389,7 @@ export interface CreationProduitCredit {
   methode_amortissement: MethodeAmortissement
   regle_arrondi: RegleArrondi
   taux_usure_max_bp: number | null
+  taux_tva_bp: number
 }
 
 export interface ModificationProduitCredit {
@@ -390,6 +399,7 @@ export interface ModificationProduitCredit {
   methode_amortissement: MethodeAmortissement
   regle_arrondi: RegleArrondi
   taux_usure_max_bp: number | null
+  taux_tva_bp: number
   motif: string
 }
 
@@ -448,12 +458,14 @@ export interface RattachementsProduitCredit {
   compte_credit_membre: CompteRattachement | null
   compte_credit_client: CompteRattachement | null
   compte_produits_interets: CompteRattachement | null
+  compte_tva: CompteRattachement | null
 }
 
 export interface ModificationRattachementsProduitCredit {
   compte_credit_membre: string | null
   compte_credit_client: string | null
   compte_produits_interets: string | null
+  compte_tva: string | null
   motif: string
 }
 

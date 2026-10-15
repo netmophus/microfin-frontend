@@ -70,6 +70,7 @@ const sessionManquante = {
   valide_le: null,
   valide_par_nom: null,
   a_valider: false,
+  arrete: null,
 }
 
 beforeEach(() => {
